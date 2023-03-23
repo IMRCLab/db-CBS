@@ -9,15 +9,17 @@
 namespace ob = ompl::base;
 namespace oc = ompl::control;
 
-class RobotUnicycleFirstOrder : public Robot
+class MultiRobotUnicycleFirstOrder : public Robot
 {
 public:
- RobotUnicycleFirstOrder(
+ MultiRobotUnicycleFirstOrder(
     const ompl::base::RealVectorBounds& position_bounds,
     float v_min, float v_max,
     float w_min, float w_max)
   {
     geom_.emplace_back(new fcl::Boxf(0.5, 0.25, 1.0));
+    geom_.emplace_back(new fcl::Boxf(0.3, 0.25, 1.0));
+
 
     auto space(std::make_shared<StateSpace>());
     space->setPositionBounds(0,position_bounds);
@@ -25,14 +27,19 @@ public:
     
     // create a control space
     // R^1: turning speed
-    auto cspace(std::make_shared<oc::RealVectorControlSpace>(space, 2));
+    auto cspace(std::make_shared<oc::RealVectorControlSpace>(space, 4));
 
     // set the bounds for the control space
-    ob::RealVectorBounds cbounds(2);
+    ob::RealVectorBounds cbounds(4);
     cbounds.setLow(0, v_min);
     cbounds.setHigh(0, v_max);
     cbounds.setLow(1, w_min);
     cbounds.setHigh(1, w_max);
+
+    cbounds.setLow(2, v_min);
+    cbounds.setHigh(2, v_max);
+    cbounds.setLow(3, w_min);
+    cbounds.setHigh(3, w_max);
   
     cspace->setBounds(cbounds);
 
@@ -121,9 +128,10 @@ public:
       ompl::base::State *state,
       const fcl::Vector3f position) override
   {
-    auto stateTyped = state->as<ob::SE2StateSpace::StateType>();
-    stateTyped->setX(position(0));
-    stateTyped->setY(position(1));
+    auto stateTyped = state->as<StateSpace::StateType>();
+
+    stateTyped->setX(0,position(0));
+    stateTyped->setY(2,position(1));
   }
 
 protected:
@@ -174,7 +182,7 @@ protected:
       setName("TwoUnicycles" + getName());
       type_ = ob::STATE_SPACE_TYPE_COUNT + 0;
       addSubspace(std::make_shared<ob::RealVectorStateSpace>(2), 1.0);  // position1
-      addSubspace(std::make_shared<ob::SO2StateSpace>(), 0.5);      // orientation1
+      addSubspace(std::make_shared<ob::SO2StateSpace>(), 0.5);          // orientation1
       addSubspace(std::make_shared<ob::RealVectorStateSpace>(2), 1.0);  // position2
       addSubspace(std::make_shared<ob::SO2StateSpace>(), 0.5);          // orientation2
 
@@ -249,7 +257,7 @@ std::shared_ptr<Robot> create_robot(
   std::shared_ptr<Robot> robot;
   if (robotType == "unicycle_first_order_0")
   {
-    robot.reset(new RobotUnicycleFirstOrder(
+    robot.reset(new MultiRobotUnicycleFirstOrder(
         positionBounds,
         /*v_min*/ -0.5 /* m/s*/,
         /*v_max*/ 0.5 /* m/s*/,

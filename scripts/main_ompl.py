@@ -22,17 +22,6 @@ def run_ompl(filename_env, folder, timelimit, cfg):
 			"-c", str(filename_cfg)])
 		if result.returncode != 0:
 			print("OMPL failed")
-		# else:
-			# # pass
-			# main_scp.run_scp(
-			# 	filename_env,
-			# 	"{}/result_ompl.yaml".format(folder),
-			# 	"{}/result_scp.yaml".format(folder))
-			# main_komo.run_komo(
-			# 	filename_env,
-			# 	"{}/result_ompl.yaml".format(folder),
-			# 	"{}/result_komo.yaml".format(folder),
-			# 	cfg["rai_cfg"])
 
 def main():
 	parser = argparse.ArgumentParser()

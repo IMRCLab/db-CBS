@@ -23,6 +23,7 @@ def main():
     parser.add_argument('result_folder', help="output folder")
     parser.add_argument('timelimit', default = 5 * 60, help="timelimit")
     parser.add_argument('cfg', help="path to algorithm cfgs")
+    # parser.add_argument('robot_number')
 
     args = parser.parse_args()
     run_example(args.env, args.result_folder,args.timelimit,args.cfg)
