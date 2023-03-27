@@ -67,4 +67,5 @@ protected:
 // Factory Method
 std::shared_ptr<Robot> create_robot(
   const std::string& robotType,
+  size_t robotNumbers,
   const ompl::base::RealVectorBounds& positionBounds);
