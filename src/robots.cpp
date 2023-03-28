@@ -109,12 +109,6 @@ public:
     }
     return result;
   }
-  virtual void setPosition(ompl::base::State *state, const fcl::Vector3f position) override
-  {
-    auto stateTyped = state->as<StateSpace::StateType>();  
-    stateTyped->setX(0,position(0));
-    stateTyped->setY(0,position(1));
-  }
 protected:
   class StateSpace : public ob::CompoundStateSpace
   {
@@ -209,16 +203,80 @@ protected:
 };
 // ////////////////////////////////////////////////////////////////////////////////////////////////
 
+class MultiRobot : public Robot
+{
+public:
+ MultiRobot(
+    const std::vector<std::shared_ptr<Robot>>& robots)
+    : robots_(robots)
+  {
+
+    // create state space
+    auto space(std::make_shared<ob::CompoundStateSpace>());
+    for (auto robot : robots) {
+      auto rsi = robot->getSpaceInformation();
+      auto rss = rsi->getStateSpace();
+      space->addSubspace(rss, 1.0);
+    }
+
+    // create a control space
+    auto cspace(std::make_shared<oc::CompoundControlSpace>(space));
+    for (auto robot : robots) {
+      auto rsi = robot->getSpaceInformation();
+      auto rcs = rsi->getControlSpace();
+      cspace->addSubspace(rcs);
+    }
+
+    // construct an instance of  space information from this control space
+    si_ = std::make_shared<oc::SpaceInformation>(space, cspace);
+  }
+
+  void propagate(
+      const ompl::base::State *start,
+      const ompl::control::Control *control,
+      const double duration,
+      ompl::base::State *result) override
+  {
+    auto startTyped = start->as<ob::CompoundStateSpace::StateType>();
+    auto controlTyped = const_cast<oc::CompoundControlSpace::ControlType*>(control->as<oc::CompoundControlSpace::ControlType>());
+    auto resultTyped = result->as<ob::CompoundStateSpace::StateType>();
+
+    for (size_t i = 0; i < robots_.size(); ++i) {
+      robots_[i]->propagate((*startTyped)[i], (*controlTyped)[i], duration, (*resultTyped)[i]);
+    }
+  }
+
+  virtual fcl::Transform3f getTransform(
+      const ompl::base::State *state,
+      size_t part) override
+  {
+    std::vector<fcl::Transform3f> results;
+    auto stateTyped = state->as<ob::CompoundStateSpace::StateType>();
+
+    for (size_t i = 0; i < robots_.size(); ++i) {
+      results[i] = robots_[i]->getTransform((*stateTyped)[i]); 
+    }
+  }
+
+  virtual size_t numParts() override
+  {
+    return robots_.size();
+  }
+
+protected:
+  std::vector<std::shared_ptr<Robot>> robots_;
+};
+// ////////////////////////////////////////////////////////////////////////////////////////////////
+
 std::shared_ptr<Robot> create_robot(
   const std::string &robotType,
-  size_t robotNumbers,
   const ob::RealVectorBounds &positionBounds)
 {
   std::shared_ptr<Robot> robot;
   if (robotType == "unicycle_first_order_0")
   {
     robot.reset(new MultiRobotUnicycleFirstOrder(
-        robotNumbers, 
+        1, 
         positionBounds,
         /*v_min*/ -0.5 /* m/s*/,
         /*v_max*/ 0.5 /* m/s*/,
@@ -231,5 +289,10 @@ std::shared_ptr<Robot> create_robot(
   }
   return robot;
 }
-
-      
+std::shared_ptr<Robot> create_joint_robot(
+  std::vector<std::shared_ptr<Robot>> robots)
+{
+  std::shared_ptr<Robot> robot;
+  robot.reset(new MultiRobot(robots));
+  return robot;
+}
