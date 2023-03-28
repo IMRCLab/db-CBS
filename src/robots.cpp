@@ -250,12 +250,11 @@ public:
       const ompl::base::State *state,
       size_t part) override
   {
-    std::vector<fcl::Transform3f> results;
     auto stateTyped = state->as<ob::CompoundStateSpace::StateType>();
 
-    for (size_t i = 0; i < robots_.size(); ++i) {
-      results[i] = robots_[i]->getTransform((*stateTyped)[i]); 
-    }
+    fcl::Transform3f result;
+    result = robots_[part]->getTransform((*stateTyped)[part],part);
+    return result;
   }
 
   virtual size_t numParts() override
