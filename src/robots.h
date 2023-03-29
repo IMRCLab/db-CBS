@@ -29,7 +29,7 @@ public:
     return 1;
   }
 
-  std::shared_ptr<fcl::CollisionGeometryf> getCollisionGeometry(size_t part = 0)
+  virtual std::shared_ptr<fcl::CollisionGeometryf> getCollisionGeometry(size_t part = 0)
   {
     return geom_[part];
   }

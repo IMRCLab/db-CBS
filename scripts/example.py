@@ -14,15 +14,15 @@ def run_visualize(script, filename_env, filename_result):
 
 def run_example(env,result_folder,timelimit,cfg):
     result_folder = Path(result_folder)
-    # if result_folder.exists():
-    #     print("Warning! {} exists already. Deleting...".format(result_folder))
-    #     shutil.rmtree(result_folder)
-    # result_folder.mkdir(parents=True, exist_ok=False)
-    # with open(cfg) as f:
-    #     cfg = yaml.safe_load(f)
-    # mycfg = cfg['sst']
-    # mycfg = mycfg['default']
-    # run_ompl(env, str(result_folder), timelimit, mycfg)
+    if result_folder.exists():
+        print("Warning! {} exists already. Deleting...".format(result_folder))
+        shutil.rmtree(result_folder)
+    result_folder.mkdir(parents=True, exist_ok=False)
+    with open(cfg) as f:
+        cfg = yaml.safe_load(f)
+    mycfg = cfg['sst']
+    mycfg = mycfg['default']
+    run_ompl(env, str(result_folder), timelimit, mycfg)
 
     visualize_files = [p.name for p in result_folder.glob('result_*')]
     vis_script = Path(env).parent / "visualize.py"

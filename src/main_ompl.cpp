@@ -105,14 +105,10 @@ int main(int argc, char* argv[]) {
       goal_reals.push_back(v.as<double>());
     }
   }
-
   std::shared_ptr<Robot> robot = create_joint_robot(robots);
-
   // load config file
   YAML::Node cfg = YAML::LoadFile(cfgFile);
-
   auto si = robot->getSpaceInformation();
-
   // set number of control steps (use 0.1s as increment -> 0.1 to 1s per Steer function)
   si->setPropagationStepSize(cfg["propagation_step_size"].as<double>());
   si->setMinMaxControlDuration(
@@ -122,7 +118,6 @@ int main(int argc, char* argv[]) {
   // set state validity checking for this space
   auto stateValidityChecker(std::make_shared<fclStateValidityChecker>(si, bpcm_env, robot));
   si->setStateValidityChecker(stateValidityChecker);
-
   // set the state propagator
   std::shared_ptr<oc::StatePropagator> statePropagator(new RobotStatePropagator(si, robot));
   si->setStatePropagator(statePropagator);
@@ -162,7 +157,6 @@ int main(int argc, char* argv[]) {
   // auto planner(rrt);
 
   pdef->setOptimizationObjective(std::make_shared<ob::ControlDurationObjective>(si));
-
   // empty stats file
   std::ofstream stats(statsFile);
   stats << "stats:" << std::endl;
@@ -179,23 +173,16 @@ int main(int argc, char* argv[]) {
         std::cout << "Intermediate solution! " << cost.value() << " " << t/1000.0f << std::endl;
       });
 
-  // set the problem we are trying to solve for the planner
+  // set the problem we are trying to solve for the plannerw
   planner->setProblemDefinition(pdef);
-
-
-
   // perform setup steps for the planner
   planner->setup();
-
   // print the settings for this space
   si->printSettings(std::cout);
-
   // print the problem settings
   pdef->print(std::cout);
-
   // attempt to solve the problem within timelimit
   ob::PlannerStatus solved;
-
   // for (int i = 0; i < 3; ++i) {
   solved = planner->ob::Planner::solve(timelimit);
   std::cout << solved << std::endl;

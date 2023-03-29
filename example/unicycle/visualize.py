@@ -36,10 +36,10 @@ class Animation:
     #         self.ax, obstacle["center"], obstacle["size"], facecolor='gray', edgecolor='black')
     #   else:
     #     print("ERROR: unknown obstacle type")
-    self.robot_numbers = env["robots"][0]["numbers"]
+    self.robot_numbers = len(env["robots"])
     for robot in env["robots"]:  
       self.size = []
-      for i in range(robot["numbers"]):
+      for i in range(self.robot_numbers):
         self.size.append(np.array([0.5, 0.25])) 
       self.draw_robot(robot["start"], facecolor='red')
       self.draw_robot(robot["goal"], facecolor='none', edgecolor='red')
@@ -93,23 +93,17 @@ class Animation:
 
   def draw_robot(self, state, **kwargs):
     patch = []
-    for j in range(self.robot_numbers):
+    for j in range(len(state)//3): # x,y,theta
       pos = state[3*j:3*j+2]
       yaw = state[3*j+2]
       patch.append(draw_box_patch(self.ax, pos, self.size[j], yaw, **kwargs))
-    # xy0 = state[0:2]
-    # yaw0 = state[2]
-    # xy1 = state[3:5]
-    # yaw1 = state[5]
-    # patch1 = draw_box_patch(self.ax, xy0, self.size[0], yaw0, **kwargs)
-    # patch2 = draw_box_patch(self.ax, xy1, self.size[1], yaw1, **kwargs)
-
+    
     return patch #[patch1, patch2]
 
 def visualize(filename_env, filename_result = None, filename_video=None):
+  print(filename_video)
   anim = Animation(filename_env, filename_result)
   # anim.save(filename_video, 1)
-
   anim.show()
   # if filename_video is not None:
   #   anim.save(filename_video, 1)
