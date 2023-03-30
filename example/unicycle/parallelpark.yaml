@@ -1,6 +1,6 @@
 environment:
   min: [0.0, 0.0]
-  max: [3.5, 1.2]
+  max: [3.5, 2.0]
   # obstacles:
     # - type: box
     #   center: [0.3, 0.3]
@@ -8,9 +8,12 @@ environment:
     # - type: box
     #   center: [2.7, 0.3]
     #   size: [0.5, 0.25]
+  obstacles: []
 robots:
   - type: unicycle_first_order_0
-    start: [0.7,0.3,0,0.7,0.9,0] # x,y,theta
-    goal: [1.5,0.3,0,1.5,0.9,0] # x,y,theta
-    numbers: 2
+    start: [0.5,0.5,0] # x,y,theta
+    goal: [2.5,0.5,0] # x,y,theta
+  - type: car_first_order_0
+    start: [2.5,0.5,0] # x,y,theta
+    goal: [0.5,0.5,0] # x,y,theta
  

@@ -24,14 +24,12 @@ public:
     const ompl::base::State *state,
     size_t part = 0) = 0;
 
-  virtual void setPosition(ompl::base::State* state, const fcl::Vector3f position) = 0;
-
   virtual size_t numParts()
   {
     return 1;
   }
 
-  std::shared_ptr<fcl::CollisionGeometryf> getCollisionGeometry(size_t part = 0)
+  virtual std::shared_ptr<fcl::CollisionGeometryf> getCollisionGeometry(size_t part = 0)
   {
     return geom_[part];
   }
@@ -67,5 +65,7 @@ protected:
 // Factory Method
 std::shared_ptr<Robot> create_robot(
   const std::string& robotType,
-  size_t robotNumbers,
   const ompl::base::RealVectorBounds& positionBounds);
+
+std::shared_ptr<Robot> create_joint_robot(
+  std::vector<std::shared_ptr<Robot>> robots);

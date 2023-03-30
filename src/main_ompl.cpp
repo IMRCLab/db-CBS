@@ -59,33 +59,30 @@ int main(int argc, char* argv[]) {
   // load problem description
   YAML::Node env = YAML::LoadFile(inputFile);
 
-  // std::vector<fcl::CollisionObjectf *> obstacles;
-  // for (const auto &obs : env["environment"]["obstacles"])
-  // {
-  //   if (obs["type"].as<std::string>() == "box")
-  //   {
-  //     const auto &size = obs["size"];
-  //     std::shared_ptr<fcl::CollisionGeometryf> geom;
-  //     geom.reset(new fcl::Boxf(size[0].as<float>(), size[1].as<float>(), 1.0));
-  //     const auto &center = obs["center"];
-  //     auto co = new fcl::CollisionObjectf(geom);
-  //     co->setTranslation(fcl::Vector3f(center[0].as<float>(), center[1].as<float>(), 0));
-  //     co->computeAABB();
-  //     obstacles.push_back(co);
-  //   }
-  //   else
-  //   {
-  //     throw std::runtime_error("Unknown obstacle type!");
-  //   }
-  // }
+  std::vector<fcl::CollisionObjectf *> obstacles;
+  for (const auto &obs : env["environment"]["obstacles"])
+  {
+    if (obs["type"].as<std::string>() == "box")
+    {
+      const auto &size = obs["size"];
+      std::shared_ptr<fcl::CollisionGeometryf> geom;
+      geom.reset(new fcl::Boxf(size[0].as<float>(), size[1].as<float>(), 1.0));
+      const auto &center = obs["center"];
+      auto co = new fcl::CollisionObjectf(geom);
+      co->setTranslation(fcl::Vector3f(center[0].as<float>(), center[1].as<float>(), 0));
+      co->computeAABB();
+      obstacles.push_back(co);
+    }
+    else
+    {
+      throw std::runtime_error("Unknown obstacle type!");
+    }
+  }
   std::shared_ptr<fcl::BroadPhaseCollisionManagerf> bpcm_env(new fcl::DynamicAABBTreeCollisionManagerf());
   // std::shared_ptr<fcl::BroadPhaseCollisionManagerf> bpcm_env(new fcl::NaiveCollisionManagerf());
-  // bpcm_env->registerObjects(obstacles);
+  bpcm_env->registerObjects(obstacles);
   bpcm_env->setup();
 
-  const auto& robot_node = env["robots"][0];
-  auto robotType = robot_node["type"].as<std::string>();
-  
   const auto &env_min = env["environment"]["min"];
   const auto &env_max = env["environment"]["max"];
   ob::RealVectorBounds position_bounds(env_min.size());
@@ -93,14 +90,25 @@ int main(int argc, char* argv[]) {
     position_bounds.setLow(i, env_min[i].as<double>());
     position_bounds.setHigh(i, env_max[i].as<double>());
   }
-  auto robot_numbers = robot_node["numbers"].as<size_t>();
-  std::shared_ptr<Robot> robot = create_robot(robotType, robot_numbers, position_bounds);
 
+  std::vector<std::shared_ptr<Robot>> robots;
+  std::vector<double> start_reals;
+  std::vector<double> goal_reals;
+  for (const auto &robot_node : env["robots"]) {
+    auto robotType = robot_node["type"].as<std::string>();
+    std::shared_ptr<Robot> robot = create_robot(robotType, position_bounds);
+    robots.push_back(robot);
+    for (const auto& v : robot_node["start"]) {
+      start_reals.push_back(v.as<double>());
+    }
+    for (const auto& v : robot_node["goal"]) {
+      goal_reals.push_back(v.as<double>());
+    }
+  }
+  std::shared_ptr<Robot> robot = create_joint_robot(robots);
   // load config file
   YAML::Node cfg = YAML::LoadFile(cfgFile);
-
   auto si = robot->getSpaceInformation();
-
   // set number of control steps (use 0.1s as increment -> 0.1 to 1s per Steer function)
   si->setPropagationStepSize(cfg["propagation_step_size"].as<double>());
   si->setMinMaxControlDuration(
@@ -110,7 +118,6 @@ int main(int argc, char* argv[]) {
   // set state validity checking for this space
   auto stateValidityChecker(std::make_shared<fclStateValidityChecker>(si, bpcm_env, robot));
   si->setStateValidityChecker(stateValidityChecker);
-
   // set the state propagator
   std::shared_ptr<oc::StatePropagator> statePropagator(new RobotStatePropagator(si, robot));
   si->setStatePropagator(statePropagator);
@@ -120,22 +127,14 @@ int main(int argc, char* argv[]) {
 
   // create and set a start state
   auto startState = si->allocState();
-  std::vector<double> reals;
-  for (const auto& v : robot_node["start"]) {
-    reals.push_back(v.as<double>());
-  }
-  si->getStateSpace()->copyFromReals(startState, reals);
+  si->getStateSpace()->copyFromReals(startState, start_reals);
   si->enforceBounds(startState);
   pdef->addStartState(startState);
   si->freeState(startState);
 
   // set goal state
   auto goalState = si->allocState();
-  reals.clear();
-  for (const auto &v : robot_node["goal"]) {
-    reals.push_back(v.as<double>());
-  }
-  si->getStateSpace()->copyFromReals(goalState, reals);
+  si->getStateSpace()->copyFromReals(goalState, goal_reals);
   std::cout<<goalState;
   si->enforceBounds(goalState);
   pdef->setGoalState(goalState, cfg["goal_epsilon"].as<double>());
@@ -158,7 +157,6 @@ int main(int argc, char* argv[]) {
   // auto planner(rrt);
 
   pdef->setOptimizationObjective(std::make_shared<ob::ControlDurationObjective>(si));
-
   // empty stats file
   std::ofstream stats(statsFile);
   stats << "stats:" << std::endl;
@@ -175,23 +173,16 @@ int main(int argc, char* argv[]) {
         std::cout << "Intermediate solution! " << cost.value() << " " << t/1000.0f << std::endl;
       });
 
-  // set the problem we are trying to solve for the planner
+  // set the problem we are trying to solve for the plannerw
   planner->setProblemDefinition(pdef);
-
-
-
   // perform setup steps for the planner
   planner->setup();
-
   // print the settings for this space
   si->printSettings(std::cout);
-
   // print the problem settings
   pdef->print(std::cout);
-
   // attempt to solve the problem within timelimit
   ob::PlannerStatus solved;
-
   // for (int i = 0; i < 3; ++i) {
   solved = planner->ob::Planner::solve(timelimit);
   std::cout << solved << std::endl;
