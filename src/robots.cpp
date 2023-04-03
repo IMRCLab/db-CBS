@@ -9,6 +9,92 @@
 namespace ob = ompl::base;
 namespace oc = ompl::control;
 
+class RobotFirstOrder : public Robot
+{
+public:
+  RobotFirstOrder(
+    const ompl::base::RealVectorBounds& position_bounds,
+    float v_min, float v_max,
+    float w_min, float w_max)
+  {
+    geom_.emplace_back(new fcl::Spheref(0.5));
+
+    auto space(std::make_shared<ob::SE2StateSpace>());
+    space->setBounds(position_bounds);
+
+    // create a control space
+    // R^1: turning speed
+    auto cspace(std::make_shared<oc::RealVectorControlSpace>(space, 2));
+
+    // set the bounds for the control space
+    ob::RealVectorBounds cbounds(2);
+    cbounds.setLow(0, v_min);
+    cbounds.setHigh(0, v_max);
+    cbounds.setLow(1, w_min);
+    cbounds.setHigh(1, w_max);
+
+    cspace->setBounds(cbounds);
+
+    // construct an instance of  space information from this control space
+    si_ = std::make_shared<oc::SpaceInformation>(space, cspace);
+
+    dt_ = 0.1;
+    is2D_ = true;
+    max_speed_ = std::max(fabsf(v_min), fabsf(v_max));
+  }
+
+  void propagate(
+    const ompl::base::State *start,
+    const ompl::control::Control *control,
+    const double duration,
+    ompl::base::State *result) override
+  {
+    auto startTyped = start->as<ob::SE2StateSpace::StateType>();
+    const double *ctrl = control->as<ompl::control::RealVectorControlSpace::ControlType>()->values;
+
+    auto resultTyped = result->as<ob::SE2StateSpace::StateType>();
+
+    // use simple Euler integration
+    float x = startTyped->getX();
+    float y = startTyped->getY();
+    float yaw = startTyped->getYaw();
+    float remaining_time = duration;
+    do
+    {
+      float dt = std::min(remaining_time, dt_);
+
+      yaw += ctrl[1] * dt;
+      x += ctrl[0] * dt;
+      y += ctrl[0] * dt;
+
+      remaining_time -= dt;
+    } while (remaining_time >= dt_);
+
+    // update result
+
+    resultTyped->setX(x);
+    resultTyped->setY(y);
+    resultTyped->setYaw(yaw);
+
+    // Normalize orientation
+    ob::SO2StateSpace SO2;
+    SO2.enforceBounds(resultTyped->as<ob::SO2StateSpace::StateType>(1));
+  }
+
+  virtual fcl::Transform3f getTransform(
+      const ompl::base::State *state,
+      size_t /*part*/) override
+  {
+    auto stateTyped = state->as<ob::SE2StateSpace::StateType>();
+
+    fcl::Transform3f result;
+    result = Eigen::Translation<float, 3>(fcl::Vector3f(stateTyped->getX(), stateTyped->getY(), 0));
+    float yaw = stateTyped->getYaw();
+    result.rotate(Eigen::AngleAxisf(yaw, Eigen::Vector3f::UnitZ()));
+    return result;
+  }
+};
+//////////////////////////////////////////////////////////////////////////////////////////
 class RobotUnicycleFirstOrder : public Robot
 {
 public:
@@ -353,6 +439,16 @@ std::shared_ptr<Robot> create_robot(
         /*phi_min*/ -M_PI/3.0f /*rad*/,
         /*phi_max*/ M_PI/3.0f /*rad*/,
         /*L*/ 0.25 /*m*/
+        ));
+  }
+  else if (robotType == "robot_first_order_0")
+  {
+    robot.reset(new RobotFirstOrder(
+        positionBounds,
+        /*v_min*/ -0.5 /* m/s*/,
+        /*v_max*/ 0.5 /* m/s*/,
+        /*w_min*/ -0.5 /*rad/s*/,
+        /*w_min*/ 0.5 /*rad/s*/
         ));
   }
   else
