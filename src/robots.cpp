@@ -9,10 +9,10 @@
 namespace ob = ompl::base;
 namespace oc = ompl::control;
 
-class RobotFirstOrder : public Robot
+class RobotSingleIntegrator2D : public Robot
 {
 public:
-  RobotFirstOrder(
+  RobotSingleIntegrator2D(
     const ompl::base::RealVectorBounds& position_bounds,
     float v_min, float v_max,
     float w_min, float w_max)
@@ -57,13 +57,11 @@ public:
     // use simple Euler integration
     float x = startTyped->getX();
     float y = startTyped->getY();
-    float yaw = startTyped->getYaw();
     float remaining_time = duration;
     do
     {
       float dt = std::min(remaining_time, dt_);
 
-      yaw += ctrl[1] * dt;
       x += ctrl[0] * dt;
       y += ctrl[0] * dt;
 
@@ -74,7 +72,6 @@ public:
 
     resultTyped->setX(x);
     resultTyped->setY(y);
-    resultTyped->setYaw(yaw);
 
     // Normalize orientation
     ob::SO2StateSpace SO2;
@@ -89,18 +86,16 @@ public:
 
     fcl::Transform3f result;
     result = Eigen::Translation<float, 3>(fcl::Vector3f(stateTyped->getX(), stateTyped->getY(), 0));
-    float yaw = stateTyped->getYaw();
-    result.rotate(Eigen::AngleAxisf(yaw, Eigen::Vector3f::UnitZ()));
     return result;
   }
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
 
-class RobotSecondOrder : public Robot
+class RobotDoubleIntegrator2D : public Robot
 {
 public:
-  RobotSecondOrder(
+  RobotDoubleIntegrator2D(
       const ompl::base::RealVectorBounds &position_bounds,
       float v_limit,      // max velocity in m/s
       float w_limit,      // max angular velocity in rad/s
@@ -157,7 +152,6 @@ public:
     // use simple Euler integration
     float x = startTyped->getX();
     float y = startTyped->getY();
-    float yaw = startTyped->getYaw();
     float v = startTyped->getVelocity();
     float w = startTyped->getAngularVelocity();
     float remaining_time = duration;
@@ -166,9 +160,8 @@ public:
       float dt = std::min(remaining_time, dt_);
 
       // For compatibility with KOMO, update v and yaw first
-      v += ctrl[0] * dt;
-      w += ctrl[1] * dt;
-      yaw += w * dt;
+      w += ctrl[0] * dt;
+      v += w * dt;
       x += v * dt;
       y += v * dt;
 
@@ -179,13 +172,9 @@ public:
 
     resultTyped->setX(x);
     resultTyped->setY(y);
-    resultTyped->setYaw(yaw);
     resultTyped->setVelocity(v);
     resultTyped->setAngularVelocity(w);
 
-    // Normalize orientation
-    // ob::SO2StateSpace SO2;
-    // SO2.enforceBounds(resultTyped->as<ob::SO2StateSpace::StateType>(1));
   }
 
   virtual fcl::Transform3f getTransform(
@@ -196,8 +185,6 @@ public:
 
     fcl::Transform3f result;
     result = Eigen::Translation<float, 3>(fcl::Vector3f(stateTyped->getX(), stateTyped->getY(), 0));
-    float yaw = stateTyped->getYaw();
-    result.rotate(Eigen::AngleAxisf(yaw, Eigen::Vector3f::UnitZ()));
     return result;
   }
 
@@ -220,11 +207,6 @@ protected:
         auto sub = as<ob::SE2StateSpace::StateType>(0);
         return sub->getY();
       }
-      double getYaw() const
-      {
-        auto sub = as<ob::SE2StateSpace::StateType>(0);
-        return sub->getYaw();
-      }
       double getVelocity() const
       {
         return as<ob::RealVectorStateSpace::StateType>(1)->values[0];
@@ -234,7 +216,6 @@ protected:
       {
         return as<ob::RealVectorStateSpace::StateType>(2)->values[0];
       }
-
       void setX(double x)
       {
         auto sub = as<ob::SE2StateSpace::StateType>(0);
@@ -248,14 +229,6 @@ protected:
         sub->setY(y);
 
       }
-
-      void setYaw(double yaw)
-      {
-        auto sub = as<ob::SE2StateSpace::StateType>(0);
-        sub->setYaw(yaw);
-
-      }
-
       void setVelocity(double velocity)
       {
         as<ob::RealVectorStateSpace::StateType>(1)->values[0] = velocity;
@@ -269,7 +242,7 @@ protected:
 
     StateSpace()
     {
-      setName("RobotSecondOrder" + getName());
+      setName("RobotDoubleIntegrator2D" + getName());
       type_ = ob::STATE_SPACE_TYPE_COUNT + 0;
       addSubspace(std::make_shared<ob::SE2StateSpace>(), 1.0);  
       addSubspace(std::make_shared<ob::RealVectorStateSpace>(1), 0.25); // velocity
@@ -673,7 +646,7 @@ std::shared_ptr<Robot> create_robot(
   }
   else if (robotType == "robot_first_order_0")
   {
-    robot.reset(new RobotFirstOrder(
+    robot.reset(new RobotSingleIntegrator2D(
         positionBounds,
         /*v_min*/ -0.5 /* m/s*/,
         /*v_max*/ 0.5 /* m/s*/,
@@ -683,7 +656,7 @@ std::shared_ptr<Robot> create_robot(
   }
   else if (robotType == "robot_second_order_0")
   {
-    robot.reset(new RobotSecondOrder(
+    robot.reset(new RobotDoubleIntegrator2D(
         positionBounds,
         /*v_limit*/ 0.5 /*m/s*/,
         /*w_limit*/ 0.5 /*rad/s*/,
