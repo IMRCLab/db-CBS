@@ -644,7 +644,7 @@ std::shared_ptr<Robot> create_robot(
         /*L*/ 0.25 /*m*/
         ));
   }
-  else if (robotType == "robot_first_order_0")
+  else if (robotType == "single_integrator")
   {
     robot.reset(new RobotSingleIntegrator2D(
         positionBounds,
@@ -654,7 +654,7 @@ std::shared_ptr<Robot> create_robot(
         /*w_min*/ 0.5 /*rad/s*/
         ));
   }
-  else if (robotType == "robot_second_order_0")
+  else if (robotType == "double_integrator")
   {
     robot.reset(new RobotDoubleIntegrator2D(
         positionBounds,
