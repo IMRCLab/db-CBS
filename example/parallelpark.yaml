@@ -10,10 +10,13 @@ environment:
     #   size: [0.5, 0.25]
   obstacles: []
 robots:
-  - type: unicycle_first_order_0
-    start: [0.5,0.5,0] # x,y,theta
-    goal: [2.5,0.5,0] # x,y,theta
+  - type: single_integrator
+    start: [0.5,0.5] # x,y
+    goal: [2.5,1.0] # x,y
+  # - type: single_integrator
+  #   start: [2.0,1.0] # x,y
+  #   goal: [1.5,0.5] # x,y
   - type: car_first_order_0
-    start: [2.5,0.5,0] # x,y,theta
-    goal: [0.5,0.5,0] # x,y,theta
+    start: [2.0,1.5,0] # x,y,theta
+    goal: [1.5,0.5,0] # x,y,theta
  
