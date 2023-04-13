@@ -94,6 +94,7 @@ int main(int argc, char* argv[]) {
   std::vector<std::shared_ptr<Robot>> robots;
   std::vector<double> start_reals;
   std::vector<double> goal_reals;
+  std::vector<size_t> state_lengths;
   for (const auto &robot_node : env["robots"]) {
     auto robotType = robot_node["type"].as<std::string>();
     std::shared_ptr<Robot> robot = create_robot(robotType, position_bounds);
@@ -101,6 +102,7 @@ int main(int argc, char* argv[]) {
     for (const auto& v : robot_node["start"]) {
       start_reals.push_back(v.as<double>());
     }
+    state_lengths.push_back(start_reals.size());
     for (const auto& v : robot_node["goal"]) {
       goal_reals.push_back(v.as<double>());
     }
@@ -216,18 +218,28 @@ int main(int argc, char* argv[]) {
   out << "result:" << std::endl;
   out << "  - states:" << std::endl;
   for (size_t i = 0; i < path->getStateCount(); ++i) {
+    int k = 0;
     const auto state = path->getState(i);
-
     std::vector<double> reals;
     si->getStateSpace()->copyToReals(reals, state);
-    out << "      - [";
+    out << "      - [[";
     for (size_t i = 0; i < reals.size(); ++i) {
-      out << reals[i];
-      if (i < reals.size() - 1) {
-        out << ",";
+      if (i < state_lengths[k]){
+        out << reals[i];
+        if (i < state_lengths[k]-1){
+          out << ",";
+        }
+      }
+      if (i == state_lengths[k]) {
+        out << "], ";
+        if (i < reals.size()-1){
+          out << "[";
+        }
+        out << reals[i] << ",";
+        k = k + 1;
       }
     }
-    out << "]" << std::endl;
+    out << "]]" << std::endl;
   }
   out << "    actions:" << std::endl;
   for (size_t i = 0; i < path->getControlCount(); ++i) {

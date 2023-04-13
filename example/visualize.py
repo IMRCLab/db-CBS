@@ -42,17 +42,12 @@ class Animation:
     self.robot_numbers = len(env["robots"])
     self.radius = 0.1
     self.size = np.array([0.5, 0.25])
-    self.robot_types, self.robot_starts, self.robot_goals = [], [], []
+    self.robot_types = []
 
     for robot in env["robots"]:  
       self.robot_types.append(robot["type"])  
-      self.robot_starts.append(robot["start"])  
-      self.robot_goals.append(robot["goal"])  
-  
-    self.robot_starts = list(deepflatten(self.robot_starts))
-    self.robot_goals = list(deepflatten(self.robot_goals))
-    self.draw_robot(self.robot_starts, self.robot_types, facecolor='red')
-    self.draw_robot(self.robot_goals, self.robot_types, facecolor='none', edgecolor='red')
+      self.draw_robot(robot["start"], robot["type"], facecolor='red')
+      self.draw_robot(robot["goal"], robot["type"], facecolor='none', edgecolor='red')
 
     if filename_result is not None:
       with open(filename_result) as result_file:
@@ -66,8 +61,9 @@ class Animation:
       self.robot_patches = []
       for robot in self.result["result"]:
         state = robot["states"][0]
-        patches = self.draw_robot(state, self.robot_types, facecolor='blue')
-        self.robot_patches.extend(patches)
+        for i in range(len(state)):
+          patches = self.draw_robot(state[i], self.robot_types[i], facecolor='blue')
+          self.robot_patches.extend(patches)
       self.anim = animation.FuncAnimation(self.fig, self.animate_func,
                                 frames=T,
                                 interval=100,
@@ -88,22 +84,18 @@ class Animation:
     print(i)
     for k, robot in enumerate(self.result["result"]):
       state = robot["states"][i]
-      end = 0
-      for j in range(self.robot_numbers):
+      for j in range(len(state)):
         if self.robot_types[j] == 'single_integrator':
-          pos = state[end:end+2]
+          pos = state[j]
           xy = np.asarray(pos)
-          end = end + 2
           self.robot_patches[2*k+j].center = xy
           t = matplotlib.transforms.Affine2D().rotate_around(
               pos[0], pos[1], 0)
           self.robot_patches[2*k+j].set_transform(t + self.ax.transData)
-
         elif self.robot_types[j] == 'unicycle_first_order_0' or self.robot_types[j] == 'car_first_order_0':
-          pos = state[end:end+2]
-          yaw = state[end+2]
+          pos = state[j][:2]
+          yaw = state[j][2]
           xy = np.asarray(pos) - np.asarray(self.size) / 2
-          end = end + 3
           self.robot_patches[2*k+j].set_xy(xy)
           t = matplotlib.transforms.Affine2D().rotate_around(
               pos[0], pos[1], yaw)
@@ -112,22 +104,18 @@ class Animation:
     return self.robot_patches
 
   def draw_robot(self, state, type, **kwargs):
-    patch, end = [], 0
-    for k in type:
-      if k == 'single_integrator':
-        pos = state[end:end+2]
-        patch.append(draw_sphere_patch(self.ax, pos, self.radius, 0, **kwargs))
-        end = end + 2
+    patch = []
+    if type == 'single_integrator':
+      pos = state
+      patch.append(draw_sphere_patch(self.ax, state, self.radius, 0, **kwargs))
 
-      elif k == 'unicycle_first_order_0' or k == 'car_first_order_0':
-        pos = state[end:end+2]
-        yaw = state[end+2]
-        patch.append(draw_box_patch(self.ax, pos, self.size, yaw, **kwargs))  
-        end = end + 3
+    if type == 'unicycle_first_order_0' or type == 'car_first_order_0':
+      pos = state[:2]
+      yaw = state[2]
+      patch.append(draw_box_patch(self.ax, pos, self.size, yaw, **kwargs))  
     return patch 
 
 def visualize(filename_env, filename_result = None, filename_video=None):
-  print(filename_video)
   anim = Animation(filename_env, filename_result)
   # anim.save(filename_video, 1)
   anim.show()
