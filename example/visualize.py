@@ -59,11 +59,12 @@ class Animation:
       print("T", T)
 
       self.robot_patches = []
+      i = 0
       for robot in self.result["result"]:
         state = robot["states"][0]
-        for i in range(len(state)):
-          patches = self.draw_robot(state[i], self.robot_types[i], facecolor='blue')
-          self.robot_patches.extend(patches)
+        patches = self.draw_robot(state, self.robot_types[i], facecolor='blue')
+        self.robot_patches.extend(patches)
+        i += 1
       self.anim = animation.FuncAnimation(self.fig, self.animate_func,
                                 frames=T,
                                 interval=100,
@@ -82,28 +83,28 @@ class Animation:
 
   def animate_func(self, i):
     print(i)
-    for k, robot in enumerate(self.result["result"]):
+    for k, robot in enumerate(self.result["result"]): # for each robot
       state = robot["states"][i]
-      for j in range(len(state)):
-        if self.robot_types[j] == 'single_integrator':
-          pos = state[j]
+      if self.robot_types[k] == 'single_integrator':
+          pos = state
           xy = np.asarray(pos)
-          self.robot_patches[2*k+j].center = xy
+          self.robot_patches[k].center = xy
           t = matplotlib.transforms.Affine2D().rotate_around(
               pos[0], pos[1], 0)
-          self.robot_patches[2*k+j].set_transform(t + self.ax.transData)
-        elif self.robot_types[j] == 'unicycle_first_order_0' or self.robot_types[j] == 'car_first_order_0':
-          pos = state[j][:2]
-          yaw = state[j][2]
+          self.robot_patches[k].set_transform(t + self.ax.transData)
+      elif self.robot_types[k] == 'unicycle_first_order_0' or self.robot_types[k] == 'car_first_order_0':
+          pos = state[:2]
+          yaw = state[2]
           xy = np.asarray(pos) - np.asarray(self.size) / 2
-          self.robot_patches[2*k+j].set_xy(xy)
+          self.robot_patches[k].set_xy(xy)
           t = matplotlib.transforms.Affine2D().rotate_around(
               pos[0], pos[1], yaw)
-          self.robot_patches[2*k+j].set_transform(t + self.ax.transData)
+          self.robot_patches[k].set_transform(t + self.ax.transData)
 
     return self.robot_patches
 
   def draw_robot(self, state, type, **kwargs):
+    print(state)
     patch = []
     if type == 'single_integrator':
       pos = state
