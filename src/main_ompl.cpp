@@ -258,39 +258,6 @@ int main(int argc, char* argv[]) {
     }
   }
 
-  // 
-  // out << "result:" << std::endl;
-  // for (size_t i = 0; i < path->getStateCount(); ++i) {
-  //   const auto state = path->getState(i);
-  //   std::vector<double> reals;
-  //   si->getStateSpace(->copyToReals(reals, state));
-
-  // }
-  // out << "  - states:" << std::endl;
-  // for (size_t i = 0; i < path->getStateCount(); ++i) {
-  //   int k = 0;
-  //   const auto state = path->getState(i);
-  //   std::vector<double> reals;
-  //   si->getStateSpace()->copyToReals(reals, state);
-  //   out << "      - [[";
-  //   for (size_t i = 0; i < reals.size(); ++i) {
-  //     if (i < state_lengths[k]){
-  //       out << reals[i];
-  //       if (i < state_lengths[k]-1){
-  //         out << ",";
-  //       }
-  //     }
-  //     if (i == state_lengths[k]) {
-  //       out << "], ";
-  //       if (i < reals.size()-1){
-  //         out << "[";
-  //       }
-  //       out << reals[i] << ",";
-  //       k = k + 1;
-  //     }
-  //   }
-  //   out << "]]" << std::endl;
-  // }
   out << "    actions:" << std::endl;
   for (size_t i = 0; i < path->getControlCount(); ++i) {
 
