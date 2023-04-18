@@ -2,7 +2,7 @@
 #include <iostream>
 #include <algorithm>
 #include <chrono>
-
+#include <iterator>
 #include <yaml-cpp/yaml.h>
 
 // #include <boost/functional/hash.hpp>
@@ -19,6 +19,7 @@
 #include "robots.h"
 #include "robotStatePropagator.hpp"
 #include "fclStateValidityChecker.hpp"
+
 
 namespace ob = ompl::base;
 namespace oc = ompl::control;
@@ -94,6 +95,9 @@ int main(int argc, char* argv[]) {
   std::vector<std::shared_ptr<Robot>> robots;
   std::vector<double> start_reals;
   std::vector<double> goal_reals;
+  std::vector<double> state_lengths;
+  // std::vector<std::vector<double>> robot_states;
+
   for (const auto &robot_node : env["robots"]) {
     auto robotType = robot_node["type"].as<std::string>();
     std::shared_ptr<Robot> robot = create_robot(robotType, position_bounds);
@@ -101,6 +105,7 @@ int main(int argc, char* argv[]) {
     for (const auto& v : robot_node["start"]) {
       start_reals.push_back(v.as<double>());
     }
+    state_lengths.push_back(start_reals.size()-1);
     for (const auto& v : robot_node["goal"]) {
       goal_reals.push_back(v.as<double>());
     }
@@ -211,24 +216,48 @@ int main(int argc, char* argv[]) {
 
   std::cout << path->getStateCount() << "," << path->getControlCount() << std::endl;
   assert(path->getStateCount() == path->getControlCount() + 1);
+  std::vector<double>::iterator switchItr;
+  std::vector<std::vector<std::vector<double>>> robot_states(state_lengths.size());
 
-  std::ofstream out(outputFile);
-  out << "result:" << std::endl;
-  out << "  - states:" << std::endl;
   for (size_t i = 0; i < path->getStateCount(); ++i) {
     const auto state = path->getState(i);
-
     std::vector<double> reals;
+    std::vector<double> state_temp;
     si->getStateSpace()->copyToReals(reals, state);
-    out << "      - [";
-    for (size_t i = 0; i < reals.size(); ++i) {
-      out << reals[i];
-      if (i < reals.size() - 1) {
-        out << ",";
+    size_t k = 0;
+    switchItr = (reals.begin() + state_lengths[0]);
+    for  (auto it = reals.begin(); it != reals.end();  ++it){
+      if (std::distance(it, switchItr) > 0){
+        state_temp.push_back(*it);
+      }
+      if (std::distance(it, switchItr) == 0){
+        state_temp.push_back(*it);
+        robot_states[k].push_back(state_temp);
+        state_temp.clear();
+        if (k < state_lengths.size()-1){
+          k = k + 1;
+          switchItr = reals.begin() + state_lengths[k];
+        }
+        else continue;
       }
     }
-    out << "]" << std::endl;
   }
+  std::ofstream out(outputFile);
+  out << "result:" << std::endl;
+  for (size_t i = 0; i < state_lengths.size(); ++i){
+    out << "  - states:" << std::endl;
+    for (size_t j = 0; j < robot_states[i].size(); j++){
+      out << "      - [";
+      for (auto it = robot_states[i][j].begin(); it != robot_states[i][j].end(); ++it){
+        out << *it;
+        if (next(it)!=robot_states[i][j].end()){
+          out << ",";
+        }
+      }
+      out << "]"<<std::endl;
+    }
+  }
+
   out << "    actions:" << std::endl;
   for (size_t i = 0; i < path->getControlCount(); ++i) {
 
