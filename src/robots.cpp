@@ -616,7 +616,7 @@ std::shared_ptr<Robot> create_robot(
   const ob::RealVectorBounds &positionBounds)
 {
   std::shared_ptr<Robot> robot;
-  if (robotType == "unicycle_first_order_0")
+  if (robotType == "unicycle_first_order")
   {
     robot.reset(new RobotUnicycleFirstOrder(
         positionBounds,
@@ -625,7 +625,7 @@ std::shared_ptr<Robot> create_robot(
         /*w_min*/ -0.5 /*rad/s*/,
         /*w_max*/ 0.5 /*rad/s*/));
   }
-  else if (robotType == "car_first_order_0")
+  else if (robotType == "car_first_order")
   {
     robot.reset(new RobotCarFirstOrder(
         positionBounds,
