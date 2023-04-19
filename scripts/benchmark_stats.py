@@ -1,23 +1,11 @@
 import yaml
 from pathlib import Path
 import plot_stats
+import argparse
 
 
-def main():
+def run_benchmark_stats(instances,algs):
 	results_path = Path("../results")
-
-	instances = [
-		"parallelpark",
-		"bugtrap",
-		"wall",
-	]
-	algs = [
-		"sst",
-		# "sbpl",
-		# "komo",
-		# "dbAstar-komo",
-		# "dbAstar-scp",
-	]
 
 	report = plot_stats.Report(results_path / "stats.pdf", T=60, dt=0.1)
 
@@ -39,6 +27,13 @@ def main():
 		# report.add_boxplot_initial_cost_plot([instance])
 
 	report.close()
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('instances', help="instances")
+    parser.add_argument('algs', help="algorithms")
+    args = parser.parse_args()
+    run_benchmark_stats(args.instances, args.algs)
 
 if __name__ == '__main__':
 	main()

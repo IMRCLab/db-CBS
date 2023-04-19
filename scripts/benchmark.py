@@ -12,6 +12,7 @@ import multiprocessing as mp
 import tqdm
 import psutil
 # import checker
+from benchmark_stats import run_benchmark_stats
 
 
 @dataclass
@@ -25,7 +26,6 @@ class ExecutionTask:
 	trial: int
 	timelimit: float
 
-
 def run_visualize(script, filename_env, filename_result):
 
 	subprocess.run(["python3",
@@ -36,12 +36,13 @@ def run_visualize(script, filename_env, filename_result):
 
 
 def execute_task(task: ExecutionTask):
-	example_path = Path("../example")
+	scripts_path = Path("../scripts")
 	results_path = Path("../results")
-	env = (example_path / task.instance).with_suffix(".yaml")
+	env_path = Path("../example")
+	env = (env_path / task.instance).with_suffix(".yaml")
 	assert(env.is_file())
 
-	cfg = example_path / "algorithms.yaml" # using single alg.yaml
+	cfg = env_path / "algorithms.yaml" # using single alg.yaml
 	assert(cfg.is_file())
 
 	with open(cfg) as f:
@@ -66,16 +67,16 @@ def execute_task(task: ExecutionTask):
 		run_ompl(str(env), str(result_folder), task.timelimit, mycfg)
 		visualize_files = [p.name for p in result_folder.glob('result_*')]
 		check_files = [p.name for p in result_folder.glob('result_*')]
-	vis_script = example_path / "visualize.py"
-	# for file in visualize_files:
-	# 	run_visualize(vis_script, env, result_folder / file)
+	vis_script = scripts_path / "visualize.py"
+	for file in visualize_files:
+		run_visualize(vis_script, env, result_folder / file)
 
 
 def main():
 	parallel = True
 	instances = [
-		# "parallelpark",
-		# "bugtrap",
+		"parallelpark",
+		"bugtrap",
         "wall",
 	]
 	algs = [
@@ -103,6 +104,9 @@ def main():
 	else:
 		for task in tasks:
 			execute_task(task)
+	# Get plots
+	run_benchmark_stats(instances,algs)
+	
 
 if __name__ == '__main__':
 	main()
