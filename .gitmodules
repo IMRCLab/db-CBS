@@ -1,0 +1,3 @@
+[submodule "s2m2"]
+	path = s2m2
+	url = https://github.com/IMRCLab/s2m2.git
