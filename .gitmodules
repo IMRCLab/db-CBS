@@ -1,0 +1,3 @@
+[submodule "Kinodynamic-Conflict-Based-Search"]
+	path = Kinodynamic-Conflict-Based-Search
+	url = git@github.com:IMRCLab/Kinodynamic-Conflict-Based-Search.git
