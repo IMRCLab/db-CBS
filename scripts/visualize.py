@@ -44,6 +44,13 @@ class Animation:
     self.size = np.array([0.5, 0.25])
     self.robot_types = []
 
+    for obstacle in env["environment"]["obstacles"]:
+      if obstacle["type"] == "box":
+        draw_box_patch(
+            self.ax, obstacle["center"], obstacle["size"], facecolor='gray', edgecolor='black')
+      else:
+        print("ERROR: unknown obstacle type")
+
     for robot in env["robots"]:  
       self.robot_types.append(robot["type"])  
       self.draw_robot(robot["start"], robot["type"], facecolor='red')
@@ -92,7 +99,7 @@ class Animation:
           t = matplotlib.transforms.Affine2D().rotate_around(
               pos[0], pos[1], 0)
           self.robot_patches[k].set_transform(t + self.ax.transData)
-      elif self.robot_types[k] == 'unicycle_first_order_0' or self.robot_types[k] == 'car_first_order_0':
+      elif self.robot_types[k] == 'unicycle_first_order' or self.robot_types[k] == 'car_first_order':
           pos = state[:2]
           yaw = state[2]
           xy = np.asarray(pos) - np.asarray(self.size) / 2
@@ -104,13 +111,12 @@ class Animation:
     return self.robot_patches
 
   def draw_robot(self, state, type, **kwargs):
-    print(state)
     patch = []
     if type == 'single_integrator':
       pos = state
       patch.append(draw_sphere_patch(self.ax, state, self.radius, 0, **kwargs))
 
-    if type == 'unicycle_first_order_0' or type == 'car_first_order_0':
+    if type == 'unicycle_first_order' or type == 'car_first_order':
       pos = state[:2]
       yaw = state[2]
       patch.append(draw_box_patch(self.ax, pos, self.size, yaw, **kwargs))  
@@ -118,12 +124,12 @@ class Animation:
 
 def visualize(filename_env, filename_result = None, filename_video=None):
   anim = Animation(filename_env, filename_result)
-  # anim.save(filename_video, 1)
-  anim.show()
-  # if filename_video is not None:
-  #   anim.save(filename_video, 1)
-  # else:
-  #   anim.show()
+  anim.save(filename_video, 1)
+  # anim.show()
+  if filename_video is not None:
+    anim.save(filename_video, 1)
+  else:
+    anim.show()
 
 def main():
   parser = argparse.ArgumentParser()
