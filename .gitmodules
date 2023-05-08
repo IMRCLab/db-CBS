@@ -1,6 +1,3 @@
 [submodule "s2m2"]
 	path = s2m2
 	url = git@github.com:IMRCLab/s2m2.git
-[submodule "s2ms"]
-	path = s2ms
-	url = git@github.com:IMRCLab/s2m2.git
