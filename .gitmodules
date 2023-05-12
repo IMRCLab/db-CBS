@@ -4,3 +4,6 @@
 [submodule "k_cbs/K-CBS-Demos"]
 	path = k_cbs/K-CBS-Demos
 	url = git@github.com:IMRCLab/K-CBS-Demos.git
+[submodule "s2m2"]
+	path = s2m2
+	url = https://github.com/IMRCLab/s2m2.git
