@@ -1,3 +1,9 @@
+[submodule "Kinodynamic-Conflict-Based-Search"]
+	path = k_cbs/Kinodynamic-Conflict-Based-Search
+	url = git@github.com:IMRCLab/Kinodynamic-Conflict-Based-Search.git
+[submodule "k_cbs/K-CBS-Demos"]
+	path = k_cbs/K-CBS-Demos
+	url = git@github.com:IMRCLab/K-CBS-Demos.git
 [submodule "s2m2"]
 	path = s2m2
 	url = https://github.com/IMRCLab/s2m2.git
