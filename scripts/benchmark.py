@@ -1,9 +1,6 @@
 import yaml
 from main_ompl import run_ompl
-# from main_sbpl import run_sbpl
-# from main_dbastar import run_dbastar
-# from main_komo import run_komo_standalone
-# from main_scp import run_scp_standalone
+from main_s2m2 import run_s2m2
 from pathlib import Path
 import shutil
 import subprocess
@@ -38,8 +35,8 @@ def run_visualize(script, filename_env, filename_result):
 def execute_task(task: ExecutionTask):
 	scripts_path = Path("../scripts")
 	results_path = Path("../results")
-	env_path = Path("../example")
-	env = (env_path / task.instance).with_suffix(".yaml")
+	env_path = Path().resolve() / "../example"
+	env = (env_path / task.instance).with_suffix(".yaml") 
 	assert(env.is_file())
 
 	cfg = env_path / "algorithms.yaml" # using single alg.yaml
@@ -67,6 +64,11 @@ def execute_task(task: ExecutionTask):
 		run_ompl(str(env), str(result_folder), task.timelimit, mycfg)
 		visualize_files = [p.name for p in result_folder.glob('result_*')]
 		check_files = [p.name for p in result_folder.glob('result_*')]
+	elif task.alg == "s2m2":
+		run_s2m2(str(env), str(result_folder))
+		visualize_files = [p.name for p in result_folder.glob('result_*')]
+		check_files = [p.name for p in result_folder.glob('result_*')]
+	# for visualization
 	vis_script = scripts_path / "visualize.py"
 	for file in visualize_files:
 		run_visualize(vis_script, env, result_folder / file)
@@ -75,13 +77,13 @@ def execute_task(task: ExecutionTask):
 def main():
 	parallel = True
 	instances = [
-		"parallelpark",
-		"bugtrap",
+		# "parallelpark",
+		# "bugtrap",
         "wall",
 	]
 	algs = [
 		"sst",
-		# "sbpl",
+		"s2m2",
 		# "komo",
 		# "dbAstar-komo",
 		# "dbAstar-scp",
