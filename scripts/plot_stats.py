@@ -32,13 +32,13 @@ class Report:
     cmap = get_cmap("Dark2")
     self.alg_dict = {
       'sst': {'idx': 0, 'color': cmap.colors[0], 'name': 'SST*'},
-      'sbpl': {'idx': 1, 'color': cmap.colors[1], 'name': 'SBPL'},
+      's2m2': {'idx': 1, 'color': cmap.colors[1], 'name': 'S2SM'},
       'komo': {'idx': 2, 'color': cmap.colors[2], 'name': 'geom. RRT*+KOMO'},
       'dbAstar-komo': {'idx': 3, 'color': cmap.colors[3], 'name': 'kMP-db-A*'},
     }
     self.color_dict = {
       'sst': cmap.colors[0],
-      'sbpl': cmap.colors[1],
+      's2m2': cmap.colors[1],
       'komo': cmap.colors[2],
       'dbAstar-komo': cmap.colors[3],
     }
