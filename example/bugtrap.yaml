@@ -18,7 +18,7 @@ environment:
       center: [1.5, 1.95]
       size: [0.2, 1.1]
 robots:
-  - type: unicycle_first_order_0
+  - type: unicycle_first_order
     start: [3.8,3,0] 
     goal: [5.2,3,0] 
   - type: single_integrator
