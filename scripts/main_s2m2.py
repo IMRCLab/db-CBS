@@ -4,7 +4,7 @@ import yaml
 from pathlib import Path
 
 def run_s2m2(filename_env, folder):
-	s2sm_script = Path().resolve().parent.parent / "git/s2m2/main_s2m2_original.py" 
+	s2sm_script = Path().resolve().parent / "s2m2/main_s2m2_original.py" 
 	result = subprocess.run(["python3",
 		s2sm_script, 
 		filename_env,

@@ -40,7 +40,6 @@ class Animation:
     self.ax.set_xlim(env["environment"]["min"][0], env["environment"]["max"][0])
     self.ax.set_ylim(env["environment"]["min"][1], env["environment"]["max"][1])
     self.robot_numbers = len(env["robots"])
-    self.radius = 0.1
     self.size = np.array([0.5, 0.25])
     self.robot_types = []
 
@@ -114,7 +113,7 @@ class Animation:
     patch = []
     if type == 'single_integrator':
       pos = state
-      patch.append(draw_sphere_patch(self.ax, state, self.radius, 0, **kwargs))
+      patch.append(draw_sphere_patch(self.ax, state, 0.1, 0, **kwargs))
 
     if type == 'unicycle_first_order' or type == 'car_first_order':
       pos = state[:2]

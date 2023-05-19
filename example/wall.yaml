@@ -1,20 +1,20 @@
 environment:
-  min: [-16, -1]
-  max: [51,31]
+  min: [0.0, 0.0]
+  max: [6, 6]
   obstacles:
     - type: box
-      center: [15,20]
-      size: [1.2, 1.4]
-    # - type: box
-    #   center: [3., 3.0]
-    #   size: [0.2, 1.4]
-    # - type: box
-    #   center: [3., 0.80]
-    #   size: [0.2, 1.4]
+      center: [3., 5.20]
+      size: [0.2, 1.8]
+    - type: box
+      center: [3., 3.0]
+      size: [0.2, 1.8]
+    - type: box
+      center: [3., 0.80]
+      size: [0.2, 1.8]
 robots:
   - type: single_integrator
-    start: [40,5] 
-    goal: [-10,20] 
+    start: [1.8,2] 
+    goal: [5.2,3] 
   - type: single_integrator
-    start: [40,20] # x,y
-    goal: [-10,5] # x,y
+    start: [5.0,2.0] # x,y
+    goal: [1.3,3.0] # x,y
