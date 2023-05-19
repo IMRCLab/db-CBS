@@ -20,3 +20,10 @@ cd buildRelease
 cmake -DCMAKE_BUILD_TYPE=Release ..
 make
 ```
+
+## Running
+
+```
+cd buildRelease
+python3 ../scripts/benchmark.py
+```
