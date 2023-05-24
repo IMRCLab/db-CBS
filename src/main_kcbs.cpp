@@ -51,6 +51,18 @@
 #include <utility>
 #include <unordered_map>
 
+#include <algorithm>
+#include <chrono>
+#include <iterator>
+#include <yaml-cpp/yaml.h>
+
+#include <boost/program_options.hpp>
+
+#include "robots.h"
+#include "robotStatePropagator.hpp"
+#include "fclStateValidityChecker.hpp"
+
+
 namespace omrb = ompl::multirobot::base;
 namespace omrc = ompl::multirobot::control;
 namespace ob = ompl::base;
@@ -77,50 +89,34 @@ public:
     // Answers the question: is the robot described by `si_` at `state` valid?
     bool isValid(const ompl::base::State *state) const override
     {
-        // cast the abstract state type to the type we expect
-        const auto *se2state = state->as<ob::SE2StateSpace::StateType>();
-
-        // extract the first component of the state and cast it to what we expect
-        const auto *pos = se2state->as<ob::RealVectorStateSpace::StateType>(0);
-
-        // extract the second component of the state and cast it to what we expect
-        const auto *rot = se2state->as<ob::SO2StateSpace::StateType>(1);
-
-        // one must code required logic to figure out if state at pos & rot is valid.
-
-        // this returns a value that is always true but uses the two variables we define, so we avoid compiler warnings
-        return (const void*)rot != (const void*)pos;
+        if (!si_->satisfiesBounds(state)){
+            return false;
+        }
+        return true;
     }
 
     // Answers the question: does the robot described by `si_` at `state1` avoid collision with some other robot described by a different `si` located at `state2`?
     bool areStatesValid(const ompl::base::State* state1, const std::pair<const ompl::base::SpaceInformationPtr,const ompl::base::State*> state2) const override
     {
         /* We assume robots are all disks of varying size (see myDemoStateValidityChecker::radii_) */
-
-        // one can get the names of robots via these commands
-        std::string robot1 = si_->getStateSpace()->getName();
-        std::string robot2 = state2.first->getStateSpace()->getName();
-
-        // one can get the states of robots via these commands
-        const auto *robot1_state = state1->as<ob::SE2StateSpace::StateType>();
-        const auto *robot2_state = state2.second->as<ob::SE2StateSpace::StateType>();
+        const auto *robot1_state = state1->as<ob::RealVectorStateSpace::StateType>();
+        const auto *robot2_state = state2.second->as<ob::RealVectorStateSpace::StateType>();
 
         // one must code required logic to figure out if robot1 at state1 collides with robot2 at state2
         // this example assumes all robots are disks in R^2 of varying sizes.
-        double rad1 = radii_.at(robot1) + 0.1; // safety criterion
-        double rad2 = radii_.at(robot2) + 0.1; // safety criterion
+        double rad1 = radii_[0] + 0.1; // safety criterion
+        double rad2 = radii_[1] + 0.1; // safety criterion
 
-        const double* robot1_pos = robot1_state->as<ob::RealVectorStateSpace::StateType>(0)->values;
-        const double* robot2_pos = robot2_state->as<ob::RealVectorStateSpace::StateType>(0)->values;
+        float x1 = robot1_state->values[0];
+        float y1 = robot1_state->values[1];
 
-        double dist = sqrt(pow(robot1_pos[0] - robot2_pos[0], 2) + pow(robot1_pos[1] - robot2_pos[1], 2));
-
+        float x2 = robot2_state->values[0];
+        float y2 = robot2_state->values[1];
+        double dist = sqrt(pow(x1 - x2, 2) + pow(y1 - y2, 2));
         return dist > (rad1 + rad2);
     }
 private:
-    std::unordered_map<std::string, double> radii_{ {"Robot 0", 0.1}, 
-                                                    {"Robot 1", 0.2}, 
-                                                    {"Robot 2", 0.3} };
+    std::vector<double> radii_{0.5,0.5};
 };
 
 /*
@@ -147,40 +143,53 @@ public:
     }
 };
 
-
 class myDemoGoalCondition: public ob::GoalRegion
 {
 public:
-    myDemoGoalCondition(const ob::SpaceInformationPtr &si, std::pair<int, int> goal): 
-        ob::GoalRegion(si), gx_(goal.first), gy_(goal.second)
+    myDemoGoalCondition(const ob::SpaceInformationPtr &si, std::vector<double> goal): 
+        ob::GoalRegion(si), gx_(goal[0]), gy_(goal[1])
     {
         threshold_ = 0.2;
     }
     
     double distanceGoal(const ob::State *st) const override
     {
-        const auto *robot_state = st->as<ob::SE2StateSpace::StateType>();
-        const double* robot_pos = robot_state->as<ob::RealVectorStateSpace::StateType>(0)->values;
-        return sqrt(pow(robot_pos[0] - gx_, 2) + pow(robot_pos[1] - gy_, 2));
+        // const auto *robot_state = st->as<ob::SE2StateSpace::StateType>();
+        const auto *robot_state = st->as<ob::RealVectorStateSpace::StateType>();
+        const double x = robot_state->values[0];
+        const double y = robot_state->values[1];
+        return sqrt(pow(x - gx_, 2) + pow(y - gy_, 2));
+
     }
 private:
-    int gx_;
-    int gy_;
+    float gx_;
+    float gy_;
 };
-
 
 void myDemoPropagateFunction(const ob::State *start, const oc::Control *control, const double duration, ob::State *result)
 {
-    const auto *se2state = start->as<ob::SE2StateSpace::StateType>();
-    const double* pos = se2state->as<ob::RealVectorStateSpace::StateType>(0)->values;
-    const double rot = se2state->as<ob::SO2StateSpace::StateType>(1)->value;
-    const double* ctrl = control->as<oc::RealVectorControlSpace::ControlType>()->values;
+    auto startTyped = start->as<ob::RealVectorStateSpace::StateType>();
+    const double *ctrl = control->as<ompl::control::RealVectorControlSpace::ControlType>()->values;
+    auto resultTyped = result->as<ob::RealVectorStateSpace::StateType>();
+    float dt_=0.1;
+    // use simple Euler integration
+    float x = startTyped->values[0];
+    float y = startTyped->values[1];
+    float remaining_time = duration;
+    do
+    {
+      float dt = std::min(remaining_time, dt_);
 
-    result->as<ob::SE2StateSpace::StateType>()->setXY(
-        pos[0] + ctrl[0] * duration * cos(rot),
-        pos[1] + ctrl[0] * duration * sin(rot));
-    result->as<ob::SE2StateSpace::StateType>()->setYaw(
-        rot    + ctrl[1] * duration);
+      x += ctrl[0] * dt;
+      y += ctrl[1] * dt;
+
+      remaining_time -= dt;
+    } while (remaining_time >= dt_);
+
+    // update result
+
+    resultTyped->values[0]=x;
+    resultTyped->values[1]=y;
 }
 
 // K-CBS and PP both work for multiple type of low-level planners. 
@@ -194,28 +203,19 @@ ompl::base::PlannerPtr myDemoPlannerAllocator(const ompl::base::SpaceInformation
 
 void plan(const std::string plannerName)
 {
-    // create start and goals for every robot
-    std::unordered_map<std::string, std::pair<int, int>> start_map{ {"Robot 0", {1, 1}}, 
-                                                                    {"Robot 1", {5, 5}}, 
-                                                                    {"Robot 2", {8, 8}} };
-    std::unordered_map<std::string, std::pair<int, int>> goal_map{  {"Robot 0", {8, 7}}, 
-                                                                    {"Robot 1", {2, 1}}, 
-                                                                    {"Robot 2", {5, 6}} };
-
+    std::vector<std::vector<double>> start_reals{{1,1}, {5,5}};
+    std::vector<std::vector<double>> goal_reals{{8,7}, {2,1}};
+    
     // construct an instance of multi-robot space information
     auto ma_si(std::make_shared<omrc::SpaceInformation>());
     auto ma_pdef(std::make_shared<omrb::ProblemDefinition>(ma_si));
 
     // construct four individuals that operate in SE3
-    for (int i = 0; i < 3; i++) 
+    for (size_t i = 0; i < start_reals.size(); i++) 
     {
-        // give robot a name 
-        std::string name = "Robot " + std::to_string(i);
-
         // construct the state space we are planning in
-        auto space = std::make_shared<ob::SE2StateSpace>();
+        auto space = std::make_shared<ob::RealVectorStateSpace>(2);
 
-        // set the bounds for the R^2 part of SE(2)
         ob::RealVectorBounds bounds(2);
         bounds.setLow(0);
         bounds.setHigh(10);
@@ -234,76 +234,34 @@ void plan(const std::string plannerName)
 
         // construct an instance of  space information from this control space
         auto si = std::make_shared<oc::SpaceInformation>(space, cspace);
-
-        // set state validity checking for this space
         si->setStateValidityChecker(std::make_shared<myDemoStateValidityChecker>(si));
-
-        // set the state propagation routine
         si->setStatePropagator(myDemoPropagateFunction);
-
-        // it is highly recommended that all robots use the same propogation step size
         si->setPropagationStepSize(0.1);
-
-        // set this to remove the warning
         si->setMinMaxControlDuration(1, 10);
-
-        // name the state space parameter (not required but helpful for robot-to-robot collision checking)
-        si->getStateSpace()->setName(name);
-
         // create a start state
-        ob::ScopedState<ob::SE2StateSpace> start(space);
-        start[0] = start_map.at(name).first;
-        start[1] = start_map.at(name).second;
-        start[2] = 0.0;
+        ob::ScopedState<ob::RealVectorStateSpace> start(space);
+        start[0] = start_reals[i][0];
+        start[1] = start_reals[i][1];
 
         // create a problem instance
         auto pdef = std::make_shared<ob::ProblemDefinition>(si);
-
-        // set the start and goal states
         pdef->addStartState(start);
-        pdef->setGoal(std::make_shared<myDemoGoalCondition>(si, goal_map.at(name)));
-
-        // add the individual information to the multi-robot SpaceInformation and ProblemDefinition
+        pdef->setGoal(std::make_shared<myDemoGoalCondition>(si, goal_reals[i]));
         ma_si->addIndividual(si);
         ma_pdef->addIndividual(pdef);
     }
-
     // lock the multi-robot SpaceInformation and ProblemDefinitions when done adding individuals
     ma_si->lock();
     ma_pdef->lock();
-
     // set the planner allocator for the multi-agent planner
     ompl::base::PlannerAllocator allocator = myDemoPlannerAllocator;
     ma_si->setPlannerAllocator(allocator);
-
-    if (plannerName == "PP")
-    {
-        // plan for all agents using a prioritized planner (PP)
-        auto planner = std::make_shared<omrc::PP>(ma_si);
-        planner->setProblemDefinition(ma_pdef); // be sure to set the problem definition
-        bool solved = planner->as<omrb::Planner>()->solve(30.0);
-
-        if (solved)
-        {
-            std::cout << "Found solution!" << std::endl;
-            omrb::PlanPtr solution = ma_pdef->getSolutionPlan();
-            std::ofstream MyFile("plan.txt");
-            solution->as<omrc::PlanControl>()->printAsMatrix(MyFile, "Robot");
-        }
-    }
-    else if (plannerName == "K-CBS")
+    if (plannerName == "K-CBS")
     {
         // plan using Kinodynamic Conflict Based Search
         auto planner = std::make_shared<omrc::KCBS>(ma_si);
         planner->setProblemDefinition(ma_pdef); // be sure to set the problem definition
 
-        // set the system merger
-        // ma_si->setSystemMerger(std::make_shared<myDemoSystemMerger>(ma_si));
-
-        // set the merge bound of K-CBS
-        // planner->setMergeBound(0);
-
-        // set the low-level solve time
         planner->setLowLevelSolveTime(0.5);
 
         bool solved = planner->as<omrb::Planner>()->solve(30.0);
@@ -316,16 +274,15 @@ void plan(const std::string plannerName)
             std::ofstream MyFile2("tree.txt");
             planner->printConstraintTree(MyFile2);
         }
-        // planner.reset();
     }
 }
 
 int main(int /*argc*/, char ** /*argv*/)
 {
     std::cout << "OMPL version: " << OMPL_VERSION << std::endl;
-
+    // std::string inputFile = "/home/akmarak-laptop/IMRC/db-CBS/example/wall.yaml";
+    // YAML::Node env_file = YAML::LoadFile(inputFile);
     std::string plannerName = "K-CBS";
-    // std::string plannerName = "PP";
     plan(plannerName);
 
     return 0;
