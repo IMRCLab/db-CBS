@@ -201,7 +201,7 @@ ompl::base::PlannerPtr myDemoPlannerAllocator(const ompl::base::SpaceInformation
     return planner;
 }
 
-void plan(const std::string plannerName)
+void plan(const std::string plannerName, const std::string statsFile)
 {
     std::vector<std::vector<double>> start_reals{{1,1}, {5,5}};
     std::vector<std::vector<double>> goal_reals{{8,7}, {2,1}};
@@ -256,6 +256,9 @@ void plan(const std::string plannerName)
     // set the planner allocator for the multi-agent planner
     ompl::base::PlannerAllocator allocator = myDemoPlannerAllocator;
     ma_si->setPlannerAllocator(allocator);
+    std::ofstream stats(statsFile);
+    stats << "stats:" << std::endl;
+    auto start = std::chrono::steady_clock::now();
     if (plannerName == "K-CBS")
     {
         // plan using Kinodynamic Conflict Based Search
@@ -267,12 +270,16 @@ void plan(const std::string plannerName)
         bool solved = planner->as<omrb::Planner>()->solve(30.0);
         if (solved)
         {
+            auto now = std::chrono::steady_clock::now();
+            double t = std::chrono::duration_cast<std::chrono::milliseconds>(now - start).count();
+            stats << "  - t: " << t/1000.0f << std::endl;
             std::cout << "Found solution!" << std::endl;
             omrb::PlanPtr solution = ma_pdef->getSolutionPlan();
-            std::ofstream MyFile("plan.txt");
-            solution->as<omrc::PlanControl>()->printAsMatrix(MyFile, "Robot");
-            std::ofstream MyFile2("tree.txt");
-            planner->printConstraintTree(MyFile2);
+            std::ofstream MyFile("result_kcbs.yaml");
+            MyFile << "result:" << std::endl;
+            solution->as<omrc::PlanControl>()->printAsMatrix(MyFile, "- states:");
+            // std::ofstream MyFile2("tree.txt");
+            // planner->printConstraintTree(MyFile2);
         }
     }
 }
@@ -282,8 +289,9 @@ int main(int /*argc*/, char ** /*argv*/)
     std::cout << "OMPL version: " << OMPL_VERSION << std::endl;
     // std::string inputFile = "/home/akmarak-laptop/IMRC/db-CBS/example/wall.yaml";
     // YAML::Node env_file = YAML::LoadFile(inputFile);
+    std::string statsFile = "/home/akmarak-laptop/IMRC/db-CBS/buildDebug/stats.yaml";
     std::string plannerName = "K-CBS";
-    plan(plannerName);
+    plan(plannerName, statsFile);
 
     return 0;
 }
