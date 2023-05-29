@@ -4,7 +4,6 @@
 #include <chrono>
 #include <iterator>
 #include <yaml-cpp/yaml.h>
-
 // #include <boost/functional/hash.hpp>
 #include <boost/program_options.hpp>
 
@@ -79,10 +78,11 @@ int main(int argc, char* argv[]) {
       throw std::runtime_error("Unknown obstacle type!");
     }
   }
-  std::shared_ptr<fcl::BroadPhaseCollisionManagerf> bpcm_env(new fcl::DynamicAABBTreeCollisionManagerf());
-  // std::shared_ptr<fcl::BroadPhaseCollisionManagerf> bpcm_env(new fcl::NaiveCollisionManagerf());
-  bpcm_env->registerObjects(obstacles);
-  bpcm_env->setup();
+  
+  // std::shared_ptr<fcl::BroadPhaseCollisionManagerf> bpcm_env (new fcl::DynamicAABBTreeCollisionManagerf());
+  // bpcm_env->registerObjects(obstacles);
+  // bpcm_env->setup();
+  
 
   const auto &env_min = env["environment"]["min"];
   const auto &env_max = env["environment"]["max"];
@@ -96,8 +96,8 @@ int main(int argc, char* argv[]) {
   std::vector<double> start_reals;
   std::vector<double> goal_reals;
   std::vector<double> state_lengths;
-  // std::vector<std::vector<double>> robot_states;
 
+  std::vector<fcl::CollisionObjectf *> robots_obj;
   for (const auto &robot_node : env["robots"]) {
     auto robotType = robot_node["type"].as<std::string>();
     std::shared_ptr<Robot> robot = create_robot(robotType, position_bounds);
@@ -109,7 +109,20 @@ int main(int argc, char* argv[]) {
     for (const auto& v : robot_node["goal"]) {
       goal_reals.push_back(v.as<double>());
     }
+    // Robot-robot collision avoidance
+    if (robotType == "single_integrator"){
+      std::shared_ptr<fcl::CollisionGeometryf> robot_geom;
+      robot_geom.reset(new fcl::Spheref(0.1));
+      auto robot_co = new fcl::CollisionObjectf(robot_geom);
+      robot_co->setTranslation(fcl::Vector3f(0, 0, 0));
+      robot_co->computeAABB();
+      robots_obj.push_back(robot_co);
+    }
   }
+  // std::shared_ptr<fcl::BroadPhaseCollisionManagerf> bpcm_robots(new fcl::DynamicAABBTreeCollisionManagerf());
+  // bpcm_robots->registerObjects(robots_obj);
+  // bpcm_robots->setup();
+
   std::shared_ptr<Robot> robot = create_joint_robot(robots);
   // load config file
   YAML::Node cfg = YAML::LoadFile(cfgFile);
@@ -121,7 +134,7 @@ int main(int argc, char* argv[]) {
     cfg["control_duration"][1].as<int>());
 
   // set state validity checking for this space
-  auto stateValidityChecker(std::make_shared<fclStateValidityChecker>(si, bpcm_env, robot));
+  auto stateValidityChecker(std::make_shared<fclStateValidityChecker>(si, obstacles, robots_obj, robot));
   si->setStateValidityChecker(stateValidityChecker);
   // set the state propagator
   std::shared_ptr<oc::StatePropagator> statePropagator(new RobotStatePropagator(si, robot));
@@ -143,6 +156,7 @@ int main(int argc, char* argv[]) {
   std::cout<<goalState;
   si->enforceBounds(goalState);
   pdef->setGoalState(goalState, cfg["goal_epsilon"].as<double>());
+
   si->freeState(goalState);
 
   // create a planner for the defined space
@@ -150,6 +164,7 @@ int main(int argc, char* argv[]) {
   if (plannerDesc == "rrt") {
     auto rrt = new oc::RRT(si);
     rrt->setGoalBias(cfg["goal_bias"].as<double>());
+
     planner.reset(rrt);
   } else if (plannerDesc == "sst") {
     auto sst = new oc::SST(si);
@@ -158,8 +173,6 @@ int main(int argc, char* argv[]) {
     sst->setPruningRadius(cfg["pruning_radius"].as<double>());
     planner.reset(sst);
   }
-  // rrt->setGoalBias(params["goalBias"].as<float>());
-  // auto planner(rrt);
 
   pdef->setOptimizationObjective(std::make_shared<ob::ControlDurationObjective>(si));
   // empty stats file
@@ -188,20 +201,15 @@ int main(int argc, char* argv[]) {
   pdef->print(std::cout);
   // attempt to solve the problem within timelimit
   ob::PlannerStatus solved;
-  // for (int i = 0; i < 3; ++i) {
   solved = planner->ob::Planner::solve(timelimit);
   std::cout << solved << std::endl;
-  // }
 
   if (solved)
   {
     // get the goal representation from the problem definition (not the same as the goal state)
     // and inquire about the found path
-    // ob::PathPtr path = pdef->getSolutionPath();
     std::cout << "Found solution:" << std::endl;
 
-    // print the path to screen
-    // path->print(std::cout);
   }
   else {
     std::cout << "No solution found" << std::endl;
