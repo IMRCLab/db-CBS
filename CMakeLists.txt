@@ -47,6 +47,7 @@ target_include_directories(main_ompl PUBLIC
 
 add_executable(main_kcbs
   src/main_kcbs.cpp
+  src/robots.cpp
 )
 target_link_libraries(main_kcbs
   ${Boost_LIBRARIES}

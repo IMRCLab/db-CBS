@@ -67,11 +67,11 @@ public:
 
     return true;
   }
-
+std::shared_ptr<Robot> robot_;
 private:
   std::shared_ptr<fcl::BroadPhaseCollisionManagerf> col_mng_environment_;
   std::shared_ptr<fcl::BroadPhaseCollisionManagerf> col_mng_parts_;
   std::vector<fcl::CollisionObjectf*> part_objs_;
-  std::shared_ptr<Robot> robot_;
+  // std::shared_ptr<Robot> robot_;
   bool check_parts_;
 };
