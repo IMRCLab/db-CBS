@@ -293,6 +293,7 @@ int main(int argc, char* argv[]){
           auto now = std::chrono::steady_clock::now();
           double t = std::chrono::duration_cast<std::chrono::milliseconds>(now - start).count();
           stats << "  - t: " << t/1000.0f << std::endl;
+          stats << "    cost: " << 0.0f << std::endl;
           std::cout << "Found solution!" << std::endl;
           omrb::PlanPtr solution = ma_pdef->getSolutionPlan();
           std::ofstream MyFile(outputFile);

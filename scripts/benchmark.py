@@ -75,20 +75,20 @@ def execute_task(task: ExecutionTask):
 		check_files = [p.name for p in result_folder.glob('result_*')]
 
 	# for visualization
-	vis_script = scripts_path / "visualize.py"
-	for file in visualize_files:
-		run_visualize(vis_script, env, result_folder / file)
+	# vis_script = scripts_path / "visualize.py"
+	# for file in visualize_files:
+	# 	run_visualize(vis_script, env, result_folder / file)
 
 
 def main():
 	parallel = True
 	instances = [
-		# "parallelpark",
-		# "bugtrap",
-        "test",
+		"parallelpark",
+		"bugtrap",
+        "wall",
 	]
 	algs = [
-		# "sst",
+		"sst",
 		# "s2m2",
 		"k-cbs",
 		# "dbAstar-komo",
