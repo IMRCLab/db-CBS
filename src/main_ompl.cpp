@@ -121,7 +121,7 @@ int main(int argc, char* argv[]) {
     cfg["control_duration"][1].as<int>());
 
   // set state validity checking for this space
-  auto stateValidityChecker(std::make_shared<fclStateValidityChecker>(si, bpcm_env, robot));
+  auto stateValidityChecker(std::make_shared<fclStateValidityChecker>(si, bpcm_env, robot, true));
   si->setStateValidityChecker(stateValidityChecker);
   // set the state propagator
   std::shared_ptr<oc::StatePropagator> statePropagator(new RobotStatePropagator(si, robot));
