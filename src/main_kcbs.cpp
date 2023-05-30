@@ -240,10 +240,10 @@ int main(int argc, char* argv[]){
         }
         auto robot = robots[i];
         auto si = robot->getSpaceInformation();
-        si->setPropagationStepSize(cfg["k-cbs"]["default"]["propagation_step_size"].as<double>());
+        si->setPropagationStepSize(cfg["propagation_step_size"].as<double>());
         si->setMinMaxControlDuration(
-        cfg["k-cbs"]["default"]["control_duration"][0].as<int>(),
-        cfg["k-cbs"]["default"]["control_duration"][1].as<int>());
+        cfg["control_duration"][0].as<int>(),
+        cfg["control_duration"][1].as<int>());
 
         // set state validity checking for this space
         auto stateValidityChecker(std::make_shared<multiRobotFclStateValidityChecker>(si, bpcm_env, robot, all_robots));
@@ -265,7 +265,7 @@ int main(int argc, char* argv[]){
         auto goalState = si->allocState();
         si->getStateSpace()->copyFromReals(goalState, goal_reals);
         si->enforceBounds(goalState);
-        pdef->setGoalState(goalState, cfg["k-cbs"]["default"]["goal_epsilon"].as<double>());
+        pdef->setGoalState(goalState, cfg["goal_epsilon"].as<double>());
         si->freeState(goalState);
         goal_reals.clear();
 
@@ -293,6 +293,7 @@ int main(int argc, char* argv[]){
           auto now = std::chrono::steady_clock::now();
           double t = std::chrono::duration_cast<std::chrono::milliseconds>(now - start).count();
           stats << "  - t: " << t/1000.0f << std::endl;
+          stats << "    cost: " << 0.0f << std::endl;
           std::cout << "Found solution!" << std::endl;
           omrb::PlanPtr solution = ma_pdef->getSolutionPlan();
           std::ofstream MyFile(outputFile);
