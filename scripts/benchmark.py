@@ -1,6 +1,7 @@
 import yaml
 from main_ompl import run_ompl
 from main_s2m2 import run_s2m2
+from main_kcbs import run_kcbs
 from pathlib import Path
 import shutil
 import subprocess
@@ -68,6 +69,11 @@ def execute_task(task: ExecutionTask):
 		run_s2m2(str(env), str(result_folder))
 		visualize_files = [p.name for p in result_folder.glob('result_*')]
 		check_files = [p.name for p in result_folder.glob('result_*')]
+	elif task.alg == "k-cbs":
+		run_kcbs(str(env), str(result_folder), task.timelimit, mycfg)
+		visualize_files = [p.name for p in result_folder.glob('result_*')]
+		check_files = [p.name for p in result_folder.glob('result_*')]
+
 	# for visualization
 	vis_script = scripts_path / "visualize.py"
 	for file in visualize_files:
@@ -79,12 +85,12 @@ def main():
 	instances = [
 		# "parallelpark",
 		# "bugtrap",
-        "wall",
+        "test",
 	]
 	algs = [
-		"sst",
-		"s2m2",
-		# "komo",
+		# "sst",
+		# "s2m2",
+		"k-cbs",
 		# "dbAstar-komo",
 		# "dbAstar-scp",
 	]
