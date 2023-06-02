@@ -90,22 +90,25 @@ class Animation:
   def animate_func(self, i):
     print(i)
     for k, robot in enumerate(self.result["result"]): # for each robot
-      state = robot["states"][i]
-      if self.robot_types[k] == 'single_integrator':
-          pos = state
-          xy = np.asarray(pos)
-          self.robot_patches[k].center = xy
-          t = matplotlib.transforms.Affine2D().rotate_around(
-              pos[0], pos[1], 0)
-          self.robot_patches[k].set_transform(t + self.ax.transData)
-      elif self.robot_types[k] == 'unicycle_first_order' or self.robot_types[k] == 'car_first_order':
-          pos = state[:2]
-          yaw = state[2]
-          xy = np.asarray(pos) - np.asarray(self.size) / 2
-          self.robot_patches[k].set_xy(xy)
-          t = matplotlib.transforms.Affine2D().rotate_around(
-              pos[0], pos[1], yaw)
-          self.robot_patches[k].set_transform(t + self.ax.transData)
+      if i >= len(robot["states"]):
+        state = robot["states"][-1]
+      else:
+        state = robot["states"][i]
+        if self.robot_types[k] == 'single_integrator':
+            pos = state
+            xy = np.asarray(pos)
+            self.robot_patches[k].center = xy
+            t = matplotlib.transforms.Affine2D().rotate_around(
+                pos[0], pos[1], 0)
+            self.robot_patches[k].set_transform(t + self.ax.transData)
+        elif self.robot_types[k] == 'unicycle_first_order' or self.robot_types[k] == 'car_first_order':
+            pos = state[:2]
+            yaw = state[2]
+            xy = np.asarray(pos) - np.asarray(self.size) / 2
+            self.robot_patches[k].set_xy(xy)
+            t = matplotlib.transforms.Affine2D().rotate_around(
+                pos[0], pos[1], yaw)
+            self.robot_patches[k].set_transform(t + self.ax.transData)
 
     return self.robot_patches
 
@@ -123,8 +126,8 @@ class Animation:
 
 def visualize(filename_env, filename_result = None, filename_video=None):
   anim = Animation(filename_env, filename_result)
-  anim.save(filename_video, 1)
-  # anim.show()
+  # anim.save(filename_video, 1)
+  anim.show()
   if filename_video is not None:
     anim.save(filename_video, 1)
   else:
