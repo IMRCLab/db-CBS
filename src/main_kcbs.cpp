@@ -287,7 +287,7 @@ int main(int argc, char* argv[]){
       auto planner = std::make_shared<omrc::KCBS>(ma_si);
       planner->setProblemDefinition(ma_pdef); // be sure to set the problem definition
       planner->setLowLevelSolveTime(0.5);
-      bool solved = planner->as<omrb::Planner>()->solve(30.0);
+      bool solved = planner->as<omrb::Planner>()->solve(timelimit);
       if (solved)
       {
           omrb::PlanPtr solution = ma_pdef->getSolutionPlan();
@@ -301,12 +301,15 @@ int main(int argc, char* argv[]){
           std::ofstream resultFile(outputFile);
           resultFile << "result:" << std::endl;
         //   solution->as<omrc::PlanControl>()->printAsMatrix(resultFile, "- states:");
-          for (unsigned int r = 0; r != 2; r++){
+          for (unsigned int r = 0; r != robots.size(); r++){
             std::vector<double> reals;
             resultFile << "  - states:" << std::endl;
             auto robot = robots[r];
             auto si = robot->getSpaceInformation();
             auto path = solution->as<omrc::PlanControl>()->getPath(r);
+            si->setPropagationStepSize(robot->dt());
+            path->interpolate(); // normalize to a single control step
+            std::cout << path->getStateCount() << "," << path->getControlCount() << std::endl;
             std::vector<ompl::base::State *> states = path->getStates();
             for (unsigned int i = 0; i < states.size(); ++i){
                 si->getStateSpace()->copyToReals(reals, states[i]);
