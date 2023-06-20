@@ -142,7 +142,14 @@ int main(int argc, char* argv[]) {
   si->getStateSpace()->copyFromReals(goalState, goal_reals);
   std::cout<<goalState;
   si->enforceBounds(goalState);
-  pdef->setGoalState(goalState, cfg["goal_epsilon"].as<double>());
+  
+  pdef->clearGoal();
+  auto gs(std::make_shared<MultiRobotGoalState>(si));
+  gs->setState(goalState);
+  gs->setThreshold(cfg["goal_epsilon"].as<double>());
+  pdef->setGoal(gs);
+  setMultiRobotGoals(robot, gs);
+  // pdef->setGoalState(goalState, cfg["goal_epsilon"].as<double>());
   si->freeState(goalState);
 
   // create a planner for the defined space
@@ -178,7 +185,7 @@ int main(int argc, char* argv[]) {
         std::cout << "Intermediate solution! " << cost.value() << " " << t/1000.0f << std::endl;
       });
 
-  // set the problem we are trying to solve for the plannerw
+  // set the problem we are trying to solve for the planner
   planner->setProblemDefinition(pdef);
   // perform setup steps for the planner
   planner->setup();

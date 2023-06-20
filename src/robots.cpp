@@ -580,7 +580,21 @@ public:
     auto resultTyped = result->as<ob::CompoundStateSpace::StateType>();
 
     for (size_t i = 0; i < robots_.size(); ++i) {
-      robots_[i]->propagate((*startTyped)[i], (*controlTyped)[i], duration, (*resultTyped)[i]);
+      if (!goals_->isSatisfied(startTyped, i)) {
+        robots_[i]->propagate(startTyped->components[i], (*controlTyped)[i], duration, (*resultTyped)[i]);
+      } else {
+        // if we are at the goal for this robot, just copy the previous state
+        auto csi = dynamic_cast<ompl::control::SpaceInformation*>(si_.get()); 
+        auto csp = csi->getStateSpace()->as<ompl::base::CompoundStateSpace>();
+        auto si_k = csp->getSubspace(i);
+
+        // option 1
+        si_k->copyState((*resultTyped)[i], (*startTyped)[i]);
+
+        // option 2
+        // std::vector<double> reals(si_k->getDimension(), nan(""));
+        // si_k->copyFromReals((*resultTyped)[i], reals); 
+      }
     }
   }
 
@@ -605,8 +619,14 @@ public:
     return robots_[part]->getCollisionGeometry(0);
   }
 
+  void setGoals(std::shared_ptr<MultiRobotGoalState> goals)
+  {
+    goals_ = goals;
+  }
+
 protected:
   std::vector<std::shared_ptr<Robot>> robots_;
+  std::shared_ptr<MultiRobotGoalState> goals_;
 };
 
 // ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -666,4 +686,13 @@ std::shared_ptr<Robot> create_joint_robot(
   std::shared_ptr<Robot> robot;
   robot.reset(new MultiRobot(robots));
   return robot;
+}
+
+// HACK for multi-robot
+void setMultiRobotGoals(
+  std::shared_ptr<Robot> robot,
+  std::shared_ptr<MultiRobotGoalState> goals)
+{
+  MultiRobot* r = dynamic_cast<MultiRobot*>(robot.get());
+  r->setGoals(goals);
 }

@@ -287,20 +287,44 @@ int main(int argc, char* argv[]){
       auto planner = std::make_shared<omrc::KCBS>(ma_si);
       planner->setProblemDefinition(ma_pdef); // be sure to set the problem definition
       planner->setLowLevelSolveTime(0.5);
-      bool solved = planner->as<omrb::Planner>()->solve(30.0);
+      bool solved = planner->as<omrb::Planner>()->solve(timelimit);
       if (solved)
       {
+          omrb::PlanPtr solution = ma_pdef->getSolutionPlan();
+          double cost = solution->as<omrc::PlanControl>()->length(); // sum of control durations
           auto now = std::chrono::steady_clock::now();
           double t = std::chrono::duration_cast<std::chrono::milliseconds>(now - start).count();
           stats << "  - t: " << t/1000.0f << std::endl;
-          stats << "    cost: " << 0.0f << std::endl;
+          stats << "    cost: " << cost << std::endl;
           std::cout << "Found solution!" << std::endl;
-          omrb::PlanPtr solution = ma_pdef->getSolutionPlan();
-          std::ofstream MyFile(outputFile);
-          MyFile << "result:" << std::endl;
-          solution->as<omrc::PlanControl>()->printAsMatrix(MyFile, "- states:");
-          // std::ofstream MyFile2("tree.txt");
-          // planner->printConstraintTree(MyFile2);
+          std::cout << cost << std::endl;
+          std::ofstream resultFile(outputFile);
+          resultFile << "result:" << std::endl;
+        //   solution->as<omrc::PlanControl>()->printAsMatrix(resultFile, "- states:");
+          for (unsigned int r = 0; r != robots.size(); r++){
+            std::vector<double> reals;
+            resultFile << "  - states:" << std::endl;
+            auto robot = robots[r];
+            auto si = robot->getSpaceInformation();
+            auto path = solution->as<omrc::PlanControl>()->getPath(r);
+            si->setPropagationStepSize(robot->dt());
+            path->interpolate(); // normalize to a single control step
+            std::cout << path->getStateCount() << "," << path->getControlCount() << std::endl;
+            std::vector<ompl::base::State *> states = path->getStates();
+            for (unsigned int i = 0; i < states.size(); ++i){
+                si->getStateSpace()->copyToReals(reals, states[i]);
+                resultFile << "    - [";
+                for (auto it = reals.begin(); it != reals.end(); ++it){
+                    resultFile << *it;
+                    if (next(it)!=reals.end()){
+                    resultFile << ",";
+                    }
+                }
+                resultFile << "]"<<std::endl;
+                
+            }
+            
+          }
       }
   }
     return 0;
