@@ -182,7 +182,7 @@ int main(int argc, char* argv[]) {
         double t = std::chrono::duration_cast<std::chrono::milliseconds>(now - start).count();
         stats << "  - t: " << t/1000.0f << std::endl;
         stats << "    cost: " << cost.value() << std::endl;
-        std::cout << "Intermediate solution! " << cost.value() << " " << t/1000.0f << std::endl;
+        std::cout << "Intermediate solution! cost: " << cost.value() << " found at t= " << t/1000.0f << std::endl;
       });
 
   // set the problem we are trying to solve for the planner
