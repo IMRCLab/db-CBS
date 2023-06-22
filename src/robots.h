@@ -24,6 +24,8 @@ public:
     const ompl::base::State *state,
     size_t part = 0) = 0;
 
+  virtual void setPosition(ompl::base::State* state, const fcl::Vector3f position, size_t part = 0) = 0;
+
   virtual size_t numParts()
   {
     return 1;

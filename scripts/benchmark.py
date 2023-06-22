@@ -2,6 +2,7 @@ import yaml
 from main_ompl import run_ompl
 from main_s2m2 import run_s2m2
 from main_kcbs import run_kcbs
+from main_dbastar import run_dbastar
 from pathlib import Path
 import shutil
 import subprocess
@@ -36,6 +37,7 @@ def run_visualize(script, filename_env, filename_result):
 def execute_task(task: ExecutionTask):
 	scripts_path = Path("../scripts")
 	results_path = Path("../results")
+	# tuning_path = Path("../tuning")
 	env_path = Path().resolve() / "../example"
 	env = (env_path / task.instance).with_suffix(".yaml") 
 	assert(env.is_file())
@@ -73,6 +75,10 @@ def execute_task(task: ExecutionTask):
 		run_kcbs(str(env), str(result_folder), task.timelimit, mycfg)
 		visualize_files = [p.name for p in result_folder.glob('result_*')]
 		check_files = [p.name for p in result_folder.glob('result_*')]
+	elif task.alg == "dbAstar":
+		run_dbastar(str(env), str(result_folder), task.timelimit, mycfg, "scp")
+		visualize_files = [p.name for p in result_folder.glob('result_*')]
+		check_files = [p.name for p in result_folder.glob('result_opt*')]
 
 	# for visualization
 	# vis_script = scripts_path / "visualize.py"
@@ -84,15 +90,14 @@ def main():
 	parallel = True
 	instances = [
 		"parallelpark",
-		"bugtrap",
-        "wall",
+		# "bugtrap",
+        # "wall",
 	]
 	algs = [
-		"sst",
+		# "sst",
 		# "s2m2",
 		"k-cbs",
-		# "dbAstar-komo",
-		# "dbAstar-scp",
+		# "dbAstar",
 	]
 	trials = 1
 	timelimit = 60 

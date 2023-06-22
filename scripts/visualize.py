@@ -94,14 +94,14 @@ class Animation:
         state = robot["states"][-1]
       else:
         state = robot["states"][i]
-        if self.robot_types[k] == 'single_integrator':
+        if self.robot_types[k] == 'single_integrator_0':
             pos = state
             xy = np.asarray(pos)
             self.robot_patches[k].center = xy
             t = matplotlib.transforms.Affine2D().rotate_around(
                 pos[0], pos[1], 0)
             self.robot_patches[k].set_transform(t + self.ax.transData)
-        elif self.robot_types[k] == 'unicycle_first_order' or self.robot_types[k] == 'car_first_order':
+        elif self.robot_types[k] == 'unicycle_first_order_0' or self.robot_types[k] == 'car_first_order_0':
             pos = state[:2]
             yaw = state[2]
             xy = np.asarray(pos) - np.asarray(self.size) / 2
@@ -114,11 +114,11 @@ class Animation:
 
   def draw_robot(self, state, type, **kwargs):
     patch = []
-    if type == 'single_integrator':
+    if type == 'single_integrator_0':
       pos = state
       patch.append(draw_sphere_patch(self.ax, state, 0.1, 0, **kwargs))
 
-    if type == 'unicycle_first_order' or type == 'car_first_order':
+    if type == 'unicycle_first_order_0' or type == 'car_first_order_0':
       pos = state[:2]
       yaw = state[2]
       patch.append(draw_box_patch(self.ax, pos, self.size, yaw, **kwargs))  
