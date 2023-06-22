@@ -15,8 +15,8 @@ public:
       std::shared_ptr<Robot> robot,
       bool check_parts=false)
       : StateValidityChecker(si)
-      , col_mng_environment_(col_mng_environment)
       , robot_(robot)
+      , col_mng_environment_(col_mng_environment)
       , check_parts_(check_parts)
   {
     col_mng_parts_ = std::make_shared<fcl::DynamicAABBTreeCollisionManagerf>();
@@ -67,8 +67,8 @@ public:
 
     return true;
   }
-std::shared_ptr<Robot> robot_;
-private:
+protected:
+  std::shared_ptr<Robot> robot_;
   std::shared_ptr<fcl::BroadPhaseCollisionManagerf> col_mng_environment_;
   std::shared_ptr<fcl::BroadPhaseCollisionManagerf> col_mng_parts_;
   std::vector<fcl::CollisionObjectf*> part_objs_;
