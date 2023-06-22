@@ -567,6 +567,22 @@ public:
 
     // construct an instance of  space information from this control space
     si_ = std::make_shared<oc::SpaceInformation>(space, cspace);
+
+    // Compute dt, max_speed, and is2D
+    std::set<float> dts;
+    std::set<bool> is2Ds;
+    std::set<float> max_speeds;
+    for (auto robot : robots) {
+      dts.insert(robot->dt());
+      is2Ds.insert(robot->is2D());
+      max_speeds.insert(robot->maxSpeed());
+    }
+
+    dt_ = *std::min_element(dts.begin(), dts.end());
+    max_speed_ = *std::min_element(max_speeds.begin(), max_speeds.end());
+    if (is2Ds.size() != 1) {
+      throw std::runtime_error("is2D doesn't match!");
+    }
   }
 
   void propagate(
