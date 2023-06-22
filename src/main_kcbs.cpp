@@ -40,7 +40,8 @@
 #include <ompl/multirobot/control/planners/kcbs/KCBS.h>
 
 #include <ompl/control/spaces/RealVectorControlSpace.h>
-#include "ompl/control/planners/rrt/RRT.h"
+#include <ompl/control/planners/rrt/RRT.h>
+#include <ompl/control/planners/sst/SST.h>
 #include <ompl/control/SpaceInformation.h>
 #include <ompl/base/objectives/ControlDurationObjective.h>
 
@@ -89,7 +90,7 @@ public:
 ompl::base::PlannerPtr PlannerAllocator(const ompl::base::SpaceInformationPtr &si)
 {
     const oc::SpaceInformationPtr siC = std::static_pointer_cast<ompl::control::SpaceInformation>(si);
-    ompl::base::PlannerPtr planner = std::make_shared<oc::RRT>(siC);
+    ompl::base::PlannerPtr planner = std::make_shared<oc::SST>(siC);
     return planner;
 }
 
