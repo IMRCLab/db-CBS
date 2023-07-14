@@ -488,7 +488,6 @@ public: // smarter way of it
         // ll_result.plan.push_back(result[i]);
         const auto node_state = result[i]->state;
         const fcl::Vector3f current_pos = robot->getTransform(node_state).translation();
-        std::cout << current_pos << std::endl;
         const auto &motion = motions.at(result[i+1]->used_motion);
         // out << "      # ";
         // printState(out, si, node_state);
@@ -611,9 +610,9 @@ public: // smarter way of it
       float tentative_gScore = current->gScore + motion->cost;
       // compute final state -> how possible ?
       si->copyState(tmpState, motion->states.back());
-      const auto current_pos = robot->getTransform(current->state).translation();
-      const auto offset = current_pos + computed_offset;
-      const auto relative_pos = robot->getTransform(tmpState).translation(); // after applying the considered motion prim.?
+      Eigen::Vector3f current_pos = robot->getTransform(current->state).translation();
+      Eigen::Vector3f offset = current_pos + computed_offset;
+      Eigen::Vector3f relative_pos = robot->getTransform(tmpState).translation(); // after applying the considered motion prim.?
       robot->setPosition(tmpState, offset + relative_pos);
       // compute estimated fscore
       float tentative_hScore = epsilon * heuristic(robot, tmpState, goalState);
