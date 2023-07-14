@@ -108,6 +108,23 @@ target_include_directories(main_ompl_geometric PUBLIC
   ${YAML_INCLUDE_DIRS}
   ${FCL_INCLUDE_DIRS}
 )
+## db_cbs
+add_executable(db_cbs
+  src/db_cbs.cpp
+  # src/robots.cpp
+)
+target_link_libraries(db_cbs
+  motion_planning_common
+  ${Boost_LIBRARIES}
+  ${YAML_LIBRARIES}
+  ompl
+  ${FCL_LIBRARIES}
+)
+target_include_directories(main_ompl PUBLIC 
+  ${YAML_INCLUDE_DIRS}
+  ${FCL_INCLUDE_DIRS}
+)
+
 
 # Python bindings
 add_subdirectory(deps/pybind11 EXCLUDE_FROM_ALL)
