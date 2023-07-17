@@ -54,7 +54,7 @@ bool getFirstConflict(const std::vector<LowLevelPlan<AStarNode*>>& solution, con
     int max_t = 0;
     std::vector<fcl::CollisionObjectf*> robot_objs_;
     std::shared_ptr<fcl::BroadPhaseCollisionManagerf> col_mng_robots_;
-
+    const ob::State *node_state;
     for (const auto& sol : solution){
       max_t = std::max<int>(max_t, sol.plan.size() - 1);
     }
@@ -62,11 +62,12 @@ bool getFirstConflict(const std::vector<LowLevelPlan<AStarNode*>>& solution, con
     
     for (int t = 0; t <= max_t; ++t){
         for (size_t i = 0; i < solution.size(); ++i){
-            auto node_state = solution[i].plan[t]->state;
-            // if (si->isValid(node_state)) {
-            //     std::cout << "Valid state" << std::endl;
-            //     return false;
-            // }
+            if (t >= solution[i].plan.size()){
+                node_state = solution[i].plan.back()->state;    
+            }
+            else {
+                node_state = solution[i].plan[t]->state;
+            }
             const auto transform = all_robots->getTransform(node_state, i);
             auto robot = new fcl::CollisionObjectf(all_robots->getCollisionGeometry(i)); 
             
