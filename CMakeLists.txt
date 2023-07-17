@@ -127,19 +127,19 @@ target_include_directories(main_ompl PUBLIC
 
 
 # Python bindings
-add_subdirectory(deps/pybind11 EXCLUDE_FROM_ALL)
+# add_subdirectory(deps/pybind11 EXCLUDE_FROM_ALL)
 
-pybind11_add_module(motionplanningutils
-  src/python_bindings.cpp
-)
-target_include_directories(motionplanningutils
-  PRIVATE ${CMAKE_BINARY_DIR}/deps/fcl/include
-  PRIVATE ${CMAKE_SOURCE_DIR}/deps/fcl/include
-)
-target_link_libraries(motionplanningutils PRIVATE
-  motion_planning_common
-  ${Boost_LIBRARIES}
-  ${YAML_LIBRARIES}
-  ompl
-  ${FCL_LIBRARIES}
-)
+# pybind11_add_module(motionplanningutils
+#   src/python_bindings.cpp
+# )
+# target_include_directories(motionplanningutils
+#   PRIVATE ${CMAKE_BINARY_DIR}/deps/fcl/include
+#   PRIVATE ${CMAKE_SOURCE_DIR}/deps/fcl/include
+# )
+# target_link_libraries(motionplanningutils PRIVATE
+#   motion_planning_common
+#   ${Boost_LIBRARIES}
+#   ${YAML_LIBRARIES}
+#   ompl
+#   ${FCL_LIBRARIES}
+# )
