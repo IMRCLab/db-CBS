@@ -24,7 +24,7 @@
 
 namespace ob = ompl::base;
 namespace oc = ompl::control;
-
+// For each robot
 struct Agent {
     std::vector<double> start_;
     std::vector<double> goal_;
@@ -32,13 +32,25 @@ struct Agent {
     std::shared_ptr<Robot> robot_;    
 };
 
+// Conflicts 
+struct Conflict {
+  Conflict(float time, const std::vector<ob::State*> states) : time(time), states(states), length(states.size()) {}
+  float time;
+  const std::vector<ob::State*> states;
+  size_t length; // corresponds to number of robots
+};
+
+// Constraints
+struct Constraint {
+  Constraint(float time, const std::vector<ob::State*> states) : time(time), states(states) {}
+  float time;
+  const std::vector<ob::State*> states;
+};
 
 struct HighLevelNode {
     std::vector<LowLevelPlan<AStarNode*>> solution;
-    // std::vector<Constraints> constraints;
-
-    float cost; // current->gscore
-
+    // std::vector<Constraint> constraints;
+    float cost; 
     // int id;
 
     typename boost::heap::d_ary_heap<HighLevelNode, boost::heap::arity<2>,
@@ -50,26 +62,32 @@ struct HighLevelNode {
     }
   };
 
-bool getFirstConflict(const std::vector<LowLevelPlan<AStarNode*>>& solution, const std::shared_ptr<Robot>& all_robots){
+// Constraint
+
+bool getConflicts(const std::vector<LowLevelPlan<AStarNode*>>& solution, const std::vector<std::shared_ptr<Robot>>& all_robots,
+                    std::vector<Conflict>& all_conflicts){
     int max_t = 0;
     std::vector<fcl::CollisionObjectf*> robot_objs_;
     std::shared_ptr<fcl::BroadPhaseCollisionManagerf> col_mng_robots_;
-    const ob::State *node_state;
+    col_mng_robots_ = std::make_shared<fcl::DynamicAABBTreeCollisionManagerf>();
+    ob::State *node_state;
+    std::vector<ob::State*> node_states;
     for (const auto& sol : solution){
       max_t = std::max<int>(max_t, sol.plan.size() - 1);
     }
-    auto si = all_robots->getSpaceInformation();
     
     for (int t = 0; t <= max_t; ++t){
-        for (size_t i = 0; i < solution.size(); ++i){
+        node_states.clear();
+        for (size_t i = 0; i < all_robots.size(); ++i){
             if (t >= solution[i].plan.size()){
                 node_state = solution[i].plan.back()->state;    
             }
             else {
                 node_state = solution[i].plan[t]->state;
             }
-            const auto transform = all_robots->getTransform(node_state, i);
-            auto robot = new fcl::CollisionObjectf(all_robots->getCollisionGeometry(i)); 
+            node_states.push_back(node_state);
+            const auto transform = all_robots[i]->getTransform(node_state,0);
+            auto robot = new fcl::CollisionObjectf(all_robots[i]->getCollisionGeometry(0)); 
             
             robot->setTranslation(transform.translation());
             robot->setRotation(transform.rotation());
@@ -81,10 +99,32 @@ bool getFirstConflict(const std::vector<LowLevelPlan<AStarNode*>>& solution, con
         fcl::DefaultCollisionData<float> collision_data;
         col_mng_robots_->collide(&collision_data, fcl::DefaultCollisionFunction<float>);
         if (collision_data.result.isCollision()) {
-            return true;
+            Conflict inter_robot_conflict(t,node_states);
+            all_conflicts.push_back(inter_robot_conflict);
         } 
     }
+    if (all_conflicts.size() != 0){
+        return true;
+    }
     return false;
+}
+// Constraints from Conflicts
+void createConstraintsFromConflicts(const std::vector<Conflict>& conflicts, std::map<size_t, std::vector<Constraint>>& constraints){
+    for (size_t i = 0; i < conflicts.size(); ++i){
+        for (size_t j = 0; j < conflicts[i].length; ++j){ // for each Rs in conflict
+            std::vector<ob::State*> conflict_states;
+            for (size_t k = 0; k < conflicts[i].length; ++k){
+                if (k==j){
+                    continue;
+                }
+                conflict_states.push_back(conflicts[i].states[k]);
+            }
+            
+            Constraint temp_const(conflicts[i].time, conflict_states);
+            constraints[j].push_back(temp_const);
+        }
+    }
+
 }
 
 int main() {
@@ -125,7 +165,7 @@ int main() {
     HighLevelNode start;
     
     start.solution.resize(env["robots"].size());
-    // start.constraints.resize(initialStates.size());
+    // start.constraints.resize(env["robots"].size());
     start.cost = 0;
     int i = 0;
     std::vector<std::shared_ptr<Robot>> robots;
@@ -151,26 +191,32 @@ int main() {
         goal_reals.clear();
         i++;  
     } 
-    std::shared_ptr<Robot> joint_robot = create_joint_robot(robots);
 
-    // typename boost::heap::d_ary_heap<HighLevelNode, boost::heap::arity<2>,
-    //                                  boost::heap::mutable_<true> > open;
-
-    // auto handle = open.push(start);
-    // (*handle).handle = handle;
-    bool conf = getFirstConflict(start.solution, joint_robot);
-    // if (conf){
-    //     std::cout<<"Conflict"<<std::endl;
-    // }
-    // while (!open.empty()) {
-    //   HighLevelNode P = open.top();
-
-    // }
+    typename boost::heap::d_ary_heap<HighLevelNode, boost::heap::arity<2>,
+                                     boost::heap::mutable_<true> > open;
+    auto handle = open.push(start);
+    (*handle).handle = handle;
+    while (!open.empty()) {
+      HighLevelNode P = open.top();
+      open.pop();
+      std::vector<Conflict> conflicts;
+      if (!getConflicts(P.solution, robots, conflicts)) {
+        std::cout << "done; cost: " << P.cost << std::endl;
+      }
+      std::map<size_t, std::vector<Constraint>> constraints;
+      createConstraintsFromConflicts(conflicts, constraints);
+      for (size_t i = 0; i < constraints[0].size(); ++i){
+            std::cout << constraints[0][i].time << std::endl;
+            const auto node_state = constraints[0][i].states[0];
+            const auto transform = robots[0]->getTransform(node_state,0);
+            std::cout << transform.translation() << std::endl;
+      }
+   
+    } // while
 
     return 0;
 }
 
 // To do:
-//     * db-A* running in an iterative manner
 //     * Better data structure for db-astar.search 
 //     * 

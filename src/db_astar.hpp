@@ -122,7 +122,8 @@ typedef typename boost::heap::d_ary_heap<
 // Node type (used for open and explored states)
 struct AStarNode
 {
-  const ob::State *state;
+  // const ob::State *state;
+  ob::State *state;
 
   float fScore;
   float gScore;
@@ -292,7 +293,7 @@ public: // smarter way of it
           break;
         }
       }
-      m.cost = m.actions.size() * robot->dt(); // time in seconds ?
+      m.cost = m.actions.size() * robot->dt(); 
       m.idx = motions.size();
 
       // generate collision objects and collision manager for saved motion (7 states)
@@ -311,7 +312,7 @@ public: // smarter way of it
       m.collision_manager.reset(new ShiftableDynamicAABBTreeCollisionManager<float>());
       m.collision_manager->registerObjects(m.collision_objects);
 
-      m.disabled = false; // why needed ?
+      m.disabled = false; 
 
       motions.push_back(m); // 5000 size
     } // end of for loop, looping over all 5k motions
@@ -457,7 +458,7 @@ public: // smarter way of it
       std::cout << "expanded: " << expands << " open: " << open.size() << " nodes: " << T_n->size() << " f-score " << current->fScore << std::endl;
     }
     
-    assert(current->fScore >= last_f_score);
+    // assert(current->fScore >= last_f_score);
     last_f_score = current->fScore;
     if (si->distance(current->state, goalState) <= delta) {
       std::cout << "SOLUTION FOUND !!!! cost: " << current->gScore << std::endl;
@@ -474,7 +475,7 @@ public: // smarter way of it
       std::reverse(result.begin(), result.end());
       ll_result.plan = result;
       ll_result.cost = current->gScore;
-
+  
       // std::ofstream out(outputFile);
       // out << "delta: " << delta << std::endl;
       // out << "epsilon: " << epsilon << std::endl;
