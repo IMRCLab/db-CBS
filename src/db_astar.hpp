@@ -154,7 +154,7 @@ bool compareAStarNode::operator()(const AStarNode *a, const AStarNode *b) const
   }
 }
 
-float heuristic(std::shared_ptr<Robot> robot, const ob::State *s, const ob::State *g)
+float heuristic(std::shared_ptr<Robot> robot, const ob::State *s, const ob::State *g, float delta)
 {
   // heuristic is the time it might take to get to the goal
   Eigen::Vector3f current_pos = robot->getTransform(s).translation();
@@ -162,10 +162,12 @@ float heuristic(std::shared_ptr<Robot> robot, const ob::State *s, const ob::Stat
 
   float dist = (current_pos - goal_pos).norm();
   const float max_vel = robot->maxSpeed(); // m/s
-  const float time = dist / max_vel;
+  // const float time = dist / max_vel;
+  const float time = std::max((dist-delta) / max_vel, 0.0f);
   return time;
+  
 }
-
+template <typename Constraint>
 class DBAstar
 {
 public: // smarter way of it
@@ -177,9 +179,12 @@ public: // smarter way of it
   std::string outputFile = "output.yaml";
   
   bool search(std::string motionsFile, std::vector<double> robot_start, std::vector<double> robot_goal, std::vector<fcl::CollisionObjectf *> obstacles, 
-    std::shared_ptr<Robot> robot,std::string robot_type, const auto env_min, LowLevelPlan<AStarNode*>& ll_result)
+    std::shared_ptr<Robot> robot,std::string robot_type, const auto env_min, const std::vector<Constraint>& constraints, LowLevelPlan<AStarNode*>& ll_result)
   
   {
+
+    ll_result.plan.clear();
+    ll_result.cost = 0;
 
     std::shared_ptr<fcl::BroadPhaseCollisionManagerf> bpcm_env(new fcl::DynamicAABBTreeCollisionManagerf());
     bpcm_env->registerObjects(obstacles);
@@ -208,8 +213,6 @@ public: // smarter way of it
     auto goalState = si->allocState();
     si->getStateSpace()->copyFromReals(goalState, robot_goal);
 
-    // auto startState = allocAndFillState(si, robot_node["start"]);
-    // auto goalState = allocAndFillState(si, robot_node["goal"]);
   // load motions primitives
     std::ifstream is( motionsFile.c_str(), std::ios::in | std::ios::binary );
     // get length of file
@@ -353,7 +356,7 @@ public: // smarter way of it
       fakeMotion.idx = -1;
       fakeMotion.states.push_back(si->allocState());
       std::vector<Motion *> neighbors_m;
-      size_t num_desired_neighbors = (size_t)-delta; // ?
+      size_t num_desired_neighbors = (size_t)-delta; 
       size_t num_samples = std::min<size_t>(1000, motions.size());
 
       auto state_sampler = si->allocStateSampler();
@@ -425,7 +428,7 @@ public: // smarter way of it
   auto start_node = new AStarNode();
   start_node->state = startState;
   start_node->gScore = 0;
-  start_node->fScore = epsilon * heuristic(robot, startState, goalState);
+  start_node->fScore = epsilon * heuristic(robot, startState, goalState, delta);
   start_node->came_from = nullptr;
   start_node->used_offset = fcl::Vector3f(0,0,0);
   start_node->used_motion = -1;
@@ -458,7 +461,7 @@ public: // smarter way of it
       std::cout << "expanded: " << expands << " open: " << open.size() << " nodes: " << T_n->size() << " f-score " << current->fScore << std::endl;
     }
     
-    // assert(current->fScore >= last_f_score);
+    assert(current->fScore >= last_f_score);
     last_f_score = current->fScore;
     if (si->distance(current->state, goalState) <= delta) {
       std::cout << "SOLUTION FOUND !!!! cost: " << current->gScore << std::endl;
@@ -616,7 +619,7 @@ public: // smarter way of it
       Eigen::Vector3f relative_pos = robot->getTransform(tmpState).translation(); // after applying the considered motion prim.?
       robot->setPosition(tmpState, offset + relative_pos);
       // compute estimated fscore
-      float tentative_hScore = epsilon * heuristic(robot, tmpState, goalState);
+      float tentative_hScore = epsilon * heuristic(robot, tmpState, goalState, delta);
       float tentative_fScore = tentative_gScore + tentative_hScore;
 
       // skip motions that would exceed cost bound
@@ -650,11 +653,48 @@ public: // smarter way of it
         }
       }
       #else
-      motion->collision_manager->shift(offset); // why offset ?
+      motion->collision_manager->shift(offset); 
       fcl::DefaultCollisionData<float> collision_data;
       motion->collision_manager->collide(bpcm_env.get(), &collision_data, fcl::DefaultCollisionFunction<float>);
       bool motionValid = !collision_data.result.isCollision();
       motion->collision_manager->shift(-offset);
+
+      // now check with dynamic constraints
+      for (const auto& constraint : constraints) {
+        // a constraint violation can only occur between t in [current->gScore, tentative_gScore]
+        if (constraint.time >= current->gScore && constraint.time <= tentative_gScore) {
+          // find the state for the constrained time
+          float time_offset = constraint.time - current->gScore;
+          int time_index = (int)(time_offset / robot->dt());
+          const auto& state = motion->states[time_index];
+          // compute translated state
+          si->copyState(tmpState, state);
+          const auto relative_pos = robot->getTransform(state).translation();
+          // robot->setPosition(tmpState, offset + relative_pos); 
+          const auto& transform = robot->getTransform(state, 0);
+          fcl::CollisionObjectf motion_state_co(robot->getCollisionGeometry(0)); 
+          motion_state_co.setTranslation(transform.translation());
+          motion_state_co.setRotation(transform.rotation());
+          motion_state_co.computeAABB();
+          // TODO: check with state from other robot
+
+          const auto& other_state = constraint.constrained_state;
+          const auto& other_transform = robot->getTransform(other_state, 0);
+          fcl::CollisionObjectf other_robot_co(robot->getCollisionGeometry(0)); 
+          other_robot_co.setTranslation(other_transform.translation());
+          other_robot_co.setRotation(other_transform.rotation());
+          other_robot_co.computeAABB();
+          fcl::CollisionRequest<float> request;
+          fcl::CollisionResult<float> result;
+          // check two states for collision
+          collide(&motion_state_co, &other_robot_co, request, result);
+          bool violation = result.isCollision();
+          if (violation) {
+            motionValid = false;
+            // break;
+          }
+        }
+      } 
 
 
 #endif
@@ -820,3 +860,5 @@ public: // smarter way of it
 
 }; // end of DBAstar class
 
+// TO DO:
+// delete New to clear the memory

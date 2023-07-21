@@ -152,8 +152,8 @@ bool compareAStarNode::operator()(const AStarNode *a, const AStarNode *b) const
 float heuristic(std::shared_ptr<Robot> robot, const ob::State *s, const ob::State *g)
 {
   // heuristic is the time it might take to get to the goal
-  const auto current_pos = robot->getTransform(s).translation();
-  const auto goal_pos = robot->getTransform(g).translation();
+  Eigen::Vector3f current_pos = robot->getTransform(s).translation();
+  Eigen::Vector3f goal_pos = robot->getTransform(g).translation();
   float dist = (current_pos - goal_pos).norm();
   const float max_vel = robot->maxSpeed(); // m/s
   const float time = dist / max_vel;
@@ -295,15 +295,16 @@ int main(int argc, char* argv[]) {
   if (msg_obj.type != msgpack::type::ARRAY) {
     throw msgpack::type_error();
   }
-  for (size_t i = 0; i < msg_obj.via.array.size; ++i) { // what is msg_obj.via.array.size ? (5000)
+
+  for (size_t i = 0; i < msg_obj.via.array.size; ++i) {  // what is msg_obj.via.array.size ? (5000)
     Motion m;
     // find the states
-    auto item = msg_obj.via.array.ptr[i]; // what is this (size=7, why?)
+    auto item = msg_obj.via.array.ptr[i]; // what is this (size = 7, why?)
     if (item.type != msgpack::type::MAP) {
       throw msgpack::type_error();
     }
     // load the states
-    for (size_t j = 0; j < item.via.map.size; ++j) { // size=7
+    for (size_t j = 0; j < item.via.map.size; ++j) { // size = 7
       auto key = item.via.map.ptr[j].key.as<std::string>();
       if (key == "states") {
         auto val = item.via.map.ptr[j].val;
@@ -345,7 +346,7 @@ int main(int argc, char* argv[]) {
     m.cost = m.actions.size() * robot->dt(); // time in seconds ?
     m.idx = motions.size();
 
-    // generate collision objects and collision manager
+    // generate collision objects and collision manager for saved motion (7 states)
     for (const auto &state : m.states)
     {
       for (size_t part = 0; part < robot->numParts(); ++part) {
@@ -361,10 +362,11 @@ int main(int argc, char* argv[]) {
     m.collision_manager.reset(new ShiftableDynamicAABBTreeCollisionManager<float>());
     m.collision_manager->registerObjects(m.collision_objects);
 
-    m.disabled = false;
+    m.disabled = false; // why needed ?
 
-    motions.push_back(m);
+    motions.push_back(m); // 5000 size
   } // end of for loop, looping over all 5k motions
+
 
   std::cout << "Info: " << num_invalid_states << " states are invalid of " << num_states << std::endl;
 
@@ -480,7 +482,7 @@ int main(int argc, char* argv[]) {
   start_node->used_offset = fcl::Vector3f(0,0,0);
   start_node->used_motion = -1;
 
-  auto handle = open.push(start_node);
+  auto handle = open.push(start_node); // what is it ?
   start_node->handle = handle;
   start_node->is_in_open = true;
 
@@ -498,6 +500,7 @@ int main(int argc, char* argv[]) {
 
   float last_f_score = start_node->fScore;
   size_t expands = 0;
+  // Entering loopm while Open set is non-empty
   while (!open.empty())
   {
     AStarNode* current = open.top();
@@ -506,10 +509,10 @@ int main(int argc, char* argv[]) {
       std::cout << "expanded: " << expands << " open: " << open.size() << " nodes: " << T_n->size() << " f-score " << current->fScore << std::endl;
     }
     
-    assert(current->fScore >= last_f_score);
+    // assert(current->fScore >= last_f_score);
     last_f_score = current->fScore;
     if (si->distance(current->state, goalState) <= delta) {
-      std::cout << "SOLUTION FOUND!!!! cost: " << current->gScore << std::endl;
+      std::cout << "SOLUTION FOUND !!!! cost: " << current->gScore << std::endl;
 
       std::vector<const AStarNode*> result;
 
@@ -553,7 +556,7 @@ int main(int argc, char* argv[]) {
           out << std::endl;
         }
         out << std::endl;
-      }
+      } // writing result states
       out << "      - ";
       printState(out, si, result.back()->state);
       out << std::endl;
@@ -570,7 +573,8 @@ int main(int argc, char* argv[]) {
           out << std::endl;
         }
         out << std::endl;
-      }
+      } // write actions to yaml file
+
       // statistics for the motions used
       std::map<size_t, size_t> motionsCount; // motionId -> usage count
       for (size_t i = 0; i < result.size() - 1; ++i)
@@ -597,8 +601,9 @@ int main(int argc, char* argv[]) {
 
       return 0;
       break;
-    }
+    } // if solution found things
 
+    // If no solution then continue
     current->is_in_open = false;
     open.pop();
 
@@ -606,7 +611,7 @@ int main(int argc, char* argv[]) {
     si->copyState(fakeMotion.states[0], current->state);
     robot->setPosition(fakeMotion.states[0], fcl::Vector3f(0,0,0));
 
-    T_m->nearestR(&fakeMotion, delta*alpha, neighbors_m);
+    T_m->nearestR(&fakeMotion, delta*alpha, neighbors_m); 
     // Loop over all potential applicable motions
     for (const Motion* motion : neighbors_m) {
       if (motion->disabled) {
@@ -645,11 +650,11 @@ int main(int argc, char* argv[]) {
 
       // compute estimated cost
       float tentative_gScore = current->gScore + motion->cost;
-      // compute final state
+      // compute final state -> how possible ?
       si->copyState(tmpState, motion->states.back());
-      const auto current_pos = robot->getTransform(current->state).translation();
-      const auto offset = current_pos + computed_offset;
-      const auto relative_pos = robot->getTransform(tmpState).translation();
+      Eigen::Vector3f current_pos = robot->getTransform(current->state).translation();
+      Eigen::Vector3f offset = current_pos + computed_offset;
+      Eigen::Vector3f  relative_pos = robot->getTransform(tmpState).translation(); // after applying the considered motion prim.?
       robot->setPosition(tmpState, offset + relative_pos);
       // compute estimated fscore
       float tentative_hScore = epsilon * heuristic(robot, tmpState, goalState);
@@ -686,7 +691,7 @@ int main(int argc, char* argv[]) {
         }
       }
       #else
-      motion->collision_manager->shift(offset);
+      motion->collision_manager->shift(offset); // why offset ?
       fcl::DefaultCollisionData<float> collision_data;
       motion->collision_manager->collide(bpcm_env.get(), &collision_data, fcl::DefaultCollisionFunction<float>);
       bool motionValid = !collision_data.result.isCollision();
@@ -701,7 +706,7 @@ int main(int argc, char* argv[]) {
         continue;
       }
       // Check if we have this state (or any within delta/2) already
-      query_n->state = tmpState;
+      query_n->state = tmpState;  // used as 'state changed with appled motion primitive' ?
       // avoid considering this an old state for very short motions
       float radius = delta*(1-alpha);
       T_n->nearestR(query_n, radius, neighbors_n);
@@ -750,10 +755,10 @@ int main(int argc, char* argv[]) {
       }
     }
 
-  }
+  } // While OpenSet not empyt ends here
 
   query_n->state = goalState;
-  const auto nearest = T_n->nearest(query_n);
+  const auto nearest = T_n->nearest(query_n); // why needed ?
   if (nearest->gScore == 0) {
     std::cout << "No solution found (not even approxmite)" << std::endl;
     return 1;
