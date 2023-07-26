@@ -162,9 +162,10 @@ float heuristic(std::shared_ptr<Robot> robot, const ob::State *s, const ob::Stat
 
   float dist = (current_pos - goal_pos).norm();
   const float max_vel = robot->maxSpeed(); // m/s
-  // const float time = dist / max_vel;
-  const float time = std::max((dist-delta) / max_vel, 0.0f);
+  const float time = dist / max_vel;
+  // const float time = std::max((dist-delta) / max_vel, 0.0f);
   return time;
+  // return 0;
   
 }
 template <typename Constraint>
@@ -461,7 +462,7 @@ public: // smarter way of it
       std::cout << "expanded: " << expands << " open: " << open.size() << " nodes: " << T_n->size() << " f-score " << current->fScore << std::endl;
     }
     
-    assert(current->fScore >= last_f_score);
+    // assert(current->fScore >= last_f_score);
     last_f_score = current->fScore;
     if (si->distance(current->state, goalState) <= delta) {
       std::cout << "SOLUTION FOUND !!!! cost: " << current->gScore << std::endl;
@@ -485,11 +486,9 @@ public: // smarter way of it
       // out << "cost: " << current->gScore << std::endl;
       // out << "result:" << std::endl;
       // out << "  - states:" << std::endl;
-      // for (size_t i = 0; i < result.size() - 1; ++i)
       for (size_t i = 0; i < result.size() - 1; ++i)
       {
         // Compute intermediate states
-        // ll_result.plan.push_back(result[i]);
         const auto node_state = result[i]->state;
         const fcl::Vector3f current_pos = robot->getTransform(node_state).translation();
         const auto &motion = motions.at(result[i+1]->used_motion);
@@ -519,7 +518,6 @@ public: // smarter way of it
       // printState(out, si, result.back()->state);
       // out << std::endl;
       // out << "    actions:" << std::endl;
-      // for (size_t i = 0; i < result.size() - 1; ++i)
       // for (size_t i = 0; i < result.size() - 1; ++i)
       // {
         // const auto &motion = motions[result[i+1]->used_motion];

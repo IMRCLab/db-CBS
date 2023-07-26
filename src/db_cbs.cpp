@@ -127,6 +127,32 @@ void createConstraintsFromConflicts(const Conflict& early_conflict, std::map<siz
 
 }
 
+// visualize paths
+void export_solutions(const std::vector<LowLevelPlan<AStarNode*>>& solution, const std::vector<std::shared_ptr<Robot>>& robots){
+    std::string outputFile = "final_solution.yaml";
+    std::ofstream out(outputFile);
+    std::vector<double> reals;
+    out << "result:" << std::endl;
+    for (size_t i = 0; i < solution.size(); ++i){
+        auto si = robots[i]->getSpaceInformation();
+        out << "  - states:" << std::endl;
+        for (size_t j = 0; j < solution[i].plan.size(); ++j){
+            const auto state = solution[i].plan[j]->state;
+            si->getStateSpace()->copyToReals(reals, state);
+            out << "      - [";
+            for (size_t k = 0; k < reals.size(); ++k) {
+                out << reals[k];
+                if (k < reals.size() - 1) {
+                    out << ",";
+                }
+            }
+            out << "]" << std::endl;
+            reals.clear();
+        }
+
+    }
+}
+
 int main() {
     
     std::string inputFile = "/home/akmarak-laptop/IMRC/db-CBS/example/parallelpark.yaml";
@@ -206,12 +232,15 @@ int main() {
     auto handle = open.push(start);
     (*handle).handle = handle;
     int id = 1;
+
     while (!open.empty()) {
       HighLevelNode P = open.top();
       open.pop();
       Conflict inter_robot_conflict;
       if (!getEarliestConflict(P.solution, robots, inter_robot_conflict)) {
-        std::cout << "done; cost: " << P.cost << std::endl;
+        std::cout << "Final solution! cost: " << P.cost << std::endl;
+        export_solutions(P.solution, robots);
+        return 0;
       }
       std::map<size_t, std::vector<Constraint>> constraints;
       createConstraintsFromConflicts(inter_robot_conflict, constraints);
