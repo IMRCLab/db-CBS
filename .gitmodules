@@ -7,3 +7,6 @@
 [submodule "s2m2"]
 	path = s2m2
 	url = git@github.com:IMRCLab/s2m2.git
+[submodule "dynoplan"]
+	path = dynoplan
+	url = git@github.com:IMRCLab/dynoplan.git

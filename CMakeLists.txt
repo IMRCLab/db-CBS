@@ -9,6 +9,7 @@ pkg_check_modules(YAML REQUIRED yaml-cpp)
 pkg_check_modules(FCL REQUIRED fcl ccd)
 
 
+add_subdirectory(dynoplan)
 
 # set(ompl_ROOT ${}/k_cbs/ompl)
 # find_package(ompl)
@@ -73,23 +74,23 @@ target_include_directories(main_kcbs PUBLIC
   ${FCL_INCLUDE_DIRS}
 )
 
-## dbastar
+# ## dbastar
 
-add_executable(dbastar
-  src/main_dbastar.cpp
+# add_executable(dbastar
+#   src/main_dbastar.cpp
   
-)
-target_link_libraries(dbastar
-  motion_planning_common
-  ${Boost_LIBRARIES}
-  ${YAML_LIBRARIES}
-  ompl
-  ${FCL_LIBRARIES}
-)
-target_include_directories(dbastar PUBLIC 
-  ${YAML_INCLUDE_DIRS}
-  ${FCL_INCLUDE_DIRS}
-)
+# )
+# target_link_libraries(dbastar
+#   motion_planning_common
+#   ${Boost_LIBRARIES}
+#   ${YAML_LIBRARIES}
+#   ompl
+#   ${FCL_LIBRARIES}
+# )
+# target_include_directories(dbastar PUBLIC 
+#   ${YAML_INCLUDE_DIRS}
+#   ${FCL_INCLUDE_DIRS}
+# )
 
 ## main_ompl_geometric
 

@@ -17,8 +17,8 @@ Tested on Ubuntu 22.04.
 ```
 mkdir buildRelease
 cd buildRelease
-cmake -DCMAKE_BUILD_TYPE=Release ..
-make
+cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="/opt/openrobots/" ..
+make -j
 ```
 
 ## Running

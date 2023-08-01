@@ -1,3 +1,4 @@
 buildRelease/
+buildDebug/
 results/
 __pycache__/
