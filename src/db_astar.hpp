@@ -177,11 +177,10 @@ public: // smarter way of it
   float alpha = 0.5;
   bool filterDuplicates = true;
   float maxCost = 1e6;
-  std::string outputFile = "output.yaml";
 
-  bool search(std::string motionsFile, std::vector<double> robot_start, std::vector<double> robot_goal, std::vector<fcl::CollisionObjectf *> obstacles, 
+  bool search(msgpack::object msg_obj, std::vector<double> robot_start, std::vector<double> robot_goal, std::vector<fcl::CollisionObjectf *> obstacles, 
     std::shared_ptr<Robot> robot,std::string robot_type, const auto env_min, const std::vector<Constraint>& constraints, LowLevelPlan<AStarNode*,ob::State*,oc::Control*>& ll_result)
-  
+
   {
 
     // std::cout << "Running dbA*" << std::endl;
@@ -226,19 +225,19 @@ public: // smarter way of it
     si->getStateSpace()->copyFromReals(goalState, robot_goal);
 
   // load motions primitives
-    std::ifstream is( motionsFile.c_str(), std::ios::in | std::ios::binary );
-    // get length of file
-    is.seekg (0, is.end);
-    int length = is.tellg();
-    is.seekg (0, is.beg);
-    //
-    msgpack::unpacker unpacker;
-    unpacker.reserve_buffer(length);
-    is.read(unpacker.buffer(), length);
-    unpacker.buffer_consumed(length);
-    msgpack::object_handle oh;
-    unpacker.next(oh);
-    msgpack::object msg_obj = oh.get(); 
+    // std::ifstream is( motionsFile.c_str(), std::ios::in | std::ios::binary );
+    // // get length of file
+    // is.seekg (0, is.end);
+    // int length = is.tellg();
+    // is.seekg (0, is.beg);
+    // //
+    // msgpack::unpacker unpacker;
+    // unpacker.reserve_buffer(length);
+    // is.read(unpacker.buffer(), length);
+    // unpacker.buffer_consumed(length);
+    // msgpack::object_handle oh;
+    // unpacker.next(oh);
+    // msgpack::object msg_obj = oh.get(); 
 
     std::vector<Motion> motions;
     size_t num_states = 0;
@@ -329,7 +328,7 @@ public: // smarter way of it
 
       m.disabled = false; 
 
-      motions.push_back(m); // 5000 size
+      motions.push_back(m); 
     } // end of for loop, looping over all 5k motions
     std::cout << "Info: " << num_invalid_states << " states are invalid of " << num_states << std::endl;
 

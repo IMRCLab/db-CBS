@@ -24,23 +24,9 @@
 
 #include <idbastar/optimization/ocp.hpp>
 
-// #include "dynobench/motions.hpp"
-// #include <Eigen/Dense>
-
-// #define dynobench_base "../../dynobench/"
-
-// using namespace dynoplan;
-// using namespace dynobench;
 
 namespace ob = ompl::base;
 namespace oc = ompl::control;
-// For each robot
-struct Agent {
-    std::vector<double> start_;
-    std::vector<double> goal_;
-    std::vector<fcl::CollisionObjectf *> obstacles_;
-    std::shared_ptr<Robot> robot_;    
-};
 
 // Conflicts 
 struct Conflict {
@@ -230,7 +216,7 @@ void execute_optimization(std::string file)
     Result_opti result;
     Trajectory sol;
     trajectory_optimization(problem, init_guess, options_trajopt, sol, result);
-    std::string outputFile = "test_dbcbs_opt.yaml";
+    std::string outputFile = "test_dbcbs_opt_msg.yaml";
     std::ofstream out(outputFile);
     result.write_yaml(out);
     // BOOST_TEST_CHECK(result.feasible);
@@ -242,7 +228,22 @@ int main() {
     
     std::string inputFile = "/home/akmarak-laptop/IMRC/db-CBS/example/parallelpark.yaml";
     std::string filename_motions = "/home/akmarak-laptop/IMRC/db-CBS/results/dbg/motions.msgpack";
-    std::string outputFile = "db_solution_test.yaml";
+    std::string outputFile = "db_solution_test_msg.yaml";
+    // load the msgpck
+    std::ifstream is( filename_motions.c_str(), std::ios::in | std::ios::binary );
+    // get length of file
+    is.seekg (0, is.end);
+    int length = is.tellg();
+    is.seekg (0, is.beg);
+    //
+    msgpack::unpacker unpacker;
+    unpacker.reserve_buffer(length);
+    is.read(unpacker.buffer(), length);
+    unpacker.buffer_consumed(length);
+    msgpack::object_handle oh;
+    unpacker.next(oh);
+    msgpack::object msg_objs = oh.get(); 
+
     // load problem description
     YAML::Node env = YAML::LoadFile(inputFile);
     std::vector<fcl::CollisionObjectf *> obstacles;
@@ -300,8 +301,9 @@ int main() {
         robot_types.push_back(robotType);
 
         DBAstar<Constraint> llplanner;
-        bool success = llplanner.search(filename_motions, starts[i], goals[i], 
+        bool success = llplanner.search(msg_objs, starts[i], goals[i], 
             obstacles, robots[i], robot_types[i], env_min, start.constraints[i], start.solution[i]); 
+
         start.cost += start.solution[i].cost;
         std::cout << "High Level Node Cost: " << start.cost << std::endl;
         start_reals.clear();
@@ -340,7 +342,7 @@ int main() {
 
         // run the low level planner
         DBAstar<Constraint> llplanner;
-        bool success = llplanner.search(filename_motions, starts[i], goals[i], 
+        bool success = llplanner.search(msg_objs, starts[i], goals[i], 
             obstacles, robots[i], robot_types[i], env_min, newNode.constraints[i], newNode.solution[i]); 
         newNode.cost += newNode.solution[i].cost;
         std::cout << "Updated New node cost: " << newNode.cost << std::endl;
