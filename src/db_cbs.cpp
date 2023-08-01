@@ -22,6 +22,16 @@
 #include "db_astar.hpp"
 #include "planresult.hpp"
 
+#include <idbastar/optimization/ocp.hpp>
+
+// #include "dynobench/motions.hpp"
+// #include <Eigen/Dense>
+
+// #define dynobench_base "../../dynobench/"
+
+// using namespace dynoplan;
+// using namespace dynobench;
+
 namespace ob = ompl::base;
 namespace oc = ompl::control;
 // For each robot
@@ -47,7 +57,7 @@ struct Constraint {
 };
 
 struct HighLevelNode {
-    std::vector<LowLevelPlan<AStarNode*>> solution;
+    std::vector<LowLevelPlan<AStarNode*, ob::State*, oc::Control*>> solution;
     std::vector<std::vector<Constraint>> constraints;
     // std::map<size_t, std::vector<Constraint>> constraints;
 
@@ -63,8 +73,29 @@ struct HighLevelNode {
     }
   };
 
-
-bool getEarliestConflict(const std::vector<LowLevelPlan<AStarNode*>>& solution, const std::vector<std::shared_ptr<Robot>>& all_robots,
+void print_solution(const std::vector<LowLevelPlan<AStarNode*,ob::State*, oc::Control*>>& solution, const std::vector<std::shared_ptr<Robot>>& all_robots){
+    int max_t = 0;
+    ob::State *node_state;
+    for (const auto& sol : solution){
+      max_t = std::max<int>(max_t, sol.trajectory.size() - 1);
+    }
+    for (int t = 0; t <= max_t; ++t){
+        std::cout << "/////////// "<< "time: " << t << "///////////" << std::endl;
+        for (size_t i = 0; i < all_robots.size(); ++i){
+            std::cout << "robot " << i << std::endl;
+            if (t >= solution[i].trajectory.size()){
+                node_state = solution[i].trajectory.back();    
+            }
+            else {
+                node_state = solution[i].trajectory[t];
+            }
+            const auto transform = all_robots[i]->getTransform(node_state,0);
+            auto robot = new fcl::CollisionObjectf(all_robots[i]->getCollisionGeometry(0)); 
+            std::cout << transform.translation() << std::endl;
+        }
+    }
+}
+bool getEarliestConflict(const std::vector<LowLevelPlan<AStarNode*,ob::State*, oc::Control*>>& solution, const std::vector<std::shared_ptr<Robot>>& all_robots,
                     Conflict& early_conflict){
     int max_t = 0;
     std::vector<fcl::CollisionObjectf*> robot_objs_;
@@ -74,7 +105,7 @@ bool getEarliestConflict(const std::vector<LowLevelPlan<AStarNode*>>& solution, 
     ob::State *node_state;
     std::vector<ob::State*> node_states;
     for (const auto& sol : solution){
-      max_t = std::max<int>(max_t, sol.plan.size() - 1);
+      max_t = std::max<int>(max_t, sol.trajectory.size() - 1);
     }
     
     for (int t = 0; t <= max_t; ++t){
@@ -84,11 +115,11 @@ bool getEarliestConflict(const std::vector<LowLevelPlan<AStarNode*>>& solution, 
         col_mng_robots_->clear();
         for (size_t i = 0; i < all_robots.size(); ++i){
             // std::cout << "ROBOT " << i << std::endl;
-            if (t >= solution[i].plan.size()){
-                node_state = solution[i].plan.back()->state;    
+            if (t >= solution[i].trajectory.size()){
+                node_state = solution[i].trajectory.back();    
             }
             else {
-                node_state = solution[i].plan[t]->state;
+                node_state = solution[i].trajectory[t];
             }
             node_states.push_back(node_state);
             const auto transform = all_robots[i]->getTransform(node_state,0);
@@ -120,44 +151,98 @@ void createConstraintsFromConflicts(const Conflict& early_conflict, std::map<siz
                 if (j==i){
                     continue;
                 }
-                Constraint temp_const = {early_conflict.time, early_conflict.conflict_states[j]};
+                Constraint temp_const = {early_conflict.time*0.1, early_conflict.conflict_states[j]};
                 constraints[i].push_back(temp_const);
             }
     }
 
 }
 
-// visualize paths
-void export_solutions(const std::vector<LowLevelPlan<AStarNode*>>& solution, const std::vector<std::shared_ptr<Robot>>& robots){
-    std::string outputFile = "final_solution.yaml";
+
+// export path to .yaml file
+void export_solutions(const std::vector<LowLevelPlan<AStarNode*,ob::State*, oc::Control*>>& solution, 
+                        const std::vector<std::shared_ptr<Robot>>& robots, std::string outputFile){
+    // std::string outputFile = "db_solution_test.yaml";
     std::ofstream out(outputFile);
     std::vector<double> reals;
+    float cost = 0;
+    for (auto& n : solution)
+      cost += n.cost;
+    out << "delta: " << 0.5 << std::endl;
+    out << "epsilon: " << 1 << std::endl;
+    out << "cost: " << cost << std::endl; 
     out << "result:" << std::endl;
-    for (size_t i = 0; i < solution.size(); ++i){
-        auto si = robots[i]->getSpaceInformation();
+    for (size_t i = 0; i < solution.size(); ++i){ 
+        auto si = robots[i]->getSpaceInformation(); 
         out << "  - states:" << std::endl;
-        for (size_t j = 0; j < solution[i].plan.size(); ++j){
-            const auto state = solution[i].plan[j]->state;
-            si->getStateSpace()->copyToReals(reals, state);
-            out << "      - [";
-            for (size_t k = 0; k < reals.size(); ++k) {
-                out << reals[k];
-                if (k < reals.size() - 1) {
-                    out << ",";
-                }
-            }
-            out << "]" << std::endl;
-            reals.clear();
+        for (size_t j = 0; j < solution[i].trajectory.size(); ++j){
+            const auto node_state = solution[i].trajectory[j];
+            out << "      - ";
+            printState(out, si, node_state);
+            out << std::endl;
+        }
+    }
+    auto si = robots.back()->getSpaceInformation();
+    out << "      - ";
+    // printState(out, si, solution.back().trajectory.back());
+    printState(out, si, solution.back().plan.back()->state);
+    out << std::endl;
+    for (size_t i = 0; i < solution.size(); ++i){ 
+        auto si = robots[i]->getSpaceInformation(); 
+        out << "    actions:" << std::endl;
+        for (size_t j = 0; j < solution[i].actions.size(); ++j){
+            const auto& node_action = solution[i].actions[j];
+            // out << "      # ";
+            out << "      - ";
+            printAction(out, si, node_action);
+            out << std::endl;
         }
 
     }
+}
+
+
+#define dynobench_base "/home/akmarak-laptop/IMRC/db-CBS/dynoplan/dynobench/"
+
+void execute_optimization(std::string file)
+{
+
+    using namespace dynoplan;
+    using namespace dynobench;
+
+    Options_trajopt options_trajopt;
+    Problem problem("/home/akmarak-laptop/IMRC/db-CBS/example/parallelpark.yaml");
+    // (dynobench_base +
+                //   std::string("envs/db_test/parallelpark.yaml"));
+                  // std::string("envs/unicycle2_v0/parallelpark_0.yaml"));
+
+    Trajectory init_guess("/home/akmarak-laptop/IMRC/db-CBS/buildDebug/" + file);
+
+        // std::string("data/unicycle2_0_parallelark_guess_0.yaml"));
+
+    options_trajopt.solver_id = static_cast<int>(SOLVER::traj_opt);
+    options_trajopt.control_bounds = 1;
+    options_trajopt.use_warmstart = 1;
+    options_trajopt.weight_goal = 100;
+    options_trajopt.max_iter = 20; //50;
+    problem.models_base_path = dynobench_base + std::string("models/");
+
+    Result_opti result;
+    Trajectory sol;
+    trajectory_optimization(problem, init_guess, options_trajopt, sol, result);
+    std::string outputFile = "test_dbcbs_opt.yaml";
+    std::ofstream out(outputFile);
+    result.write_yaml(out);
+    // BOOST_TEST_CHECK(result.feasible);
+    std::cout << "cost is " << result.cost << std::endl;
+    // BOOST_TEST_CHECK(result.cost <= 10.);
 }
 
 int main() {
     
     std::string inputFile = "/home/akmarak-laptop/IMRC/db-CBS/example/parallelpark.yaml";
     std::string filename_motions = "/home/akmarak-laptop/IMRC/db-CBS/results/dbg/motions.msgpack";
-
+    std::string outputFile = "db_solution_test.yaml";
     // load problem description
     YAML::Node env = YAML::LoadFile(inputFile);
     std::vector<fcl::CollisionObjectf *> obstacles;
@@ -215,23 +300,22 @@ int main() {
         robot_types.push_back(robotType);
 
         DBAstar<Constraint> llplanner;
-        // bool success = llplanner.search(filename_motions, start_reals, goal_reals, 
-        //     obstacles, robot, robotType, env_min, start.constraints[i], start.solution[i]); 
         bool success = llplanner.search(filename_motions, starts[i], goals[i], 
             obstacles, robots[i], robot_types[i], env_min, start.constraints[i], start.solution[i]); 
-        std::cout<< "Start node run done:" << success << std::endl;
         start.cost += start.solution[i].cost;
         std::cout << "High Level Node Cost: " << start.cost << std::endl;
         start_reals.clear();
         goal_reals.clear();
         i++;  
     } 
-
+    // For Debugging
+    // print_solution(start.solution, robots);
     typename boost::heap::d_ary_heap<HighLevelNode, boost::heap::arity<2>,
                                      boost::heap::mutable_<true> > open;
     auto handle = open.push(start);
     (*handle).handle = handle;
     int id = 1;
+
 
     while (!open.empty()) {
       HighLevelNode P = open.top();
@@ -239,38 +323,41 @@ int main() {
       Conflict inter_robot_conflict;
       if (!getEarliestConflict(P.solution, robots, inter_robot_conflict)) {
         std::cout << "Final solution! cost: " << P.cost << std::endl;
-        export_solutions(P.solution, robots);
+        export_solutions(P.solution, robots, outputFile);
+        execute_optimization(outputFile);
         return 0;
       }
       std::map<size_t, std::vector<Constraint>> constraints;
       createConstraintsFromConflicts(inter_robot_conflict, constraints);
-      int it=0;
       for (const auto& c : constraints){
         HighLevelNode newNode = P;
         size_t i = c.first;
         newNode.id = id;
+        std::cout << "Node ID is " << id << std::endl;
         newNode.constraints[i].insert(newNode.constraints[i].begin(), c.second.begin(), c.second.end());
         newNode.cost -= newNode.solution[i].cost;
+        std::cout << "New node cost: " << newNode.cost << std::endl;
+
         // run the low level planner
         DBAstar<Constraint> llplanner;
-        bool success = llplanner.search(filename_motions, starts[it], goals[it], 
-            obstacles, robots[it], robot_types[it], env_min, newNode.constraints[i], newNode.solution[i]); 
+        bool success = llplanner.search(filename_motions, starts[i], goals[i], 
+            obstacles, robots[i], robot_types[i], env_min, newNode.constraints[i], newNode.solution[i]); 
         newNode.cost += newNode.solution[i].cost;
+        std::cout << "Updated New node cost: " << newNode.cost << std::endl;
+
         if (success) {
+            // print_solution(newNode.solution, robots);
+
           auto handle = open.push(newNode);
           (*handle).handle = handle;
-          std::cout<< "Run with constraints is done:" << success << std::endl;
+          
         }
-        it++;
+        else {
+
+        }
         id++;
       }
-      // test constraints on R1 = (time, R2(time))
-    //   for (size_t i = 0; i < constraints[0].size(); ++i){
-    //         std::cout << constraints[0][i].time << std::endl;
-    //         const auto node_state = constraints[0][i].constrained_state;
-    //         const auto transform = robots[0]->getTransform(node_state,0);
-    //         std::cout << transform.translation() << std::endl;
-    //   }
+
     }
 
     return 0;
@@ -288,78 +375,3 @@ int main() {
 
 
 
-
-// To do:
-//     * Better data structure for db-astar.search 
-//     * 
-
-
-// bool getEarliestConflict(const std::vector<LowLevelPlan<AStarNode*>>& solution, const std::vector<std::shared_ptr<Robot>>& all_robots,
-//                     std::vector<Conflict>& all_conflicts){
-//     int max_t = 0;
-//     std::vector<fcl::CollisionObjectf*> robot_objs_;
-//     std::shared_ptr<fcl::BroadPhaseCollisionManagerf> col_mng_robots_;
-//     col_mng_robots_ = std::make_shared<fcl::DynamicAABBTreeCollisionManagerf>();
-//     col_mng_robots_->setup();
-//     ob::State *node_state;
-//     std::vector<ob::State*> node_states;
-//     for (const auto& sol : solution){
-//       max_t = std::max<int>(max_t, sol.plan.size() - 1);
-//     }
-    
-//     for (int t = 0; t <= max_t; ++t){
-//         std::cout << "TIMESTAMP: " << t << std::endl;
-//         node_states.clear();
-//         robot_objs_.clear();
-//         col_mng_robots_->clear();
-//         for (size_t i = 0; i < all_robots.size(); ++i){
-//             std::cout << "ROBOT " << i << std::endl;
-//             if (t >= solution[i].plan.size()){
-//                 node_state = solution[i].plan.back()->state;    
-//             }
-//             else {
-//                 node_state = solution[i].plan[t]->state;
-//             }
-//             node_states.push_back(node_state);
-//             const auto transform = all_robots[i]->getTransform(node_state,0);
-//             auto robot = new fcl::CollisionObjectf(all_robots[i]->getCollisionGeometry(0)); 
-//             std::cout << transform.translation() << std::endl;
-//             robot->setTranslation(transform.translation());
-//             robot->setRotation(transform.rotation());
-//             robot->computeAABB();
-//             robot_objs_.push_back(robot);
-//         }
-//         col_mng_robots_->registerObjects(robot_objs_);
-//         // col_mng_robots_->update();
-//         fcl::DefaultCollisionData<float> collision_data;
-//         col_mng_robots_->collide(&collision_data, fcl::DefaultCollisionFunction<float>);
-//         if (collision_data.result.isCollision()) {
-//             Conflict inter_robot_conflict(t,node_states);
-//             std::cout << "CONFLICT at time " << t << std::endl;
-//             all_conflicts.push_back(inter_robot_conflict);
-//         } 
-//     }
-//     if (all_conflicts.size() != 0){
-//         return true;
-//     }
-//     return false;
-// }
-
-
-// void createConstraintsFromConflicts(const std::vector<Conflict>& conflicts, std::map<size_t, std::vector<Constraint>>& constraints){
-//     for (size_t i = 0; i < conflicts.size(); ++i){
-//         for (size_t j = 0; j < conflicts[i].length; ++j){ // for each Rs in conflict
-//             std::vector<ob::State*> conflict_states;
-//             for (size_t k = 0; k < conflicts[i].length; ++k){
-//                 if (k==j){
-//                     continue;
-//                 }
-//                 conflict_states.push_back(conflicts[i].states[k]);
-//             }
-            
-//             Constraint temp_const(conflicts[i].time, conflict_states);
-//             constraints[j].push_back(temp_const);
-//         }
-//     }
-
-// }

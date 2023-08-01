@@ -161,9 +161,9 @@ float heuristic(std::shared_ptr<Robot> robot, const ob::State *s, const ob::Stat
   Eigen::Vector3f goal_pos = robot->getTransform(g).translation();
 
   float dist = (current_pos - goal_pos).norm();
-  const float max_vel = robot->maxSpeed(); // m/s
-  const float time = dist / max_vel;
-  // const float time = std::max((dist-delta) / max_vel, 0.0f);
+  const float max_vel = robot->maxSpeed(); // m/s./db_    
+  // const float time = dist / max_vel;
+  const float time = std::max((dist-delta) / max_vel, 0.0f);
   return time;
   // return 0;
   
@@ -172,19 +172,30 @@ template <typename Constraint>
 class DBAstar
 {
 public: // smarter way of it
-  float delta = 0.01;
+  float delta = 0.5;
   float epsilon = 1.0;
   float alpha = 0.5;
   bool filterDuplicates = true;
   float maxCost = 1e6;
   std::string outputFile = "output.yaml";
-  
+
   bool search(std::string motionsFile, std::vector<double> robot_start, std::vector<double> robot_goal, std::vector<fcl::CollisionObjectf *> obstacles, 
-    std::shared_ptr<Robot> robot,std::string robot_type, const auto env_min, const std::vector<Constraint>& constraints, LowLevelPlan<AStarNode*>& ll_result)
+    std::shared_ptr<Robot> robot,std::string robot_type, const auto env_min, const std::vector<Constraint>& constraints, LowLevelPlan<AStarNode*,ob::State*,oc::Control*>& ll_result)
   
   {
 
+    // std::cout << "Running dbA*" << std::endl;
+    // std::cout << "Constraint size: " << constraints.size() << std::endl;
+    // for (const auto& constraint : constraints){
+      // const auto& other_state = constraint.constrained_state;
+        // const auto& other_transform = robot->getTransform(other_state, 0);
+        // fcl::CollisionObjectf other_robot_co(robot->getCollisionGeometry(0)); 
+        // std::cout << "db constraints: " << other_transform.translation() << "time: " << constraint.time << std::endl;
+    // }
+
     ll_result.plan.clear();
+    ll_result.trajectory.clear();
+    ll_result.actions.clear();
     ll_result.cost = 0;
 
     std::shared_ptr<fcl::BroadPhaseCollisionManagerf> bpcm_env(new fcl::DynamicAABBTreeCollisionManagerf());
@@ -227,7 +238,7 @@ public: // smarter way of it
     unpacker.buffer_consumed(length);
     msgpack::object_handle oh;
     unpacker.next(oh);
-    msgpack::object msg_obj = oh.get(); // size ?
+    msgpack::object msg_obj = oh.get(); 
 
     std::vector<Motion> motions;
     size_t num_states = 0;
@@ -258,7 +269,7 @@ public: // smarter way of it
         throw msgpack::type_error();
       }
       // load the states
-      for (size_t j = 0; j < item.via.map.size; ++j) { // size = 7
+      for (size_t j = 0; j < item.via.map.size; ++j) { 
         auto key = item.via.map.ptr[j].key.as<std::string>();
         if (key == "states") {
           auto val = item.via.map.ptr[j].val;
@@ -300,7 +311,7 @@ public: // smarter way of it
       m.cost = m.actions.size() * robot->dt(); 
       m.idx = motions.size();
 
-      // generate collision objects and collision manager for saved motion (7 states)
+      // generate collision objects and collision manager for saved motion
       for (const auto &state : m.states)
       {
         for (size_t part = 0; part < robot->numParts(); ++part) {
@@ -362,7 +373,7 @@ public: // smarter way of it
 
       auto state_sampler = si->allocStateSampler();
       float sum_delta = 0.0;
-      for (size_t k = 0; k < num_samples; ++k) { // why need to sample ?
+      for (size_t k = 0; k < num_samples; ++k) { 
         do {
           state_sampler->sampleUniform(fakeMotion.states[0]);
         } while (!si->isValid(fakeMotion.states[0]));
@@ -378,7 +389,7 @@ public: // smarter way of it
       delta = adjusted_delta;
 
     }
-//   //////////////////////////
+////////////////////////////
 
   if (filterDuplicates)
   {
@@ -447,12 +458,13 @@ public: // smarter way of it
   AStarNode* query_n = new AStarNode();
 
   ob::State* tmpState = si->allocState();
+  ob::State* tmpStateconst = si->allocState();
   std::vector<Motion*> neighbors_m; // applicable
   std::vector<AStarNode*> neighbors_n; // explored
 
   float last_f_score = start_node->fScore;
   size_t expands = 0;
-  // Entering loopm while Open set is non-empty
+  // Entering loop while Open set is non-empty
   while (!open.empty())
   {
     AStarNode* current = open.top();
@@ -467,74 +479,49 @@ public: // smarter way of it
     if (si->distance(current->state, goalState) <= delta) {
       std::cout << "SOLUTION FOUND !!!! cost: " << current->gScore << std::endl;
 
-      // std::vector<const AStarNode*> result;
       std::vector<AStarNode*> result;
-      // const AStarNode* n = current;
       AStarNode* n = current;
+
       while (n != nullptr) {
         result.push_back(n);
         n = n->came_from;
       }
-      // std::reverse(result.begin(), result.end());
       std::reverse(result.begin(), result.end());
       ll_result.plan = result;
       ll_result.cost = current->gScore;
-  
-      // std::ofstream out(outputFile);
-      // out << "delta: " << delta << std::endl;
-      // out << "epsilon: " << epsilon << std::endl;
-      // out << "cost: " << current->gScore << std::endl;
-      // out << "result:" << std::endl;
-      // out << "  - states:" << std::endl;
+
       for (size_t i = 0; i < result.size() - 1; ++i)
       {
         // Compute intermediate states
         const auto node_state = result[i]->state;
         const fcl::Vector3f current_pos = robot->getTransform(node_state).translation();
         const auto &motion = motions.at(result[i+1]->used_motion);
-        // out << "      # ";
-        // printState(out, si, node_state);
-        // out << std::endl;
-        // out << "      # motion " << motion.idx << " with cost " << motion.cost << std::endl;
-        // skip last state each
-        for (size_t k = 0; k < motion.states.size(); ++k)
+        
+        for (size_t k = 0; k < motion.states.size()-1; ++k) // skipping the last state
         {
           const auto state = motion.states[k];
-          si->copyState(tmpState, state);
+          ob::State* motion_state = si->allocState(); // alternative 
+          si->copyState(motion_state, state);
           const fcl::Vector3f relative_pos = robot->getTransform(state).translation();
-          robot->setPosition(tmpState, current_pos + result[i+1]->used_offset + relative_pos);
-
-          // if (k < motion.states.size() - 1) {
-          //   out << "      - ";
-          // } else {
-          //   out << "      # ";
-          // }
-          // printState(out, si, tmpState);
-          // out << std::endl;
+          robot->setPosition(motion_state, current_pos + result[i+1]->used_offset + relative_pos);
+          // si->printState(motion_state);
+          ll_result.trajectory.push_back(motion_state);
         }
-        // out << std::endl;
       } // writing result states
-      // out << "      - ";
-      // printState(out, si, result.back()->state);
-      // out << std::endl;
-      // out << "    actions:" << std::endl;
-      // for (size_t i = 0; i < result.size() - 1; ++i)
-      // {
-        // const auto &motion = motions[result[i+1]->used_motion];
-        // out << "      # motion " << motion.idx << " with cost " << motion.cost << std::endl;
-        // for (size_t k = 0; k < motion.actions.size(); ++k)
-        // {
-        //   const auto& action = motion.actions[k];
-        //   out << "      - ";
-        //   printAction(out, si, action);
-        //   out << std::endl;
-        // }
-        // out << std::endl;
-      // } // write actions to yaml file
+      for (size_t i = 0; i < result.size() - 1; ++i)
+      {
+        const auto &motion = motions[result[i+1]->used_motion];
+        for (size_t k = 0; k < motion.actions.size(); ++k)
+        {
+          const auto& action = motion.actions[k];
+          oc::Control* motion_action = si->allocControl(); 
+          si->copyControl(motion_action, action);
+          ll_result.actions.push_back(motion_action);
+        }
+      } // write actions to yaml file
 
       // statistics for the motions used
-      std::map<size_t, size_t> motionsCount; // motionId -> usage count
-      // for (size_t i = 0; i < result.size() - 1; ++i)
+      std::map<size_t, size_t> motionsCount; 
       for (size_t i = 0; i < result.size() - 1; ++i)
       {
         auto motionId = result[i+1]->used_motion;
@@ -545,19 +532,6 @@ public: // smarter way of it
           iter->second += 1;
         }
       }
-      // out << "    motion_stats:" << std::endl;
-      // for (const auto& kv : motionsCount) {
-      //   out << "      " << motions[kv.first].idx << ": " << kv.second << std::endl;
-      // }
-
-      // out << "    splits:" << std::endl;
-      // for (size_t i = 0; i < result.size() - 1; ++i) {
-      // for (size_t i = 0; i < result.size() - 1; ++i) {
-      //   // const auto &motion = motions.at(result[i+1]->used_motion);
-      //   const auto &motion = motions.at(result.paln[i+1]->used_motion);
-
-      //   out << "      - " << motion.states.size() - 1 << std::endl;
-      // }
 
       return true;
       // break;
@@ -610,7 +584,6 @@ public: // smarter way of it
 
       // compute estimated cost
       float tentative_gScore = current->gScore + motion->cost;
-      // compute final state -> how possible ?
       si->copyState(tmpState, motion->states.back());
       Eigen::Vector3f current_pos = robot->getTransform(current->state).translation();
       Eigen::Vector3f offset = current_pos + computed_offset;
@@ -656,25 +629,23 @@ public: // smarter way of it
       motion->collision_manager->collide(bpcm_env.get(), &collision_data, fcl::DefaultCollisionFunction<float>);
       bool motionValid = !collision_data.result.isCollision();
       motion->collision_manager->shift(-offset);
-
+    
       // now check with dynamic constraints
       for (const auto& constraint : constraints) {
         // a constraint violation can only occur between t in [current->gScore, tentative_gScore]
         if (constraint.time >= current->gScore && constraint.time <= tentative_gScore) {
-          // find the state for the constrained time
           float time_offset = constraint.time - current->gScore;
           int time_index = (int)(time_offset / robot->dt());
           const auto& state = motion->states[time_index];
           // compute translated state
-          si->copyState(tmpState, state);
+          si->copyState(tmpStateconst, state);
           const auto relative_pos = robot->getTransform(state).translation();
-          // robot->setPosition(tmpState, offset + relative_pos); 
-          const auto& transform = robot->getTransform(state, 0);
+          robot->setPosition(tmpStateconst, offset + relative_pos);
+          const auto& transform = robot->getTransform(tmpStateconst, 0);
           fcl::CollisionObjectf motion_state_co(robot->getCollisionGeometry(0)); 
           motion_state_co.setTranslation(transform.translation());
           motion_state_co.setRotation(transform.rotation());
           motion_state_co.computeAABB();
-          // TODO: check with state from other robot
 
           const auto& other_state = constraint.constrained_state;
           const auto& other_transform = robot->getTransform(other_state, 0);
@@ -689,11 +660,10 @@ public: // smarter way of it
           bool violation = result.isCollision();
           if (violation) {
             motionValid = false;
-            // break;
+            break;
           }
         }
       } 
-
 
 #endif
 
@@ -703,7 +673,7 @@ public: // smarter way of it
         continue;
       }
       // Check if we have this state (or any within delta/2) already
-      query_n->state = tmpState;  // used as 'state changed with appled motion primitive' ?
+      query_n->state = tmpState;  
       // avoid considering this an old state for very short motions
       float radius = delta*(1-alpha);
       T_n->nearestR(query_n, radius, neighbors_n);
@@ -760,7 +730,8 @@ public: // smarter way of it
 
   if (nearest->gScore == 0) {
     std::cout << "No solution found (not even approxmite)" << std::endl;
-    return 1;
+    // return 1;
+    return false;
   }
 
   float nearest_distance = si->distance(nearest->state, goalState);
