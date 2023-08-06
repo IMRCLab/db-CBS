@@ -187,6 +187,85 @@ void export_solutions(const std::vector<LowLevelPlan<AStarNode*,ob::State*, oc::
     }
 }
 
+void export_joint_solutions(const std::vector<LowLevelPlan<AStarNode*,ob::State*, oc::Control*>>& solution, 
+                        const std::vector<std::shared_ptr<Robot>>& robots, std::string outputFile){
+    std::ofstream out(outputFile);
+    std::vector<double> reals;
+    ob::State *node_state;
+    oc::Control *node_action;
+    float cost = 0;
+    int max_t = 0;
+    int max_a = 0;
+    for (auto& sol : solution){
+      cost += sol.cost;
+      max_t = std::max<int>(max_t, sol.trajectory.size() - 1);
+      max_a = std::max<int>(max_a, sol.actions.size() - 1);
+    }
+
+    out << "delta: " << 0.5 << std::endl;
+    out << "epsilon: " << 1 << std::endl;
+    out << "cost: " << cost << std::endl; 
+    out << "result:" << std::endl;
+    out << "  - states:" << std::endl;
+    // std::vector<std::vector<double>> joint_states;
+    std::vector<double> joint_state;
+    std::vector<double> joint_action;
+    for (int t = 0; t <= max_t; ++t){
+        out << "      - [";
+        for (size_t i = 0; i < robots.size(); ++i){
+            std::vector<double> reals;
+            auto si = robots[i]->getSpaceInformation(); 
+            if (t >= solution[i].trajectory.size()){
+                node_state = solution[i].trajectory.back();    
+            }
+            else {
+                node_state = solution[i].trajectory[t];
+            }
+            si->getStateSpace()->copyToReals(reals, node_state);
+            joint_state.insert(joint_state.end(), reals.begin(), reals.end());
+        }
+        for (size_t k = 0; k < joint_state.size(); ++k) {
+                out << joint_state[k];
+                if (k < joint_state.size() - 1) {
+                    out << ",";
+                }
+        }
+        out << "]" << std::endl;
+        joint_state.clear();
+    }
+    // for the action
+    out << "  - actions:" << std::endl;
+    for (int t = 0; t <= max_a; ++t){
+        out << "      - [";
+        for (size_t i = 0; i < robots.size(); ++i){
+            std::vector<double> reals;
+            auto si = robots[i]->getSpaceInformation(); 
+            const size_t dim = si->getControlSpace()->getDimension();
+            if (t >= solution[i].actions.size()){
+                node_action = solution[i].actions.back();    
+            }
+            else {
+                node_action = solution[i].actions[t];
+            }
+            for (size_t d = 0; d < dim; ++d)
+            {
+                double *address = si->getControlSpace()->getValueAddressAtIndex(node_action, d);
+                reals.push_back(*address);
+            }
+            joint_action.insert(joint_action.end(), reals.begin(), reals.end());
+        }
+        for (size_t k = 0; k < joint_action.size(); ++k) {
+                out << joint_action[k];
+                if (k < joint_action.size() - 1) {
+                    out << ",";
+                }
+        }
+        out << "]" << std::endl;
+        joint_action.clear();
+    }
+
+    
+}
 
 #define dynobench_base "/home/akmarak-laptop/IMRC/db-CBS/dynoplan/dynobench/"
 
@@ -206,7 +285,7 @@ void execute_optimization(std::string file)
 
         // std::string("data/unicycle2_0_parallelark_guess_0.yaml"));
 
-    options_trajopt.solver_id = static_cast<int>(SOLVER::traj_opt);
+    options_trajopt.solver_id = 1; //static_cast<int>(SOLVER::traj_opt);
     options_trajopt.control_bounds = 1;
     options_trajopt.use_warmstart = 1;
     options_trajopt.weight_goal = 100;
@@ -216,7 +295,7 @@ void execute_optimization(std::string file)
     Result_opti result;
     Trajectory sol;
     trajectory_optimization(problem, init_guess, options_trajopt, sol, result);
-    std::string outputFile = "test_dbcbs_opt_msg.yaml";
+    std::string outputFile = "test_opt.yaml";
     std::ofstream out(outputFile);
     result.write_yaml(out);
     // BOOST_TEST_CHECK(result.feasible);
@@ -228,7 +307,9 @@ int main() {
     
     std::string inputFile = "/home/akmarak-laptop/IMRC/db-CBS/example/parallelpark.yaml";
     std::string filename_motions = "/home/akmarak-laptop/IMRC/db-CBS/results/dbg/motions.msgpack";
-    std::string outputFile = "db_solution_test_msg.yaml";
+    std::string outputFile = "test.yaml";
+    std::string jointoutputFile = "joint_test.yaml";
+
     // load the msgpck
     std::ifstream is( filename_motions.c_str(), std::ios::in | std::ios::binary );
     // get length of file
@@ -326,7 +407,8 @@ int main() {
       if (!getEarliestConflict(P.solution, robots, inter_robot_conflict)) {
         std::cout << "Final solution! cost: " << P.cost << std::endl;
         export_solutions(P.solution, robots, outputFile);
-        execute_optimization(outputFile);
+        export_joint_solutions(P.solution, robots, jointoutputFile);
+        // execute_optimization(outputFile);
         return 0;
       }
       std::map<size_t, std::vector<Constraint>> constraints;
@@ -364,8 +446,6 @@ int main() {
 
     return 0;
 }
-
-
 
 
 
