@@ -15,8 +15,8 @@ sys.path.append(os.getcwd())
 
 def run_dbcbs(filename_env, folder, timelimit, cfg):
     with tempfile.TemporaryDirectory() as tmpdirname:
-        p = Path("../results/dbg")
-        filename_motions = p / "motions.msgpack"
+        p = Path("../results/")
+        filename_motions = p / "dbg/motions.msgpack"
         filename_stats = "{}/stats.yaml".format(folder)
         start = time.time()
         dt = 0.1
@@ -24,8 +24,8 @@ def run_dbcbs(filename_env, folder, timelimit, cfg):
         with open(filename_stats, 'w') as stats:
             stats.write("stats:\n")
             
-            filename_result_dbcbs = p / "result_dbcbs.yaml"
-            filename_result_dbcbs_opt = p / "result_dbcbs_opt.yaml"
+            filename_result_dbcbs = Path(folder) / "result_dbcbs.yaml"
+            filename_result_dbcbs_opt = Path(folder) / "result_dbcbs_opt.yaml"
             t_dbcbs_start = time.time()
             result = subprocess.run(["./db_cbs", 
                 "-i", filename_env,
@@ -37,11 +37,10 @@ def run_dbcbs(filename_env, folder, timelimit, cfg):
             if result.returncode != 0:
                 print("db-cbs failed")
             else:
-                shutil.copyfile(filename_result_dbcbs_opt, "{}/result_dbcbs_sol_opt.yaml".format(folder))
+                # shutil.copyfile(filename_result_dbcbs_opt, "{}/result_dbcbs_opt.yaml".format(folder))
                 with open(filename_result_dbcbs_opt) as f:
                     result = yaml.safe_load(f)
-                    # cost = len(result["result"][0]["actions"]) * dt
-                    cost = result["cost"]
+                    cost = result["cost"] # cost*2
                 now = time.time()
                 t = now - start
                 print("success!", cost, t)

@@ -2,7 +2,6 @@ import yaml
 from main_ompl import run_ompl
 from main_s2m2 import run_s2m2
 from main_kcbs import run_kcbs
-from main_dbastar import run_dbastar
 from main_dbcbs import run_dbcbs
 from pathlib import Path
 import shutil
@@ -27,7 +26,6 @@ class ExecutionTask:
 	timelimit: float
 
 def run_visualize(script, filename_env, filename_result):
-
 	subprocess.run(["python3",
 				script,
 				filename_env,
@@ -76,10 +74,6 @@ def execute_task(task: ExecutionTask):
 		run_kcbs(str(env), str(result_folder), task.timelimit, mycfg)
 		visualize_files = [p.name for p in result_folder.glob('result_*')]
 		check_files = [p.name for p in result_folder.glob('result_*')]
-	elif task.alg == "dbAstar":
-		run_dbastar(str(env), str(result_folder), task.timelimit, mycfg, "scp")
-		visualize_files = [p.name for p in result_folder.glob('result_*')]
-		check_files = [p.name for p in result_folder.glob('result_opt*')]
 	elif task.alg == "db-cbs":
 		run_dbcbs(str(env), str(result_folder), task.timelimit, mycfg)
 		visualize_files = [p.name for p in result_folder.glob('result_*')]
@@ -94,19 +88,20 @@ def execute_task(task: ExecutionTask):
 def main():
 	parallel = True
 	instances = [
-		"parallelpark",
+		# "parallelpark",
 		# "bugtrap",
         # "wall",
 		# "swap",
+		"classic",
 	]
 	algs = [
-		"sst",
-		"s2m2",
-		"k-cbs",
+		# "sst",
+		# "s2m2",
+		# "k-cbs",
 		"db-cbs",
 	]
-	trials = 10
-	timelimit = 5*60 
+	trials = 1
+	timelimit = 2*60 
 
 	tasks = []
 	for instance in instances:
@@ -124,7 +119,7 @@ def main():
 		for task in tasks:
 			execute_task(task)
 	
-	run_benchmark_stats(instances,algs)
+	# run_benchmark_stats(instances,algs)
 	
 
 if __name__ == '__main__':
