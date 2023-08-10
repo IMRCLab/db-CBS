@@ -3,6 +3,7 @@ from main_ompl import run_ompl
 from main_s2m2 import run_s2m2
 from main_kcbs import run_kcbs
 from main_dbastar import run_dbastar
+from main_dbcbs import run_dbcbs
 from pathlib import Path
 import shutil
 import subprocess
@@ -68,7 +69,7 @@ def execute_task(task: ExecutionTask):
 		visualize_files = [p.name for p in result_folder.glob('result_*')]
 		check_files = [p.name for p in result_folder.glob('result_*')]
 	elif task.alg == "s2m2":
-		run_s2m2(str(env), str(result_folder))
+		run_s2m2(str(env), str(result_folder), mycfg)
 		visualize_files = [p.name for p in result_folder.glob('result_*')]
 		check_files = [p.name for p in result_folder.glob('result_*')]
 	elif task.alg == "k-cbs":
@@ -79,11 +80,15 @@ def execute_task(task: ExecutionTask):
 		run_dbastar(str(env), str(result_folder), task.timelimit, mycfg, "scp")
 		visualize_files = [p.name for p in result_folder.glob('result_*')]
 		check_files = [p.name for p in result_folder.glob('result_opt*')]
+	elif task.alg == "db-cbs":
+		run_dbcbs(str(env), str(result_folder), task.timelimit, mycfg)
+		visualize_files = [p.name for p in result_folder.glob('result_*')]
+		check_files = [p.name for p in result_folder.glob('result_opt*')]
 
 	# for visualization
-	# vis_script = scripts_path / "visualize.py"
-	# for file in visualize_files:
-	# 	run_visualize(vis_script, env, result_folder / file)
+	vis_script = scripts_path / "visualize.py"
+	for file in visualize_files:
+		run_visualize(vis_script, env, result_folder / file)
 
 
 def main():
@@ -92,15 +97,16 @@ def main():
 		"parallelpark",
 		# "bugtrap",
         # "wall",
+		# "swap",
 	]
 	algs = [
-		# "sst",
-		# "s2m2",
+		"sst",
+		"s2m2",
 		"k-cbs",
-		# "dbAstar",
+		"db-cbs",
 	]
-	trials = 1
-	timelimit = 60 
+	trials = 10
+	timelimit = 5*60 
 
 	tasks = []
 	for instance in instances:
@@ -117,7 +123,7 @@ def main():
 	else:
 		for task in tasks:
 			execute_task(task)
-	# Get plots
+	
 	run_benchmark_stats(instances,algs)
 	
 

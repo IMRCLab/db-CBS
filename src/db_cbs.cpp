@@ -23,6 +23,8 @@
 #include "planresult.hpp"
 
 #include <idbastar/optimization/ocp.hpp>
+#include <boost/program_options.hpp>
+#include <boost/heap/d_ary_heap.hpp>
 
 
 namespace ob = ompl::base;
@@ -207,11 +209,13 @@ void export_joint_solutions(const std::vector<LowLevelPlan<AStarNode*,ob::State*
     out << "cost: " << cost << std::endl; 
     out << "result:" << std::endl;
     out << "  - states:" << std::endl;
-    // std::vector<std::vector<double>> joint_states;
     std::vector<double> joint_state;
     std::vector<double> joint_action;
+    std::vector<double> last_state;
     for (int t = 0; t <= max_t; ++t){
         out << "      - [";
+        // out << "      - ";
+        // out << "[";
         for (size_t i = 0; i < robots.size(); ++i){
             std::vector<double> reals;
             auto si = robots[i]->getSpaceInformation(); 
@@ -232,11 +236,31 @@ void export_joint_solutions(const std::vector<LowLevelPlan<AStarNode*,ob::State*
         }
         out << "]" << std::endl;
         joint_state.clear();
+
     }
+    // for the last state
+    for (size_t l = 0; l < robots.size(); ++l){
+        std::vector<double> reals;
+        auto si = robots[l]->getSpaceInformation();
+        auto node_state = solution[l].plan.back()->state;  
+        si->getStateSpace()->copyToReals(reals, node_state);
+        last_state.insert(last_state.end(), reals.begin(), reals.end());
+    }
+    out << "      - [";
+    for (size_t k = 0; k < last_state.size(); ++k) {
+            out << last_state[k];
+            if (k < last_state.size() - 1) {
+                out << ",";
+            }
+    }
+    out << "]" << std::endl;
+    last_state.clear();
+
     // for the action
-    out << "  - actions:" << std::endl;
+    out << "    actions:" << std::endl;
     for (int t = 0; t <= max_a; ++t){
-        out << "      - [";
+        out << "      - ";
+        out << "[";
         for (size_t i = 0; i < robots.size(); ++i){
             std::vector<double> reals;
             auto si = robots[i]->getSpaceInformation(); 
@@ -269,49 +293,71 @@ void export_joint_solutions(const std::vector<LowLevelPlan<AStarNode*,ob::State*
 
 #define dynobench_base "/home/akmarak-laptop/IMRC/db-CBS/dynoplan/dynobench/"
 
-void execute_optimization(std::string file)
+void execute_optimization(std::string env_file, std::string initial_guess_file, std::string output_file)
 {
 
     using namespace dynoplan;
     using namespace dynobench;
 
     Options_trajopt options_trajopt;
-    Problem problem("/home/akmarak-laptop/IMRC/db-CBS/example/parallelpark.yaml");
-    // (dynobench_base +
-                //   std::string("envs/db_test/parallelpark.yaml"));
-                  // std::string("envs/unicycle2_v0/parallelpark_0.yaml"));
+    // Problem problem("/home/akmarak-laptop/IMRC/db-CBS/example/classic.yaml");
+    // Trajectory init_guess("/home/akmarak-laptop/IMRC/db-CBS/buildDebug/" + file);
+    Problem problem(env_file);
+    Trajectory init_guess(initial_guess_file);
 
-    Trajectory init_guess("/home/akmarak-laptop/IMRC/db-CBS/buildDebug/" + file);
 
-        // std::string("data/unicycle2_0_parallelark_guess_0.yaml"));
-
-    options_trajopt.solver_id = 1; //static_cast<int>(SOLVER::traj_opt);
+    options_trajopt.solver_id = 1; // static_cast<int>(SOLVER::traj_opt);
     options_trajopt.control_bounds = 1;
     options_trajopt.use_warmstart = 1;
     options_trajopt.weight_goal = 100;
-    options_trajopt.max_iter = 20; //50;
+    options_trajopt.max_iter = 50;
     problem.models_base_path = dynobench_base + std::string("models/");
 
     Result_opti result;
     Trajectory sol;
     trajectory_optimization(problem, init_guess, options_trajopt, sol, result);
-    std::string outputFile = "test_opt.yaml";
-    std::ofstream out(outputFile);
-    result.write_yaml(out);
-    // BOOST_TEST_CHECK(result.feasible);
+    // std::string outputFile = "classic_constrained_opt.yaml";
+    std::ofstream out(output_file);
     std::cout << "cost is " << result.cost << std::endl;
+    result.write_yaml_joint(out);
+    // result.write_yaml_joint(out);
+    // BOOST_TEST_CHECK(result.feasible);
     // BOOST_TEST_CHECK(result.cost <= 10.);
 }
 
-int main() {
+int main(int argc, char* argv[]) {
     
-    std::string inputFile = "/home/akmarak-laptop/IMRC/db-CBS/example/parallelpark.yaml";
-    std::string filename_motions = "/home/akmarak-laptop/IMRC/db-CBS/results/dbg/motions.msgpack";
-    std::string outputFile = "test.yaml";
-    std::string jointoutputFile = "joint_test.yaml";
+    namespace po = boost::program_options;
+    // Declare the supported options.
+    po::options_description desc("Allowed options");
+    std::string inputFile;
+    std::string motionsFile;
+    std::string outputFile;
+    std::string optimizationFile;
+    // std::string outputFileSimple;
+    desc.add_options()
+      ("help", "produce help message")
+      ("input,i", po::value<std::string>(&inputFile)->required(), "input file (yaml)")
+      ("motions,m", po::value<std::string>(&motionsFile)->required(), "motions file (yaml)")
+      ("output,o", po::value<std::string>(&outputFile)->required(), "output file (yaml)")
+      ("optimization,opt", po::value<std::string>(&optimizationFile)->required(), "optimization file (yaml)");
+      
+    try {
+      po::variables_map vm;
+      po::store(po::parse_command_line(argc, argv, desc), vm);
+      po::notify(vm);
 
+      if (vm.count("help") != 0u) {
+        std::cout << desc << "\n";
+        return 0;
+      }
+    } catch (po::error& e) {
+      std::cerr << e.what() << std::endl << std::endl;
+      std::cerr << desc << std::endl;
+      return 1;
+    }
     // load the msgpck
-    std::ifstream is( filename_motions.c_str(), std::ios::in | std::ios::binary );
+    std::ifstream is( motionsFile.c_str(), std::ios::in | std::ios::binary );
     // get length of file
     is.seekg (0, is.end);
     int length = is.tellg();
@@ -392,7 +438,6 @@ int main() {
         i++;  
     } 
     // For Debugging
-    // print_solution(start.solution, robots);
     typename boost::heap::d_ary_heap<HighLevelNode, boost::heap::arity<2>,
                                      boost::heap::mutable_<true> > open;
     auto handle = open.push(start);
@@ -406,10 +451,11 @@ int main() {
       Conflict inter_robot_conflict;
       if (!getEarliestConflict(P.solution, robots, inter_robot_conflict)) {
         std::cout << "Final solution! cost: " << P.cost << std::endl;
-        export_solutions(P.solution, robots, outputFile);
-        export_joint_solutions(P.solution, robots, jointoutputFile);
-        // execute_optimization(outputFile);
+        // export_solutions(P.solution, robots, outputFile);
+        export_joint_solutions(P.solution, robots, outputFile);
+        execute_optimization(inputFile, outputFile, optimizationFile);
         return 0;
+        break;
       }
       std::map<size_t, std::vector<Constraint>> constraints;
       createConstraintsFromConflicts(inter_robot_conflict, constraints);
