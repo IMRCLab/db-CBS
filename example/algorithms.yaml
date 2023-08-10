@@ -24,6 +24,14 @@ k-cbs:
     pruning_radius: 0.1  # delta_s in paper
     propagation_step_size: 0.1 #s
     control_duration: [1, 10] # multiples of step size
+db-cbs:
+  default:
+    goal_epsilon: 0.1
+    goal_bias: 0.05
+    selection_radius: 0.2 # delta_BN in paper
+    pruning_radius: 0.1  # delta_s in paper
+    propagation_step_size: 0.1 #s
+    control_duration: [1, 10] # multiples of step size
     
 dbAstar:
   default:
