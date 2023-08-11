@@ -173,7 +173,9 @@ bool getEarliestConflict(const std::vector<LowLevelPlan<AStarNode*,ob::State*, o
             early_conflict.time = t;
             early_conflict.conflict_states = node_states;
             early_conflict.length = node_states.size();
+            auto si = all_robots.back()->getSpaceInformation();
             std::cout << "CONFLICT at time " << t << std::endl;
+            si->printState(node_states[0]);
             return true;
         } 
     }
@@ -182,14 +184,12 @@ bool getEarliestConflict(const std::vector<LowLevelPlan<AStarNode*,ob::State*, o
 
 // Constraints from Conflicts
 void createConstraintsFromConflicts(const Conflict& early_conflict, std::map<size_t, std::vector<Constraint>>& constraints){
-        for (size_t i = 0; i < early_conflict.length; ++i){ // for each Robot in conflict
-            for (size_t j = 0; j < early_conflict.length; ++j){
-                if (j==i){
-                    continue;
-                }
-                Constraint temp_const = {early_conflict.time*0.1, early_conflict.conflict_states[j]};
-                constraints[i].push_back(temp_const);
-            }
+    // TODO: the current logic only works for two robots!
+    assert(early_conflict.conflict_states.size() == 2);
+
+    for (size_t i = 0; i < early_conflict.conflict_states.size(); ++i){ // for each Robot in conflict
+        Constraint temp_const = {early_conflict.time*0.1, early_conflict.conflict_states[i]};
+        constraints[i].push_back(temp_const);
     }
 
 }

@@ -172,7 +172,7 @@ template <typename Constraint>
 class DBAstar
 {
 public: 
-  float delta = 1.0;
+  float delta = 0.5;
   float epsilon = 1.0;
   float alpha = 0.5;
   bool filterDuplicates = true;
@@ -182,9 +182,13 @@ public:
     std::shared_ptr<Robot> robot,std::string robot_type, const auto env_min, const std::vector<Constraint>& constraints, LowLevelPlan<AStarNode*,ob::State*,oc::Control*>& ll_result)
 
   {
-    // std::cout << "Running dbA*" << std::endl;
-    // std::cout << "Constraint size: " << constraints.size() << std::endl;
-    // for (const auto& constraint : constraints){
+    auto si = robot->getSpaceInformation();
+
+    std::cout << "Running dbA*" << std::endl;
+    for (const auto& constraint : constraints){
+      std::cout << "constraint at time: " << constraint.time << std::endl;
+      si->printState(constraint.constrained_state);
+    }
     //   const auto& other_state = constraint.constrained_state;
     //     const auto& other_transform = robot->getTransform(other_state, 0);
     //     fcl::CollisionObjectf other_robot_co(robot->getCollisionGeometry(0)); 
@@ -212,7 +216,6 @@ public:
     bpcm_env->registerObjects(obstacles);
     bpcm_env->setup();
 
-    auto si = robot->getSpaceInformation();
     // set number of control steps
     si->setPropagationStepSize(1);
     si->setMinMaxControlDuration(1, 1);
