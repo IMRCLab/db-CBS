@@ -25,12 +25,14 @@ def run_dbcbs(filename_env, folder, timelimit, cfg):
             stats.write("stats:\n")
             
             filename_result_dbcbs = Path(folder) / "result_dbcbs.yaml"
+            filename_result_dbcbs_joint = Path(folder) / "result_dbcbs_joint.yaml"
             filename_result_dbcbs_opt = Path(folder) / "result_dbcbs_opt.yaml"
             t_dbcbs_start = time.time()
             result = subprocess.run(["./db_cbs", 
                 "-i", filename_env,
                 "-m", filename_motions,
                 "-o", filename_result_dbcbs,
+                "--joint", filename_result_dbcbs_joint,
                 "--opt", filename_result_dbcbs_opt])
             t_dbcbs_stop = time.time()
             duration_dbcbs += t_dbcbs_stop - t_dbcbs_start

@@ -171,8 +171,8 @@ float heuristic(std::shared_ptr<Robot> robot, const ob::State *s, const ob::Stat
 template <typename Constraint>
 class DBAstar
 {
-public: // smarter way of it
-  float delta = 0.5;
+public: 
+  float delta = 1.0;
   float epsilon = 1.0;
   float alpha = 0.5;
   bool filterDuplicates = true;
@@ -182,20 +182,31 @@ public: // smarter way of it
     std::shared_ptr<Robot> robot,std::string robot_type, const auto env_min, const std::vector<Constraint>& constraints, LowLevelPlan<AStarNode*,ob::State*,oc::Control*>& ll_result)
 
   {
-
     // std::cout << "Running dbA*" << std::endl;
     // std::cout << "Constraint size: " << constraints.size() << std::endl;
     // for (const auto& constraint : constraints){
-      // const auto& other_state = constraint.constrained_state;
-        // const auto& other_transform = robot->getTransform(other_state, 0);
-        // fcl::CollisionObjectf other_robot_co(robot->getCollisionGeometry(0)); 
-        // std::cout << "db constraints: " << other_transform.translation() << "time: " << constraint.time << std::endl;
+    //   const auto& other_state = constraint.constrained_state;
+    //     const auto& other_transform = robot->getTransform(other_state, 0);
+    //     fcl::CollisionObjectf other_robot_co(robot->getCollisionGeometry(0)); 
+    //     std::cout << "db constraints: " << other_transform.translation() << "time: " << constraint.time << std::endl;
     // }
+
+    // debug
+    // std::vector<fcl::CollisionObjectf*> debug_objs_; 
+    // std::shared_ptr<fcl::BroadPhaseCollisionManagerf> debug_mng_robots_; 
+    // debug_mng_robots_ = std::make_shared<fcl::DynamicAABBTreeCollisionManagerf>(); 
+    // debug_mng_robots_->setup();
+
 
     ll_result.plan.clear();
     ll_result.trajectory.clear();
     ll_result.actions.clear();
     ll_result.cost = 0;
+    // to handle constraints
+    // std::vector<fcl::CollisionObjectf*> objs_;
+    // std::shared_ptr<fcl::BroadPhaseCollisionManagerf> col_mng_objs_;
+    // col_mng_objs_ = std::make_shared<fcl::DynamicAABBTreeCollisionManagerf>();
+    // col_mng_objs_->setup();
 
     std::shared_ptr<fcl::BroadPhaseCollisionManagerf> bpcm_env(new fcl::DynamicAABBTreeCollisionManagerf());
     bpcm_env->registerObjects(obstacles);
@@ -207,7 +218,7 @@ public: // smarter way of it
     si->setMinMaxControlDuration(1, 1);
 
     // set state validity checking for this space
-    auto stateValidityChecker(std::make_shared<fclStateValidityChecker>(si, bpcm_env, robot));
+    auto stateValidityChecker(std::make_shared<fclStateValidityChecker>(si, bpcm_env, robot, false));
     si->setStateValidityChecker(stateValidityChecker);
 
     // set the state propagator
@@ -216,29 +227,21 @@ public: // smarter way of it
 
     si->setup();
 
+    // debug
+    // std::vector<double> fake_conflict_state_ = {1.60426, 1.04635, 0.0};
+    // float fake_conflict_time_ = 0.4;
+    // auto f_state = si->allocState();
+    // si->getStateSpace()->copyFromReals(f_state, fake_conflict_state_);
+    // Constraint temp_const = {fake_conflict_time_, f_state}; // single state constraint
+    // std::map<size_t, std::vector<Constraint>> fake_constraints;
+    // fake_constraints[0].push_back(temp_const);
     // create and set a start state
     auto startState = si->allocState();
     si->getStateSpace()->copyFromReals(startState, robot_start);
-
+    
     // set goal state
     auto goalState = si->allocState();
     si->getStateSpace()->copyFromReals(goalState, robot_goal);
-
-  // load motions primitives
-    // std::ifstream is( motionsFile.c_str(), std::ios::in | std::ios::binary );
-    // // get length of file
-    // is.seekg (0, is.end);
-    // int length = is.tellg();
-    // is.seekg (0, is.beg);
-    // //
-    // msgpack::unpacker unpacker;
-    // unpacker.reserve_buffer(length);
-    // is.read(unpacker.buffer(), length);
-    // unpacker.buffer_consumed(length);
-    // msgpack::object_handle oh;
-    // unpacker.next(oh);
-    // msgpack::object msg_obj = oh.get(); 
-
     std::vector<Motion> motions;
     size_t num_states = 0;
     size_t num_invalid_states = 0;
@@ -631,6 +634,9 @@ public: // smarter way of it
     
       // now check with dynamic constraints
       for (const auto& constraint : constraints) {
+        // debug_objs_.clear();
+        // debug_mng_robots_->clear();
+      // for (const auto& constraint : fake_constraints[0]) {
         // a constraint violation can only occur between t in [current->gScore, tentative_gScore]
         if (constraint.time >= current->gScore && constraint.time <= tentative_gScore) {
           float time_offset = constraint.time - current->gScore;
@@ -652,15 +658,35 @@ public: // smarter way of it
           other_robot_co.setTranslation(other_transform.translation());
           other_robot_co.setRotation(other_transform.rotation());
           other_robot_co.computeAABB();
+          // if (transform.translation() == other_transform.translation()){
+            // std::cout << "CATCH: " << transform.translation() << std::endl;
+          // }
           fcl::CollisionRequest<float> request;
           fcl::CollisionResult<float> result;
           // check two states for collision
           collide(&motion_state_co, &other_robot_co, request, result);
+          //debug
+          // debug_objs_.push_back(&motion_state_co);
+          // debug_objs_.push_back(&other_robot_co);
+          // debug_mng_robots_->registerObjects(debug_objs_);
+          // fcl::DefaultDistanceData<float> inter_robot_distance_data;
+          // inter_robot_distance_data.request.enable_signed_distance = true;
+          // debug_mng_robots_->distance(&inter_robot_distance_data, fcl::DefaultDistanceFunction<float>);
+
           bool violation = result.isCollision();
           if (violation) {
             motionValid = false;
+            // std::cout << "INVALID:" << std::endl;
+            // std::cout << transform.translation() << std::endl;
+            // std::cout << "distance: " << inter_robot_distance_data.result.min_distance <<  " time: " << 
+            // constraint.time << std::endl;
             break;
           }
+          // std::cout << "VALID:" << std::endl;
+          // std::cout << transform.translation() << std::endl;
+          // std::cout << "distance: " << inter_robot_distance_data.result.min_distance <<  " time: " << 
+            // constraint.time << std::endl;
+
         }
       } 
 
@@ -830,3 +856,4 @@ public: // smarter way of it
 
 // TO DO:
 // delete New to clear the memory
+
