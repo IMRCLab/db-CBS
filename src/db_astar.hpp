@@ -513,7 +513,7 @@ public:
           ll_result.trajectory.push_back(motion_state);
         }
       } // writing result states
-      // TODO AKMARAL: this is missing the last state!
+      ll_result.trajectory.push_back(si->cloneState(result.back()->state));
 
       for (size_t i = 0; i < result.size() - 1; ++i)
       {
@@ -526,6 +526,44 @@ public:
           ll_result.actions.push_back(motion_action);
         }
       } // write actions to yaml file
+
+      // sanity check on the sizes
+      assert(ll_result.actions.size() + 1 == ll_result.trajectory.size());
+
+      // Sanity check here, that verifies that we obey all constraints
+      for (const auto& constraint : constraints) {
+        std::cout << "checking constraint " << constraint.time << std::endl;
+        si->printState(constraint.constrained_state);
+        size_t time_index = std::lround(constraint.time / robot->dt());
+        assert(time_index >= 0);
+        time_index = std::min(time_index, ll_result.trajectory.size()-1);
+        assert(time_index < ll_result.trajectory.size());
+
+        auto transform = robot->getTransform(ll_result.trajectory.at(time_index), 0);
+        fcl::CollisionObjectf motion_state_co(robot->getCollisionGeometry(0)); 
+        motion_state_co.setTranslation(transform.translation());
+        motion_state_co.setRotation(transform.rotation());
+        motion_state_co.computeAABB();
+
+        const auto& other_state = constraint.constrained_state;
+        auto other_transform = robot->getTransform(other_state, 0);
+        fcl::CollisionObjectf other_robot_co(robot->getCollisionGeometry(0)); 
+        other_robot_co.setTranslation(other_transform.translation());
+        other_robot_co.setRotation(other_transform.rotation());
+        other_robot_co.computeAABB();
+
+        fcl::CollisionRequest<float> request;
+        fcl::CollisionResult<float> result;
+        // check two states for collision
+        collide(&motion_state_co, &other_robot_co, request, result);
+
+        if (result.isCollision()) {
+          std::cout << "VIOLATION";
+          si->printState(ll_result.trajectory.at(time_index));
+        }
+
+        assert(!result.isCollision());
+      }
 
       // statistics for the motions used
       std::map<size_t, size_t> motionsCount; 
@@ -638,19 +676,32 @@ public:
       motion->collision_manager->shift(-offset);
     
       // now check with dynamic constraints
+      bool reachesGoal = si->distance(tmpState, goalState) <= delta;
+
       for (const auto& constraint : constraints) {
         // debug_objs_.clear();
         // debug_mng_robots_->clear();
       // for (const auto& constraint : fake_constraints[0]) {
         // a constraint violation can only occur between t in [current->gScore, tentative_gScore]
-        if (constraint.time >= current->gScore && constraint.time < tentative_gScore) {
-          float time_offset = constraint.time - current->gScore;
-          int time_index = std::lround(time_offset / robot->dt());
-          // std::cout << constraint.time << " " << current->gScore << " " << time_offset << " " << time_index << std::endl;
-          const auto& state = motion->states[time_index];
+        float time_offset = constraint.time - current->gScore;
+        int time_index = std::lround(time_offset / robot->dt());
+
+        // if this motion reaches the goal and we have a constraint in the future, check with the last state
+        ob::State* state_to_check = nullptr;
+        if (reachesGoal && time_index > motion->states.size() - 1) {
+          state_to_check = goalState;
+        }
+
+        if (time_index >= 0 && time_index < motion->states.size() - 1) {
+          state_to_check = motion->states[time_index];
+        }
+
+        if (state_to_check) {
+          
+          std::cout << constraint.time << " " << current->gScore << " " << time_offset << " " << time_index << std::endl;
           // compute translated state
-          si->copyState(tmpStateconst, state);
-          const auto relative_pos = robot->getTransform(state).translation();
+          si->copyState(tmpStateconst, state_to_check);
+          const auto relative_pos = robot->getTransform(state_to_check).translation();
           robot->setPosition(tmpStateconst, offset + relative_pos);
           // std::cout << "p " << offset + relative_pos << std::endl;
           const auto& transform = robot->getTransform(tmpStateconst, 0);
@@ -658,6 +709,8 @@ public:
           motion_state_co.setTranslation(transform.translation());
           motion_state_co.setRotation(transform.rotation());
           motion_state_co.computeAABB();
+
+          si->printState(tmpStateconst);
 
           const auto& other_state = constraint.constrained_state;
           const auto& other_transform = robot->getTransform(other_state, 0);
