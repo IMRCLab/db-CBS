@@ -513,6 +513,8 @@ public:
           ll_result.trajectory.push_back(motion_state);
         }
       } // writing result states
+      // TODO AKMARAL: this is missing the last state!
+
       for (size_t i = 0; i < result.size() - 1; ++i)
       {
         const auto &motion = motions[result[i+1]->used_motion];
@@ -641,14 +643,16 @@ public:
         // debug_mng_robots_->clear();
       // for (const auto& constraint : fake_constraints[0]) {
         // a constraint violation can only occur between t in [current->gScore, tentative_gScore]
-        if (constraint.time >= current->gScore && constraint.time <= tentative_gScore) {
+        if (constraint.time >= current->gScore && constraint.time < tentative_gScore) {
           float time_offset = constraint.time - current->gScore;
-          int time_index = (int)(time_offset / robot->dt());
+          int time_index = std::lround(time_offset / robot->dt());
+          // std::cout << constraint.time << " " << current->gScore << " " << time_offset << " " << time_index << std::endl;
           const auto& state = motion->states[time_index];
           // compute translated state
           si->copyState(tmpStateconst, state);
           const auto relative_pos = robot->getTransform(state).translation();
           robot->setPosition(tmpStateconst, offset + relative_pos);
+          // std::cout << "p " << offset + relative_pos << std::endl;
           const auto& transform = robot->getTransform(tmpStateconst, 0);
           fcl::CollisionObjectf motion_state_co(robot->getCollisionGeometry(0)); 
           motion_state_co.setTranslation(transform.translation());

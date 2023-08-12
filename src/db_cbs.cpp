@@ -187,10 +187,14 @@ void createConstraintsFromConflicts(const Conflict& early_conflict, std::map<siz
     // TODO: the current logic only works for two robots!
     assert(early_conflict.conflict_states.size() == 2);
 
-    for (size_t i = 0; i < early_conflict.conflict_states.size(); ++i){ // for each Robot in conflict
-        Constraint temp_const = {early_conflict.time*0.1, early_conflict.conflict_states[i]};
-        constraints[i].push_back(temp_const);
-    }
+    constraints[0].push_back({early_conflict.time*0.1, early_conflict.conflict_states[1]});
+    constraints[1].push_back({early_conflict.time*0.1, early_conflict.conflict_states[0]});
+
+
+    // for (size_t i = 0; i < early_conflict.conflict_states.size(); ++i){ // for each Robot in conflict
+    //     Constraint temp_const = {early_conflict.time*0.1, early_conflict.conflict_states[i]};
+    //     constraints[i].push_back(temp_const);
+    // }
 
 }
 
