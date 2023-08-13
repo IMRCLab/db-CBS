@@ -223,8 +223,6 @@ void export_joint_solutions(const std::vector<LowLevelPlan<AStarNode*,ob::State*
     std::vector<double> last_state;
     for (int t = 0; t <= max_t; ++t){
         out << "      - [";
-        // out << "      - ";
-        // out << "[";
         for (size_t i = 0; i < robots.size(); ++i){
             std::vector<double> reals;
             auto si = robots[i]->getSpaceInformation(); 
@@ -247,23 +245,6 @@ void export_joint_solutions(const std::vector<LowLevelPlan<AStarNode*,ob::State*
         joint_state.clear();
 
     }
-    // for the last state
-    for (size_t l = 0; l < robots.size(); ++l){
-        std::vector<double> reals;
-        auto si = robots[l]->getSpaceInformation();
-        auto node_state = solution[l].plan.back()->state;  
-        si->getStateSpace()->copyToReals(reals, node_state);
-        last_state.insert(last_state.end(), reals.begin(), reals.end());
-    }
-    out << "      - [";
-    for (size_t k = 0; k < last_state.size(); ++k) {
-            out << last_state[k];
-            if (k < last_state.size() - 1) {
-                out << ",";
-            }
-    }
-    out << "]" << std::endl;
-    last_state.clear();
 
     // for the action
     out << "    actions:" << std::endl;
@@ -309,8 +290,6 @@ void execute_optimization(std::string env_file, std::string initial_guess_file, 
     using namespace dynobench;
 
     Options_trajopt options_trajopt;
-    // Problem problem("/home/akmarak-laptop/IMRC/db-CBS/example/classic.yaml");
-    // Trajectory init_guess("/home/akmarak-laptop/IMRC/db-CBS/buildDebug/" + file);
     Problem problem(env_file);
     Trajectory init_guess(initial_guess_file);
 
@@ -325,7 +304,6 @@ void execute_optimization(std::string env_file, std::string initial_guess_file, 
     Result_opti result;
     Trajectory sol;
     trajectory_optimization(problem, init_guess, options_trajopt, sol, result);
-    // std::string outputFile = "classic_constrained_opt.yaml";
     std::ofstream out(output_file);
     std::cout << "cost is " << result.cost << std::endl;
     result.write_yaml_joint(out);

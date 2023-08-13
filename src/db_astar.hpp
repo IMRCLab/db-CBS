@@ -195,22 +195,10 @@ public:
     //     std::cout << "db constraints: " << other_transform.translation() << "time: " << constraint.time << std::endl;
     // }
 
-    // debug
-    // std::vector<fcl::CollisionObjectf*> debug_objs_; 
-    // std::shared_ptr<fcl::BroadPhaseCollisionManagerf> debug_mng_robots_; 
-    // debug_mng_robots_ = std::make_shared<fcl::DynamicAABBTreeCollisionManagerf>(); 
-    // debug_mng_robots_->setup();
-
-
     ll_result.plan.clear();
     ll_result.trajectory.clear();
     ll_result.actions.clear();
     ll_result.cost = 0;
-    // to handle constraints
-    // std::vector<fcl::CollisionObjectf*> objs_;
-    // std::shared_ptr<fcl::BroadPhaseCollisionManagerf> col_mng_objs_;
-    // col_mng_objs_ = std::make_shared<fcl::DynamicAABBTreeCollisionManagerf>();
-    // col_mng_objs_->setup();
 
     std::shared_ptr<fcl::BroadPhaseCollisionManagerf> bpcm_env(new fcl::DynamicAABBTreeCollisionManagerf());
     bpcm_env->registerObjects(obstacles);
@@ -679,8 +667,6 @@ public:
       bool reachesGoal = si->distance(tmpState, goalState) <= delta;
 
       for (const auto& constraint : constraints) {
-        // debug_objs_.clear();
-        // debug_mng_robots_->clear();
       // for (const auto& constraint : fake_constraints[0]) {
         // a constraint violation can only occur between t in [current->gScore, tentative_gScore]
         float time_offset = constraint.time - current->gScore;
@@ -725,27 +711,11 @@ public:
           fcl::CollisionResult<float> result;
           // check two states for collision
           collide(&motion_state_co, &other_robot_co, request, result);
-          //debug
-          // debug_objs_.push_back(&motion_state_co);
-          // debug_objs_.push_back(&other_robot_co);
-          // debug_mng_robots_->registerObjects(debug_objs_);
-          // fcl::DefaultDistanceData<float> inter_robot_distance_data;
-          // inter_robot_distance_data.request.enable_signed_distance = true;
-          // debug_mng_robots_->distance(&inter_robot_distance_data, fcl::DefaultDistanceFunction<float>);
-
           bool violation = result.isCollision();
           if (violation) {
             motionValid = false;
-            // std::cout << "INVALID:" << std::endl;
-            // std::cout << transform.translation() << std::endl;
-            // std::cout << "distance: " << inter_robot_distance_data.result.min_distance <<  " time: " << 
-            // constraint.time << std::endl;
             break;
           }
-          // std::cout << "VALID:" << std::endl;
-          // std::cout << transform.translation() << std::endl;
-          // std::cout << "distance: " << inter_robot_distance_data.result.min_distance <<  " time: " << 
-            // constraint.time << std::endl;
 
         }
       } 

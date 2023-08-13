@@ -24,8 +24,8 @@ def run_dbcbs(filename_env, folder, timelimit, cfg):
         with open(filename_stats, 'w') as stats:
             stats.write("stats:\n")
             
-            filename_result_dbcbs = Path(folder) / "result_dbcbs.yaml"
-            filename_result_dbcbs_joint = Path(folder) / "result_dbcbs_joint.yaml"
+            filename_result_dbcbs = Path(folder) / "dbcbs.yaml"
+            filename_result_dbcbs_joint = Path(folder) / "dbcbs_joint.yaml"
             filename_result_dbcbs_opt = Path(folder) / "result_dbcbs_opt.yaml"
             t_dbcbs_start = time.time()
             result = subprocess.run(["./db_cbs", 
