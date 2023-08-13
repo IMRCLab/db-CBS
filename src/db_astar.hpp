@@ -675,7 +675,7 @@ public:
         // if this motion reaches the goal and we have a constraint in the future, check with the last state
         ob::State* state_to_check = nullptr;
         if (reachesGoal && time_index > motion->states.size() - 1) {
-          state_to_check = goalState;
+          state_to_check = motion->states.back();
         }
 
         if (time_index >= 0 && time_index < motion->states.size() - 1) {
