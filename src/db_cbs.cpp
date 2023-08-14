@@ -148,6 +148,7 @@ bool getEarliestConflict(
     for (size_t t = 0; t <= max_t; ++t){
         // std::cout << "TIMESTAMP: " << t << std::endl;
         node_states.clear();
+        size_t obj_idx = 0;
         for (size_t i = 0; i < all_robots.size(); ++i){
             // std::cout << "ROBOT " << i << std::endl;
             if (t >= solution[i].trajectory.size()){
@@ -157,10 +158,13 @@ bool getEarliestConflict(
                 node_state = solution[i].trajectory[t];
             }
             node_states.push_back(node_state);
-            const auto transform = all_robots[i]->getTransform(node_state,0);
-            col_mng_objs[i]->setTranslation(transform.translation());
-            col_mng_objs[i]->setRotation(transform.rotation());
-            col_mng_objs[i]->computeAABB();
+            for (size_t p = 0; p < all_robots[i]->numParts(); ++p) {
+                const auto transform = all_robots[i]->getTransform(node_state,p);
+                col_mng_objs[obj_idx]->setTranslation(transform.translation());
+                col_mng_objs[obj_idx]->setRotation(transform.rotation());
+                col_mng_objs[obj_idx]->computeAABB();
+                ++obj_idx;
+            }
         }
         col_mng_robots->update(col_mng_objs);
         fcl::DefaultCollisionData<float> collision_data;
@@ -177,6 +181,7 @@ bool getEarliestConflict(
             early_conflict.time = t * all_robots[0]->dt();
             early_conflict.robot_idx_i = (size_t)contact.o1->getUserData();
             early_conflict.robot_idx_j = (size_t)contact.o2->getUserData();
+            assert(early_conflict.robot_idx_i != early_conflict.robot_idx_j);
             early_conflict.robot_state_i = node_states[early_conflict.robot_idx_i];
             early_conflict.robot_state_j = node_states[early_conflict.robot_idx_j];
 
@@ -439,9 +444,11 @@ int main(int argc, char* argv[]) {
     col_mng_robots->setup();
 
     for (size_t i = 0; i < robots.size(); ++i) {
-        auto coll_obj = new fcl::CollisionObjectf(robots[i]->getCollisionGeometry(0));
-        robots[i]->getCollisionGeometry(0)->setUserData((void*)i);
-        col_mng_objs.push_back(coll_obj);
+        for (size_t p = 0; p < robots[i]->numParts(); ++p) {
+            auto coll_obj = new fcl::CollisionObjectf(robots[i]->getCollisionGeometry(p));
+            robots[i]->getCollisionGeometry(p)->setUserData((void*)i);
+            col_mng_objs.push_back(coll_obj);
+        }
     }
     col_mng_robots->registerObjects(col_mng_objs);
 
