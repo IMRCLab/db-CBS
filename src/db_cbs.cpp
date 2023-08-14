@@ -33,8 +33,10 @@ namespace oc = ompl::control;
 // Conflicts 
 struct Conflict {
   float time;
-  std::vector<ob::State*> conflict_states;
-  size_t length; // corresponds to number of robots
+  size_t robot_idx_i;
+  ob::State* robot_state_i;
+  size_t robot_idx_j;
+  ob::State* robot_state_j;
 };
 
 // Constraints
@@ -128,6 +130,7 @@ void export_solutions(const std::vector<LowLevelPlan<AStarNode*,ob::State*, oc::
 
 bool getEarliestConflict(const std::vector<LowLevelPlan<AStarNode*,ob::State*, oc::Control*>>& solution, const std::vector<std::shared_ptr<Robot>>& all_robots,
                     Conflict& early_conflict){
+    // TODO: TONS OF MEMORY LEAKS IN HERE
     size_t max_t = 0;
     std::vector<fcl::CollisionObjectf*> robot_objs_;
     std::shared_ptr<fcl::BroadPhaseCollisionManagerf> col_mng_robots_;
@@ -154,7 +157,8 @@ bool getEarliestConflict(const std::vector<LowLevelPlan<AStarNode*,ob::State*, o
             }
             node_states.push_back(node_state);
             const auto transform = all_robots[i]->getTransform(node_state,0);
-            auto robot = new fcl::CollisionObjectf(all_robots[i]->getCollisionGeometry(0)); 
+            auto robot = new fcl::CollisionObjectf(all_robots[i]->getCollisionGeometry(0));
+            all_robots[i]->getCollisionGeometry(0)->setUserData((void*)i);
             // std::cout << transform.translation() << std::endl;
             robot->setTranslation(transform.translation());
             robot->setRotation(transform.rotation());
@@ -170,12 +174,21 @@ bool getEarliestConflict(const std::vector<LowLevelPlan<AStarNode*,ob::State*, o
             // inter_robot_distance_data.request.enable_signed_distance = true;
             // col_mng_robots_->distance(&inter_robot_distance_data, fcl::DefaultDistanceFunction<float>);
 
+            assert(collision_data.result.numContacts() > 0);
+            const auto& contact = collision_data.result.getContact(0);
+
             early_conflict.time = t;
-            early_conflict.conflict_states = node_states;
-            early_conflict.length = node_states.size();
-            auto si = all_robots.back()->getSpaceInformation();
-            std::cout << "CONFLICT at time " << t << std::endl;
-            si->printState(node_states[0]);
+            early_conflict.robot_idx_i = (size_t)contact.o1->getUserData();
+            early_conflict.robot_idx_j = (size_t)contact.o2->getUserData();
+            early_conflict.robot_state_i = node_states[early_conflict.robot_idx_i];
+            early_conflict.robot_state_j = node_states[early_conflict.robot_idx_j];
+
+            
+            std::cout << "CONFLICT at time " << t << " " << early_conflict.robot_idx_i << " " << early_conflict.robot_idx_j << std::endl;
+            auto si_i = all_robots[early_conflict.robot_idx_i]->getSpaceInformation();
+            si_i->printState(early_conflict.robot_state_i);
+            auto si_j = all_robots[early_conflict.robot_idx_j]->getSpaceInformation();
+            si_j->printState(early_conflict.robot_state_j);
             return true;
         } 
     }
@@ -184,19 +197,9 @@ bool getEarliestConflict(const std::vector<LowLevelPlan<AStarNode*,ob::State*, o
 
 // Constraints from Conflicts
 void createConstraintsFromConflicts(const Conflict& early_conflict, std::map<size_t, std::vector<Constraint>>& constraints){
-    // TODO: the current logic only works for two robots!
-    assert(early_conflict.conflict_states.size() == 2);
-
     // TODO: fix the dt-based logic!
-    constraints[0].push_back({early_conflict.time*0.1f, early_conflict.conflict_states[0]});
-    constraints[1].push_back({early_conflict.time*0.1f, early_conflict.conflict_states[1]});
-
-
-    // for (size_t i = 0; i < early_conflict.conflict_states.size(); ++i){ // for each Robot in conflict
-    //     Constraint temp_const = {early_conflict.time*0.1, early_conflict.conflict_states[i]};
-    //     constraints[i].push_back(temp_const);
-    // }
-
+    constraints[early_conflict.robot_idx_i].push_back({early_conflict.time*0.1f, early_conflict.robot_state_i});
+    constraints[early_conflict.robot_idx_j].push_back({early_conflict.time*0.1f, early_conflict.robot_state_j});
 }
 
 void export_joint_solutions(const std::vector<LowLevelPlan<AStarNode*,ob::State*, oc::Control*>>& solution, 
