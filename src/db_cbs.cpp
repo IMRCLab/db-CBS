@@ -128,25 +128,26 @@ void export_solutions(const std::vector<LowLevelPlan<AStarNode*,ob::State*, oc::
     }
 }
 
-bool getEarliestConflict(const std::vector<LowLevelPlan<AStarNode*,ob::State*, oc::Control*>>& solution, const std::vector<std::shared_ptr<Robot>>& all_robots,
-                    Conflict& early_conflict){
-    // TODO: TONS OF MEMORY LEAKS IN HERE
+bool getEarliestConflict(
+    const std::vector<LowLevelPlan<AStarNode*,ob::State*, oc::Control*>>& solution,
+    const std::vector<std::shared_ptr<Robot>>& all_robots,
+    std::shared_ptr<fcl::BroadPhaseCollisionManagerf> col_mng_robots,
+    Conflict& early_conflict)
+{
     size_t max_t = 0;
-    std::vector<fcl::CollisionObjectf*> robot_objs_;
-    std::shared_ptr<fcl::BroadPhaseCollisionManagerf> col_mng_robots_;
-    col_mng_robots_ = std::make_shared<fcl::DynamicAABBTreeCollisionManagerf>();
-    col_mng_robots_->setup();
-    ob::State *node_state;
-    std::vector<ob::State*> node_states;
     for (const auto& sol : solution){
       max_t = std::max(max_t, sol.trajectory.size() - 1);
     }
+
+    std::vector<fcl::CollisionObjectf*> col_mng_objs;
+    col_mng_robots->getObjects(col_mng_objs);
+
+    ob::State* node_state;
+    std::vector<ob::State*> node_states;
     
     for (size_t t = 0; t <= max_t; ++t){
         // std::cout << "TIMESTAMP: " << t << std::endl;
         node_states.clear();
-        robot_objs_.clear();
-        col_mng_robots_->clear();
         for (size_t i = 0; i < all_robots.size(); ++i){
             // std::cout << "ROBOT " << i << std::endl;
             if (t >= solution[i].trajectory.size()){
@@ -157,17 +158,13 @@ bool getEarliestConflict(const std::vector<LowLevelPlan<AStarNode*,ob::State*, o
             }
             node_states.push_back(node_state);
             const auto transform = all_robots[i]->getTransform(node_state,0);
-            auto robot = new fcl::CollisionObjectf(all_robots[i]->getCollisionGeometry(0));
-            all_robots[i]->getCollisionGeometry(0)->setUserData((void*)i);
-            // std::cout << transform.translation() << std::endl;
-            robot->setTranslation(transform.translation());
-            robot->setRotation(transform.rotation());
-            robot->computeAABB();
-            robot_objs_.push_back(robot);
+            col_mng_objs[i]->setTranslation(transform.translation());
+            col_mng_objs[i]->setRotation(transform.rotation());
+            col_mng_objs[i]->computeAABB();
         }
-        col_mng_robots_->registerObjects(robot_objs_);
+        col_mng_robots->update(col_mng_objs);
         fcl::DefaultCollisionData<float> collision_data;
-        col_mng_robots_->collide(&collision_data, fcl::DefaultCollisionFunction<float>);
+        col_mng_robots->collide(&collision_data, fcl::DefaultCollisionFunction<float>);
         if (collision_data.result.isCollision()) {
             //debug
             // fcl::DefaultDistanceData<float> inter_robot_distance_data;
@@ -183,7 +180,6 @@ bool getEarliestConflict(const std::vector<LowLevelPlan<AStarNode*,ob::State*, o
             early_conflict.robot_state_i = node_states[early_conflict.robot_idx_i];
             early_conflict.robot_state_j = node_states[early_conflict.robot_idx_j];
 
-            
             std::cout << "CONFLICT at time " << t << " " << early_conflict.robot_idx_i << " " << early_conflict.robot_idx_j << std::endl;
             auto si_i = all_robots[early_conflict.robot_idx_i]->getSpaceInformation();
             si_i->printState(early_conflict.robot_state_i);
@@ -437,12 +433,24 @@ int main(int argc, char* argv[]) {
     (*handle).handle = handle;
     int id = 1;
 
+    // allocate data for conflict checking
+    std::vector<fcl::CollisionObjectf*> col_mng_objs;
+    std::shared_ptr<fcl::BroadPhaseCollisionManagerf> col_mng_robots;
+    col_mng_robots = std::make_shared<fcl::DynamicAABBTreeCollisionManagerf>();
+    col_mng_robots->setup();
+
+    for (size_t i = 0; i < robots.size(); ++i) {
+        auto coll_obj = new fcl::CollisionObjectf(robots[i]->getCollisionGeometry(0));
+        robots[i]->getCollisionGeometry(0)->setUserData((void*)i);
+        col_mng_objs.push_back(coll_obj);
+    }
+    col_mng_robots->registerObjects(col_mng_objs);
 
     while (!open.empty()) {
       HighLevelNode P = open.top();
       open.pop();
       Conflict inter_robot_conflict;
-      if (!getEarliestConflict(P.solution, robots, inter_robot_conflict)) {
+      if (!getEarliestConflict(P.solution, robots, col_mng_robots, inter_robot_conflict)) {
         std::cout << "Final solution! cost: " << P.cost << std::endl;
         export_solutions(P.solution, robots, outputFile);
         export_joint_solutions(P.solution, robots, jointFile);
