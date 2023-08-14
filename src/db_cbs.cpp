@@ -174,7 +174,7 @@ bool getEarliestConflict(
             assert(collision_data.result.numContacts() > 0);
             const auto& contact = collision_data.result.getContact(0);
 
-            early_conflict.time = t;
+            early_conflict.time = t * all_robots[0]->dt();
             early_conflict.robot_idx_i = (size_t)contact.o1->getUserData();
             early_conflict.robot_idx_j = (size_t)contact.o2->getUserData();
             early_conflict.robot_state_i = node_states[early_conflict.robot_idx_i];
@@ -193,9 +193,8 @@ bool getEarliestConflict(
 
 // Constraints from Conflicts
 void createConstraintsFromConflicts(const Conflict& early_conflict, std::map<size_t, std::vector<Constraint>>& constraints){
-    // TODO: fix the dt-based logic!
-    constraints[early_conflict.robot_idx_i].push_back({early_conflict.time*0.1f, early_conflict.robot_state_i});
-    constraints[early_conflict.robot_idx_j].push_back({early_conflict.time*0.1f, early_conflict.robot_state_j});
+    constraints[early_conflict.robot_idx_i].push_back({early_conflict.time, early_conflict.robot_state_i});
+    constraints[early_conflict.robot_idx_j].push_back({early_conflict.time, early_conflict.robot_state_j});
 }
 
 void export_joint_solutions(const std::vector<LowLevelPlan<AStarNode*,ob::State*, oc::Control*>>& solution, 
