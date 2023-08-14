@@ -62,12 +62,12 @@ struct HighLevelNode {
   };
 
 void print_solution(const std::vector<LowLevelPlan<AStarNode*,ob::State*, oc::Control*>>& solution, const std::vector<std::shared_ptr<Robot>>& all_robots){
-    int max_t = 0;
+    size_t max_t = 0;
     ob::State *node_state;
     for (const auto& sol : solution){
-      max_t = std::max<int>(max_t, sol.trajectory.size() - 1);
+      max_t = std::max(max_t, sol.trajectory.size() - 1);
     }
-    for (int t = 0; t <= max_t; ++t){
+    for (size_t t = 0; t <= max_t; ++t){
         std::cout << "/////////// "<< "time: " << t << "///////////" << std::endl;
         for (size_t i = 0; i < all_robots.size(); ++i){
             std::cout << "robot " << i << std::endl;
@@ -78,7 +78,7 @@ void print_solution(const std::vector<LowLevelPlan<AStarNode*,ob::State*, oc::Co
                 node_state = solution[i].trajectory[t];
             }
             const auto transform = all_robots[i]->getTransform(node_state,0);
-            auto robot = new fcl::CollisionObjectf(all_robots[i]->getCollisionGeometry(0)); 
+            // auto robot = new fcl::CollisionObjectf(all_robots[i]->getCollisionGeometry(0));
             std::cout << transform.translation() << std::endl;
         }
     }
@@ -128,7 +128,7 @@ void export_solutions(const std::vector<LowLevelPlan<AStarNode*,ob::State*, oc::
 
 bool getEarliestConflict(const std::vector<LowLevelPlan<AStarNode*,ob::State*, oc::Control*>>& solution, const std::vector<std::shared_ptr<Robot>>& all_robots,
                     Conflict& early_conflict){
-    int max_t = 0;
+    size_t max_t = 0;
     std::vector<fcl::CollisionObjectf*> robot_objs_;
     std::shared_ptr<fcl::BroadPhaseCollisionManagerf> col_mng_robots_;
     col_mng_robots_ = std::make_shared<fcl::DynamicAABBTreeCollisionManagerf>();
@@ -136,10 +136,10 @@ bool getEarliestConflict(const std::vector<LowLevelPlan<AStarNode*,ob::State*, o
     ob::State *node_state;
     std::vector<ob::State*> node_states;
     for (const auto& sol : solution){
-      max_t = std::max<int>(max_t, sol.trajectory.size() - 1);
+      max_t = std::max(max_t, sol.trajectory.size() - 1);
     }
     
-    for (int t = 0; t <= max_t; ++t){
+    for (size_t t = 0; t <= max_t; ++t){
         // std::cout << "TIMESTAMP: " << t << std::endl;
         node_states.clear();
         robot_objs_.clear();
@@ -205,12 +205,12 @@ void export_joint_solutions(const std::vector<LowLevelPlan<AStarNode*,ob::State*
     ob::State *node_state;
     oc::Control *node_action;
     float cost = 0;
-    int max_t = 0;
-    int max_a = 0;
+    size_t max_t = 0;
+    size_t max_a = 0;
     for (auto& sol : solution){
       cost += sol.cost;
-      max_t = std::max<int>(max_t, sol.trajectory.size() - 1);
-      max_a = std::max<int>(max_a, sol.actions.size() - 1);
+      max_t = std::max(max_t, sol.trajectory.size() - 1);
+      max_a = std::max(max_a, sol.actions.size() - 1);
     }
 
     out << "delta: " << 0.5 << std::endl;
@@ -221,7 +221,7 @@ void export_joint_solutions(const std::vector<LowLevelPlan<AStarNode*,ob::State*
     std::vector<double> joint_state;
     std::vector<double> joint_action;
     std::vector<double> last_state;
-    for (int t = 0; t <= max_t; ++t){
+    for (size_t t = 0; t <= max_t; ++t){
         out << "      - [";
         for (size_t i = 0; i < robots.size(); ++i){
             std::vector<double> reals;
@@ -248,7 +248,7 @@ void export_joint_solutions(const std::vector<LowLevelPlan<AStarNode*,ob::State*
 
     // for the action
     out << "    actions:" << std::endl;
-    for (int t = 0; t <= max_a; ++t){
+    for (size_t t = 0; t <= max_a; ++t){
         out << "      - ";
         out << "[";
         for (size_t i = 0; i < robots.size(); ++i){
@@ -416,8 +416,9 @@ int main(int argc, char* argv[]) {
         goals.push_back(goal_reals);
         robot_types.push_back(robotType);
         DBAstar<Constraint> llplanner;
-        bool success = llplanner.search(msg_objs, starts[i], goals[i], 
-            obstacles, robots[i], robot_types[i], env_min, start.constraints[i], start.solution[i]); 
+        /*bool success =*/ llplanner.search(msg_objs, starts[i], goals[i], 
+            obstacles, robots[i], robot_types[i], env_min.size(), start.constraints[i], start.solution[i]);
+        // TODO: need to handle the failure case, too!
 
         start.cost += start.solution[i].cost;
         std::cout << "High Level Node Cost: " << start.cost << std::endl;
@@ -459,7 +460,7 @@ int main(int argc, char* argv[]) {
         // run the low level planner
         DBAstar<Constraint> llplanner;
         bool success = llplanner.search(msg_objs, starts[i], goals[i], 
-            obstacles, robots[i], robot_types[i], env_min, newNode.constraints[i], newNode.solution[i]); 
+            obstacles, robots[i], robot_types[i], env_min.size(), newNode.constraints[i], newNode.solution[i]); 
         newNode.cost += newNode.solution[i].cost;
         std::cout << "Updated New node cost: " << newNode.cost << std::endl;
 

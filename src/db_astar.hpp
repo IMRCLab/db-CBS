@@ -179,7 +179,7 @@ public:
   float maxCost = 1e6;
 
   bool search(msgpack::object msg_obj, std::vector<double> robot_start, std::vector<double> robot_goal, std::vector<fcl::CollisionObjectf *> obstacles, 
-    std::shared_ptr<Robot> robot,std::string robot_type, const auto env_min, const std::vector<Constraint>& constraints, LowLevelPlan<AStarNode*,ob::State*,oc::Control*>& ll_result)
+    std::shared_ptr<Robot> robot,std::string robot_type, size_t env_size, const std::vector<Constraint>& constraints, LowLevelPlan<AStarNode*,ob::State*,oc::Control*>& ll_result)
 
   {
     auto si = robot->getSpaceInformation();
@@ -238,7 +238,7 @@ public:
     size_t num_invalid_states = 0;
 
     // create a robot with no position bounds
-    ob::RealVectorBounds position_bounds_no_bound(env_min.size());
+    ob::RealVectorBounds position_bounds_no_bound(env_size);
     position_bounds_no_bound.setLow(-1e6);//std::numeric_limits<double>::lowest());
     position_bounds_no_bound.setHigh(1e6);//std::numeric_limits<double>::max());
     // std::shared_ptr<Robot> robot_no_pos_bound = create_robot("unicyle_first_order_0", position_bounds_no_bound); // hard-coded
@@ -674,11 +674,11 @@ public:
 
         // if this motion reaches the goal and we have a constraint in the future, check with the last state
         ob::State* state_to_check = nullptr;
-        if (reachesGoal && time_index > motion->states.size() - 1) {
+        if (reachesGoal && time_index >= (int)motion->states.size() - 1) {
           state_to_check = motion->states.back();
         }
 
-        if (time_index >= 0 && time_index < motion->states.size() - 1) {
+        if (time_index >= 0 && time_index < (int)motion->states.size() - 1) {
           state_to_check = motion->states[time_index];
         }
 
