@@ -187,8 +187,9 @@ void createConstraintsFromConflicts(const Conflict& early_conflict, std::map<siz
     // TODO: the current logic only works for two robots!
     assert(early_conflict.conflict_states.size() == 2);
 
-    constraints[0].push_back({early_conflict.time*0.1, early_conflict.conflict_states[1]});
-    constraints[1].push_back({early_conflict.time*0.1, early_conflict.conflict_states[0]});
+    // TODO: fix the dt-based logic!
+    constraints[0].push_back({early_conflict.time*0.1f, early_conflict.conflict_states[0]});
+    constraints[1].push_back({early_conflict.time*0.1f, early_conflict.conflict_states[1]});
 
 
     // for (size_t i = 0; i < early_conflict.conflict_states.size(); ++i){ // for each Robot in conflict

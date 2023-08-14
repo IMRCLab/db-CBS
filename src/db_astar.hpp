@@ -518,15 +518,26 @@ public:
       // sanity check on the sizes
       assert(ll_result.actions.size() + 1 == ll_result.trajectory.size());
 
+      #ifndef NDEBUG
       // Sanity check here, that verifies that we obey all constraints
+      std::cout << "checking constraints " << std::endl;
       for (const auto& constraint : constraints) {
-        std::cout << "checking constraint " << constraint.time << std::endl;
+        std::cout << "constraint t=" << constraint.time << std::endl;
         si->printState(constraint.constrained_state);
-        size_t time_index = std::lround(constraint.time / robot->dt());
+        int time_index = std::lround(constraint.time / robot->dt());
         assert(time_index >= 0);
-        time_index = std::min(time_index, ll_result.trajectory.size()-1);
-        assert(time_index < ll_result.trajectory.size());
+        time_index = std::min<int>(time_index, (int)ll_result.trajectory.size()-1);
+        assert(time_index < (int)ll_result.trajectory.size());
 
+        float dist = si->distance(ll_result.trajectory.at(time_index), constraint.constrained_state);
+
+        if (dist <= delta){
+          std::cout << "VIOLATION " << dist << std::endl;
+          si->printState(ll_result.trajectory.at(time_index));
+        }
+
+        assert(dist > delta);
+        #if 0
         auto transform = robot->getTransform(ll_result.trajectory.at(time_index), 0);
         fcl::CollisionObjectf motion_state_co(robot->getCollisionGeometry(0)); 
         motion_state_co.setTranslation(transform.translation());
@@ -551,7 +562,9 @@ public:
         }
 
         assert(!result.isCollision());
+        #endif
       }
+      #endif
 
       // statistics for the motions used
       std::map<size_t, size_t> motionsCount; 
@@ -684,11 +697,12 @@ public:
 
         if (state_to_check) {
           
-          std::cout << constraint.time << " " << current->gScore << " " << time_offset << " " << time_index << std::endl;
+          // std::cout << constraint.time << " " << current->gScore << " " << time_offset << " " << time_index << std::endl;
           // compute translated state
           si->copyState(tmpStateconst, state_to_check);
           const auto relative_pos = robot->getTransform(state_to_check).translation();
           robot->setPosition(tmpStateconst, offset + relative_pos);
+          #if 0
           // std::cout << "p " << offset + relative_pos << std::endl;
           const auto& transform = robot->getTransform(tmpStateconst, 0);
           fcl::CollisionObjectf motion_state_co(robot->getCollisionGeometry(0)); 
@@ -712,6 +726,9 @@ public:
           // check two states for collision
           collide(&motion_state_co, &other_robot_co, request, result);
           bool violation = result.isCollision();
+          #else
+          bool violation = si->distance(tmpStateconst, constraint.constrained_state) <= delta;
+          #endif
           if (violation) {
             motionValid = false;
             break;
