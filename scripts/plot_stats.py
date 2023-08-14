@@ -49,7 +49,7 @@ class Report:
 
   def load_stat_files(self, exp_name, algo, filenames):
     costs = []
-    for filename in filenames:
+    for filename in filenames: # 0000, 0001, etc.
       costs.append(load_data(filename, self.T, self.dt))
 
     # convert to 2D array
@@ -88,7 +88,7 @@ class Report:
       if exp_name_stats != exp_name:
         continue
 
-      success = np.count_nonzero(~np.isnan(costs), axis=0) / 5 * 100
+      success = np.count_nonzero(~np.isnan(costs), axis=0) * 100
 
       self.ax.plot(self.times, success, label=self.alg_dict[algo]['name'], color=self.color_dict[algo], linewidth=3, alpha=0.8)
     self.ax.legend()
@@ -110,7 +110,8 @@ class Report:
       if exp_name_stats != exp_name:
         continue
 
-      success = np.count_nonzero(~np.isnan(costs), axis=0) / 10 * 100
+      success = np.count_nonzero(~np.isnan(costs), axis=0) / 5 * 100 # trial number
+      # print(np.count_nonzero(~np.isnan(costs), axis=0)) # axis = 0: column, axis 1: row
       median = np.nanmedian(costs, axis=0)
       percentileH = np.nanpercentile(costs, 75, axis=0)
       percentileL = np.nanpercentile(costs, 25, axis=0)

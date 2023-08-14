@@ -67,7 +67,7 @@ def execute_task(task: ExecutionTask):
 		visualize_files = [p.name for p in result_folder.glob('result_*')]
 		check_files = [p.name for p in result_folder.glob('result_*')]
 	elif task.alg == "s2m2":
-		run_s2m2(str(env), str(result_folder), mycfg)
+		run_s2m2(str(env), str(result_folder), task.timelimit, mycfg)
 		visualize_files = [p.name for p in result_folder.glob('result_*')]
 		check_files = [p.name for p in result_folder.glob('result_*')]
 	elif task.alg == "k-cbs":
@@ -77,7 +77,7 @@ def execute_task(task: ExecutionTask):
 	elif task.alg == "db-cbs":
 		run_dbcbs(str(env), str(result_folder), task.timelimit, mycfg)
 		visualize_files = [p.name for p in result_folder.glob('result_*')]
-		check_files = [p.name for p in result_folder.glob('result_opt*')]
+		check_files = [p.name for p in result_folder.glob('result_*')]
 
 	# for visualization
 	vis_script = scripts_path / "visualize.py"
@@ -92,16 +92,18 @@ def main():
 		# "bugtrap",
         # "wall",
 		# "swap",
-		"classic",
+		# "classic",
+		# "alcove",
+		"alcove_hard",
 	]
 	algs = [
-		# "sst",
-		# "s2m2",
-		# "k-cbs",
+		"sst",
+		"s2m2",
+		"k-cbs",
 		"db-cbs",
 	]
-	trials = 1
-	timelimit = 2*60 
+	trials = 5
+	timelimit = 5*60 
 
 	tasks = []
 	for instance in instances:
@@ -119,7 +121,7 @@ def main():
 		for task in tasks:
 			execute_task(task)
 	
-	# run_benchmark_stats(instances,algs)
+	run_benchmark_stats(instances,algs)
 	
 
 if __name__ == '__main__':
