@@ -356,6 +356,284 @@ protected:
 protected:
   float L_;
 };
+
+////////////////////////////////////////////////////////////////////////////////////////////////
+
+class RobotCarFirstOrderWithTrailers : public Robot
+{
+public:
+  RobotCarFirstOrderWithTrailers(
+      const ompl::base::RealVectorBounds &position_bounds,
+      float v_min,
+      float v_max,
+      float phi_min,
+      float phi_max,
+      float L,
+      const std::vector<float>& hitch_lengths)
+      : Robot()
+      , L_(L)
+      , hitch_lengths_(hitch_lengths)
+  {
+    geom_.emplace_back(new fcl::Boxf(0.5, 0.25, 1.0));
+    for (size_t i = 0; i < hitch_lengths.size(); ++i) {
+      geom_.emplace_back(new fcl::Boxf(0.3, 0.25, 1.0));
+    }
+
+    auto space(std::make_shared<StateSpace>(hitch_lengths.size()));
+    space->setPositionBounds(position_bounds);
+
+    // create a control space
+    // R^1: turning speed
+    auto cspace(std::make_shared<oc::RealVectorControlSpace>(space, 2));
+
+    // set the bounds for the control space
+    ob::RealVectorBounds cbounds(2);
+    cbounds.setLow(0, v_min);
+    cbounds.setHigh(0, v_max);
+    cbounds.setLow(1, phi_min);
+    cbounds.setHigh(1, phi_max);
+
+    cspace->setBounds(cbounds);
+
+    // construct an instance of  space information from this control space
+    si_ = std::make_shared<oc::SpaceInformation>(space, cspace);
+
+    dt_ = 0.1;
+    is2D_ = true;
+    max_speed_ = std::max(fabsf(v_min), fabsf(v_max));
+  }
+
+  virtual size_t numParts()
+  {
+    return hitch_lengths_.size() + 1;
+  }
+
+  void propagate(
+      const ompl::base::State *start,
+      const ompl::control::Control *control,
+      const double duration,
+      ompl::base::State *result) override
+  {
+    auto startTyped = start->as<StateSpace::StateType>();
+    const double *ctrl = control->as<ompl::control::RealVectorControlSpace::ControlType>()->values;
+
+    auto resultTyped = result->as<StateSpace::StateType>();
+
+    // use simple Euler integration
+    float x = startTyped->getX();
+    float y = startTyped->getY();
+    std::vector<float> theta(hitch_lengths_.size() + 1);
+    for (size_t i = 0; i < hitch_lengths_.size() + 1; ++i) {
+      theta[i] = startTyped->getTheta(i);
+    }
+    float remaining_time = duration;
+    do
+    {
+      float dt = std::min(remaining_time, dt_);
+
+      // TODO: loop over this in reverse, to avoid changing dependenies
+      //       (for a single trailer it shouldn't matter)
+      for (size_t i = 1; i < hitch_lengths_.size() + 1; ++i) {
+        float theta_dot = ctrl[0] / hitch_lengths_[i-i];
+        for (size_t j = 1; j < i; ++j) {
+          theta_dot *= cosf(theta[j-1] - theta[j]);
+        }
+        theta_dot *= sinf(theta[i-1] - theta[i]);
+        theta[i] += theta_dot * dt;
+      }
+      theta[0] += ctrl[0] / L_ * tanf(ctrl[1]) * dt;
+      x += ctrl[0] * cosf(theta[0]) * dt;
+      y += ctrl[0] * sinf(theta[0]) * dt;
+
+      remaining_time -= dt;
+    } while (remaining_time >= dt_);
+
+    // update result
+    resultTyped->setX(x);
+    resultTyped->setY(y);
+    for (size_t i = 0; i < hitch_lengths_.size() + 1; ++i) {
+      resultTyped->setTheta(i, theta[i]);
+    }
+  }
+
+  virtual fcl::Transform3f getTransform(
+      const ompl::base::State *state,
+      size_t part) override
+  {
+    auto stateTyped = state->as<StateSpace::StateType>();
+
+    fcl::Transform3f result;
+
+    if (part == 0) {
+      result = Eigen::Translation<float, 3>(fcl::Vector3f(stateTyped->getX(), stateTyped->getY(), 0));
+      float yaw = stateTyped->getTheta(0);
+      result.rotate(Eigen::AngleAxisf(yaw, Eigen::Vector3f::UnitZ()));
+    } else if (part == 1) {
+      fcl::Vector3f pos0(stateTyped->getX(), stateTyped->getY(), 0);
+      float theta1 = stateTyped->getTheta(1);
+      fcl::Vector3f delta(cosf(theta1), sinf(theta1), 0);
+      result = Eigen::Translation<float, 3>(pos0 - delta * hitch_lengths_[0]);
+      result.rotate(Eigen::AngleAxisf(theta1, Eigen::Vector3f::UnitZ()));
+    } else {
+      assert(false);
+    }
+    return result;
+  }
+
+  virtual void setPosition(ompl::base::State *state, const fcl::Vector3f position, size_t /*part*/) override
+  {
+    auto stateTyped = state->as<StateSpace::StateType>();
+    stateTyped->setX(position(0));
+    stateTyped->setY(position(1));
+  }
+
+protected:
+  class StateSpace : public ob::CompoundStateSpace
+  {
+  public:
+    class StateType : public ob::CompoundStateSpace::StateType
+    {
+    public:
+      StateType() = default;
+
+      double getX() const
+      {
+        return as<ob::RealVectorStateSpace::StateType>(0)->values[0];
+      }
+
+      double getY() const
+      {
+        return as<ob::RealVectorStateSpace::StateType>(0)->values[1];
+      }
+
+      // 0 means theta of pulling car
+      double getTheta(size_t trailer) const
+      {
+        return as<ob::SO2StateSpace::StateType>(1+trailer)->value;
+      }
+
+      void setX(double x)
+      {
+        as<ob::RealVectorStateSpace::StateType>(0)->values[0] = x;
+      }
+
+      void setY(double y)
+      {
+        as<ob::RealVectorStateSpace::StateType>(0)->values[1] = y;
+      }
+
+      void setTheta(size_t trailer, double yaw)
+      {
+        auto s = as<ob::SO2StateSpace::StateType>(1+trailer);
+        s->value = yaw;
+
+        // Normalize orientation
+        ob::SO2StateSpace SO2;
+        SO2.enforceBounds(s);
+      }
+    };
+
+    StateSpace(size_t numTrailers)
+    {
+      setName("CarWithTrailerSO" + getName());
+      type_ = ob::STATE_SPACE_TYPE_COUNT + 1;
+      addSubspace(std::make_shared<ob::RealVectorStateSpace>(2), 1.0);  // position
+      addSubspace(std::make_shared<ob::SO2StateSpace>(), 0.5);          // orientation
+      for (size_t i = 0; i < numTrailers; ++i) {
+        addSubspace(std::make_shared<ob::SO2StateSpace>(), 0.5);        // orientation
+      }
+      lock();
+    }
+
+    ~StateSpace() override = default;
+
+    bool satisfiesBounds(const ob::State *state) const override
+    {
+      auto stateTyped = state->as<StateSpace::StateType>();
+      double th0 = stateTyped->getTheta(0);
+      double th1 = stateTyped->getTheta(1);
+      double delta = th1 - th0;
+      double angular_change = atan2(sin(delta), cos(delta));
+      if (fabs(angular_change) > M_PI / 4) {
+        return false;
+      }
+      return ob::CompoundStateSpace::satisfiesBounds(state);
+    }
+
+    void enforceBounds(ob::State *state) const override
+    {
+      auto stateTyped = state->as<StateSpace::StateType>();
+      double th0 = stateTyped->getTheta(0);
+      double th1 = stateTyped->getTheta(1);
+      double delta = th1 - th0;
+      double angular_change = atan2(sin(delta), cos(delta));
+      if (fabs(angular_change) > M_PI / 4) {
+        stateTyped->setTheta(1, th0 + angular_change / fabs(angular_change) * M_PI/4);
+      }
+      ob::CompoundStateSpace::enforceBounds(state);
+    }
+
+    void setPositionBounds(const ob::RealVectorBounds &bounds)
+    {
+      as<ob::RealVectorStateSpace>(0)->setBounds(bounds);
+    }
+
+    const ob::RealVectorBounds &getPositionBounds() const
+    {
+      return as<ob::RealVectorStateSpace>(0)->getBounds();
+    }
+
+    ob::State *allocState() const override
+    {
+      auto *state = new StateType();
+      allocStateComponents(state);
+      return state;
+    }
+
+    void freeState(ob::State *state) const override
+    {
+      CompoundStateSpace::freeState(state);
+    }
+
+    void registerProjections() override
+    {
+      class DefaultProjection : public ob::ProjectionEvaluator
+      {
+      public:
+        DefaultProjection(const ob::StateSpace *space) : ob::ProjectionEvaluator(space)
+        {
+        }
+
+        unsigned int getDimension() const override
+        {
+          return 2;
+        }
+
+        void defaultCellSizes() override
+        {
+          cellSizes_.resize(2);
+          bounds_ = space_->as<ob::SE2StateSpace>()->getBounds();
+          cellSizes_[0] = (bounds_.high[0] - bounds_.low[0]) / ompl::magic::PROJECTION_DIMENSION_SPLITS;
+          cellSizes_[1] = (bounds_.high[1] - bounds_.low[1]) / ompl::magic::PROJECTION_DIMENSION_SPLITS;
+        }
+
+        void project(const ob::State *state, Eigen::Ref<Eigen::VectorXd> projection) const override
+        {
+          projection = Eigen::Map<const Eigen::VectorXd>(
+              state->as<ob::SE2StateSpace::StateType>()->as<ob::RealVectorStateSpace::StateType>(0)->values, 2);
+        }
+      };
+
+      registerDefaultProjection(std::make_shared<DefaultProjection>(this));
+    }
+  };
+
+protected:
+  float L_;
+  std::vector<float> hitch_lengths_;
+
+};
+
 //////////////////////////////////////////////////////////////////////////////////////////////////
 class MultiRobot : public Robot
 {
@@ -495,6 +773,18 @@ std::shared_ptr<Robot> create_robot(
         /*phi_min*/ -M_PI/3.0f /*rad*/,
         /*phi_max*/ M_PI/3.0f /*rad*/,
         /*L*/ 0.25 /*m*/
+        ));
+  }
+  else if (robotType == "car_first_order_with_1_trailers_0")
+  {
+    robot.reset(new RobotCarFirstOrderWithTrailers(
+        positionBounds,
+        /*v_min*/ -0.1 /*m/s*/,
+        /*v_max*/ 0.5 /*m/s*/,
+        /*phi_min*/ -M_PI/3.0f /*rad*/,
+        /*phi_max*/ M_PI/3.0f /*rad*/,
+        /*L*/ 0.25 /*m*/,
+        /*hitch_lengths*/ {0.5} /*m*/
         ));
   }
   else if (robotType == "single_integrator_0")
