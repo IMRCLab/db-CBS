@@ -6,7 +6,8 @@ find_package(Boost 1.58 REQUIRED COMPONENTS program_options)
 find_package(Eigen3 REQUIRED)
 find_package(PkgConfig)
 pkg_check_modules(YAML REQUIRED yaml-cpp)
-pkg_check_modules(FCL REQUIRED fcl ccd)
+find_package(fcl REQUIRED)
+
 
 
 add_subdirectory(dynoplan)
@@ -26,6 +27,7 @@ add_subdirectory(k_cbs/Kinodynamic-Conflict-Based-Search EXCLUDE_FROM_ALL)
 include_directories(
   ${EIGEN3_INCLUDE_DIR}
   ${CMAKE_SOURCE_DIR}/deps/libMultiRobotPlanning/include
+  ${FCL_INCLUDE_DIRS}
   ${CMAKE_SOURCE_DIR}/k_cbs/Kinodynamic-Conflict-Based-Search/src
   ${CMAKE_BINARY_DIR}/k_cbs/Kinodynamic-Conflict-Based-Search/src
 )
