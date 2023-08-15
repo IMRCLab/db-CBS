@@ -10,7 +10,7 @@ from matplotlib.cm import get_cmap
 from collections import defaultdict
 
 class Report:
-  def __init__(self, filename, T, dt):
+  def __init__(self, filename, trials, T, dt):
 
     tex_fonts = {
         # Use LaTeX to write all text
@@ -42,6 +42,7 @@ class Report:
       'k-cbs': cmap.colors[2],
       'db-cbs': cmap.colors[3],
     }
+    self.trials = trials
     self.T = T
     self.dt = dt
     self.times = np.arange(0, self.T, self.dt)
@@ -49,7 +50,7 @@ class Report:
 
   def load_stat_files(self, exp_name, algo, filenames):
     costs = []
-    for filename in filenames: # 0000, 0001, etc.
+    for filename in filenames:
       costs.append(load_data(filename, self.T, self.dt))
 
     # convert to 2D array
@@ -88,7 +89,7 @@ class Report:
       if exp_name_stats != exp_name:
         continue
 
-      success = np.count_nonzero(~np.isnan(costs), axis=0) * 100
+      success = np.count_nonzero(~np.isnan(costs), axis=0) / self.trials * 100
 
       self.ax.plot(self.times, success, label=self.alg_dict[algo]['name'], color=self.color_dict[algo], linewidth=3, alpha=0.8)
     self.ax.legend()
@@ -110,8 +111,7 @@ class Report:
       if exp_name_stats != exp_name:
         continue
 
-      success = np.count_nonzero(~np.isnan(costs), axis=0) / 5 * 100 # trial number
-      # print(np.count_nonzero(~np.isnan(costs), axis=0)) # axis = 0: column, axis 1: row
+      success = np.count_nonzero(~np.isnan(costs), axis=0) / self.trials * 100
       median = np.nanmedian(costs, axis=0)
       percentileH = np.nanpercentile(costs, 75, axis=0)
       percentileL = np.nanpercentile(costs, 25, axis=0)

@@ -88,21 +88,22 @@ def execute_task(task: ExecutionTask):
 def main():
 	parallel = True
 	instances = [
-		# "parallelpark",
+		"parallelpark",
 		# "bugtrap",
         # "wall",
 		# "swap",
 		# "classic",
 		# "alcove",
-		"alcove_hard",
+		# "alcove_hard",
+		# "straight"
 	]
 	algs = [
-		"sst",
-		"s2m2",
-		"k-cbs",
+		# "sst",
+		# "s2m2",
+		# "k-cbs",
 		"db-cbs",
 	]
-	trials = 5
+	trials = 2
 	timelimit = 5*60 
 
 	tasks = []
@@ -121,7 +122,7 @@ def main():
 		for task in tasks:
 			execute_task(task)
 	
-	run_benchmark_stats(instances,algs)
+	run_benchmark_stats(instances,algs,trials)
 	
 
 if __name__ == '__main__':
