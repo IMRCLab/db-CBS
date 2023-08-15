@@ -35,7 +35,7 @@ protected:
       if (!obj->isFree()) {
         obj->setTranslation(obj->getTranslation() + offset);
         obj->computeAABB();
-        assert(node->bv.equal(obj->getAABB()));
+        // assert(node->bv.equal(obj->getAABB()));
         // std::cout << "ot" << std::endl;
       }
     } else {

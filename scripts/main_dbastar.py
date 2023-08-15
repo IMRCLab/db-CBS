@@ -180,53 +180,9 @@ def run_dbastar(filename_env, folder, timelimit, cfg, opt_alg="scp", motions_sta
 					print("DELTA CHECK", delta_achieved)
 
 					t_opt_start = time.time()
-					# if opt_alg == "scp":
-					# 	success = main_scp.run_scp(filename_env, filename_result_dbastar, filename_result_opt)
-					# elif opt_alg == "komo":
-					# 	success = main_komo.run_komo_with_T_scaling(
-					# 		filename_env, filename_result_dbastar, filename_result_opt, cfg["rai_cfg"], max_T=int(maxCost/robot.dt))
-
-					# else:
-						# raise Exception("Unknown optimization algorithm {}!".format(opt_alg))
 					t_opt_stop = time.time()
 					duration_opt += t_opt_stop - t_opt_start
 
-					# # extract solution, independent of success
-					# if Path(filename_result_opt).exists():
-					# 	opt_motions = checker.extract_valid_motions(filename_env, filename_result_opt, success)
-					# 	print("Extracted {} motions from optimization".format(len(opt_motions)))
-					# 	motions.extend(opt_motions)
-
-					# # checker_success = checker.check(filename_env, filename_result_opt)
-					# # success = success and checker_success
-					# if not success:
-					# 	# print("Optimization failed; Reducing delta")
-					# 	# delta = delta * 0.9
-
-
-					# 	print("Optimization failed; Using more primitives")
-
-					# else:
-					# 	# # ONLY FOR MOTION PRIMITIVE SELECTION
-					# 	# if motions_stats is not None:
-					# 		# compute_motion_importance(filename_env, filename_motions, filename_result_dbastar, delta, maxCost, motions_stats)
-					# 	with open(filename_result_opt) as f:
-					# 		result = yaml.safe_load(f)
-					# 		cost = len(result["result"][0]["actions"]) * robot.dt
-					# 	now = time.time()
-					# 	t = now - start
-					# 	print("success!", cost, t)
-					# 	stats.write("  - t: {}\n".format(t))
-					# 	stats.write("    cost: {}\n".format(cost))
-					# 	stats.write("    delta_achieved: {}\n".format(delta_achieved))
-					# 	stats.write("    duration_dbastar: {}\n".format(duration_dbastar))
-					# 	stats.write("    duration_opt: {}\n".format(duration_opt))
-					# 	stats.flush()
-					# 	duration_dbastar = 0
-					# 	duration_opt = 0
-					# 	maxCost = cost * 0.99
-
-					# 	shutil.copyfile(filename_result_opt, "{}/result_opt_sol{}.yaml".format(folder, sol))
 					shutil.copyfile(filename_result_dbastar, "{}/result_dbastar_sol{}.yaml".format(folder, sol))
 
 					sol += 1
@@ -237,19 +193,10 @@ def run_dbastar(filename_env, folder, timelimit, cfg, opt_alg="scp", motions_sta
 						del all_motions[0:add_prims]
 					else:
 						break
-						# for _ in range(add_prims):
-						# 	print("gen motion", len(motions))
-						# 	motion = gen_motion_primitive.gen_random_motion(robot_type)
-						# 	motion['distance'] = rh.distance(motion['x0'], motion['xf'])
-						# 	motions.append(motion)
-
-					# with open(filename_motions, 'w') as file:
-					# 	yaml.dump(motions, file, Dumper=yaml.CSafeDumper)
+						
 					with open(filename_motions, 'wb') as file:
 						msgpack.pack(motions, file)
 
-						# delta = initialDelta
-						# break
 
 def main():
 	parser = argparse.ArgumentParser()

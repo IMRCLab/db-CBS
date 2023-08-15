@@ -1,0 +1,15 @@
+environment:
+  min: [0, 0]
+  max: [6, 6]
+  obstacles:
+    - type: box
+      center: [3, 3]
+      size: [1, 1]
+   
+robots:
+  - type: unicycle_first_order_0
+    start: [3.5,4,0] # x,y,theta
+    goal: [4.5,2,0] # x,y,theta
+  - type: unicycle_first_order_0
+    start: [4.5,3,0] # x,y,theta
+    goal: [2,4,0] # x,y,theta

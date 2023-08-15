@@ -1,22 +1,18 @@
 environment:
-  min: [0.0, 0.0]
-  max: [3.5, 2.0]
-  # obstacles:
+  min: [0, 0]
+  max: [6, 6]
+  obstacles:
+    - type: box
+      center: [3.1, 2.1]
+      size: [0.5, 0.25]
     # - type: box
-    #   center: [0.3, 0.3]
+    #   center: [1.5, 1.3]
     #   size: [0.5, 0.25]
-    # - type: box
-    #   center: [2.7, 0.3]
-    #   size: [0.5, 0.25]
-  obstacles: []
 robots:
-  - type: single_integrator
-    start: [0.5,0.5] # x,y
-    goal: [2.5,1.0] # x,y
-  # - type: single_integrator
-  #   start: [2.0,1.0] # x,y
-  #   goal: [1.5,0.5] # x,y
-  - type: car_first_order_0
-    start: [2.0,1.5,0] # x,y,theta
-    goal: [1.5,0.5,0] # x,y,theta
+  - type: unicycle_first_order_0
+    start: [1,1,0] # x,y,theta
+    goal: [4,2,0] # x,y,theta
+  - type: unicycle_first_order_0
+    start: [4,1,0] # x,y,theta
+    goal: [2,1,0] # x,y,theta
  

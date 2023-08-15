@@ -9,6 +9,7 @@ pkg_check_modules(YAML REQUIRED yaml-cpp)
 pkg_check_modules(FCL REQUIRED fcl ccd)
 
 
+add_subdirectory(dynoplan)
 
 # set(ompl_ROOT ${}/k_cbs/ompl)
 # find_package(ompl)
@@ -73,23 +74,23 @@ target_include_directories(main_kcbs PUBLIC
   ${FCL_INCLUDE_DIRS}
 )
 
-## dbastar
+# ## dbastar
 
-add_executable(dbastar
-  src/main_dbastar.cpp
+# add_executable(dbastar
+#   src/main_dbastar.cpp
   
-)
-target_link_libraries(dbastar
-  motion_planning_common
-  ${Boost_LIBRARIES}
-  ${YAML_LIBRARIES}
-  ompl
-  ${FCL_LIBRARIES}
-)
-target_include_directories(dbastar PUBLIC 
-  ${YAML_INCLUDE_DIRS}
-  ${FCL_INCLUDE_DIRS}
-)
+# )
+# target_link_libraries(dbastar
+#   motion_planning_common
+#   ${Boost_LIBRARIES}
+#   ${YAML_LIBRARIES}
+#   ompl
+#   ${FCL_LIBRARIES}
+# )
+# target_include_directories(dbastar PUBLIC 
+#   ${YAML_INCLUDE_DIRS}
+#   ${FCL_INCLUDE_DIRS}
+# )
 
 ## main_ompl_geometric
 
@@ -108,21 +109,42 @@ target_include_directories(main_ompl_geometric PUBLIC
   ${YAML_INCLUDE_DIRS}
   ${FCL_INCLUDE_DIRS}
 )
-
-# Python bindings
-add_subdirectory(deps/pybind11 EXCLUDE_FROM_ALL)
-
-pybind11_add_module(motionplanningutils
-  src/python_bindings.cpp
+## db_cbs
+add_executable(db_cbs
+  src/db_cbs.cpp
+  # src/robots.cpp
 )
-target_include_directories(motionplanningutils
-  PRIVATE ${CMAKE_BINARY_DIR}/deps/fcl/include
-  PRIVATE ${CMAKE_SOURCE_DIR}/deps/fcl/include
+target_include_directories(db_cbs PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}/dynoplan/include
 )
-target_link_libraries(motionplanningutils PRIVATE
+target_link_libraries(db_cbs PRIVATE 
+  idbastar::optimization
   motion_planning_common
   ${Boost_LIBRARIES}
   ${YAML_LIBRARIES}
   ompl
   ${FCL_LIBRARIES}
 )
+target_include_directories(main_ompl PUBLIC 
+  ${YAML_INCLUDE_DIRS}
+  ${FCL_INCLUDE_DIRS}
+)
+
+
+# Python bindings
+# add_subdirectory(deps/pybind11 EXCLUDE_FROM_ALL)
+
+# pybind11_add_module(motionplanningutils
+#   src/python_bindings.cpp
+# )
+# target_include_directories(motionplanningutils
+#   PRIVATE ${CMAKE_BINARY_DIR}/deps/fcl/include
+#   PRIVATE ${CMAKE_SOURCE_DIR}/deps/fcl/include
+# )
+# target_link_libraries(motionplanningutils PRIVATE
+#   motion_planning_common
+#   ${Boost_LIBRARIES}
+#   ${YAML_LIBRARIES}
+#   ompl
+#   ${FCL_LIBRARIES}
+# )

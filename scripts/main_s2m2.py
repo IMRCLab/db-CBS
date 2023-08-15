@@ -1,14 +1,16 @@
 import argparse
 import subprocess
-import yaml
 from pathlib import Path
 
-def run_s2m2(filename_env, folder):
+
+def run_s2m2(filename_env, folder, timelimit, cfg):
 	s2sm_script = Path().resolve().parent / "s2m2/main_s2m2_original.py" 
 	result = subprocess.run(["python3",
 		s2sm_script, 
 		filename_env,
 		folder,
+		str(timelimit),
+		str(cfg),
 		])
 	if result.returncode != 0:
 		print("S2SM failed")

@@ -2,7 +2,7 @@ import yaml
 from main_ompl import run_ompl
 from main_s2m2 import run_s2m2
 from main_kcbs import run_kcbs
-from main_dbastar import run_dbastar
+from main_dbcbs import run_dbcbs
 from pathlib import Path
 import shutil
 import subprocess
@@ -26,7 +26,6 @@ class ExecutionTask:
 	timelimit: float
 
 def run_visualize(script, filename_env, filename_result):
-
 	subprocess.run(["python3",
 				script,
 				filename_env,
@@ -68,22 +67,22 @@ def execute_task(task: ExecutionTask):
 		visualize_files = [p.name for p in result_folder.glob('result_*')]
 		check_files = [p.name for p in result_folder.glob('result_*')]
 	elif task.alg == "s2m2":
-		run_s2m2(str(env), str(result_folder))
+		run_s2m2(str(env), str(result_folder), task.timelimit, mycfg)
 		visualize_files = [p.name for p in result_folder.glob('result_*')]
 		check_files = [p.name for p in result_folder.glob('result_*')]
 	elif task.alg == "k-cbs":
 		run_kcbs(str(env), str(result_folder), task.timelimit, mycfg)
 		visualize_files = [p.name for p in result_folder.glob('result_*')]
 		check_files = [p.name for p in result_folder.glob('result_*')]
-	elif task.alg == "dbAstar":
-		run_dbastar(str(env), str(result_folder), task.timelimit, mycfg, "scp")
+	elif task.alg == "db-cbs":
+		run_dbcbs(str(env), str(result_folder), task.timelimit, mycfg)
 		visualize_files = [p.name for p in result_folder.glob('result_*')]
-		check_files = [p.name for p in result_folder.glob('result_opt*')]
+		check_files = [p.name for p in result_folder.glob('result_*')]
 
 	# for visualization
-	# vis_script = scripts_path / "visualize.py"
-	# for file in visualize_files:
-	# 	run_visualize(vis_script, env, result_folder / file)
+	vis_script = scripts_path / "visualize.py"
+	for file in visualize_files:
+		run_visualize(vis_script, env, result_folder / file)
 
 
 def main():
@@ -92,15 +91,20 @@ def main():
 		"parallelpark",
 		# "bugtrap",
         # "wall",
+		# "swap",
+		# "classic",
+		# "alcove",
+		# "alcove_hard",
+		# "straight"
 	]
 	algs = [
 		# "sst",
 		# "s2m2",
-		"k-cbs",
-		# "dbAstar",
+		# "k-cbs",
+		"db-cbs",
 	]
-	trials = 1
-	timelimit = 60 
+	trials = 2
+	timelimit = 5*60 
 
 	tasks = []
 	for instance in instances:
@@ -117,8 +121,8 @@ def main():
 	else:
 		for task in tasks:
 			execute_task(task)
-	# Get plots
-	run_benchmark_stats(instances,algs)
+	
+	run_benchmark_stats(instances,algs,trials)
 	
 
 if __name__ == '__main__':

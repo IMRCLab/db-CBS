@@ -10,7 +10,7 @@ from matplotlib.cm import get_cmap
 from collections import defaultdict
 
 class Report:
-  def __init__(self, filename, T, dt):
+  def __init__(self, filename, trials, T, dt):
 
     tex_fonts = {
         # Use LaTeX to write all text
@@ -34,14 +34,15 @@ class Report:
       'sst': {'idx': 0, 'color': cmap.colors[0], 'name': 'SST*'},
       's2m2': {'idx': 1, 'color': cmap.colors[1], 'name': 'S2SM'},
       'k-cbs': {'idx': 2, 'color': cmap.colors[2], 'name': 'K-CBS'},
-      'dbAstar': {'idx': 3, 'color': cmap.colors[3], 'name': 'kMP-db-A*'},
+      'db-cbs': {'idx': 3, 'color': cmap.colors[3], 'name': 'DB-CBS'},
     }
     self.color_dict = {
       'sst': cmap.colors[0],
       's2m2': cmap.colors[1],
       'k-cbs': cmap.colors[2],
-      'dbAstar': cmap.colors[3],
+      'db-cbs': cmap.colors[3],
     }
+    self.trials = trials
     self.T = T
     self.dt = dt
     self.times = np.arange(0, self.T, self.dt)
@@ -88,7 +89,7 @@ class Report:
       if exp_name_stats != exp_name:
         continue
 
-      success = np.count_nonzero(~np.isnan(costs), axis=0) / 5 * 100
+      success = np.count_nonzero(~np.isnan(costs), axis=0) / self.trials * 100
 
       self.ax.plot(self.times, success, label=self.alg_dict[algo]['name'], color=self.color_dict[algo], linewidth=3, alpha=0.8)
     self.ax.legend()
@@ -110,7 +111,7 @@ class Report:
       if exp_name_stats != exp_name:
         continue
 
-      success = np.count_nonzero(~np.isnan(costs), axis=0) / 10 * 100
+      success = np.count_nonzero(~np.isnan(costs), axis=0) / self.trials * 100
       median = np.nanmedian(costs, axis=0)
       percentileH = np.nanpercentile(costs, 75, axis=0)
       percentileL = np.nanpercentile(costs, 25, axis=0)
