@@ -112,13 +112,40 @@ target_include_directories(main_ompl_geometric PUBLIC
   ${FCL_INCLUDE_DIRS}
 )
 ## db_cbs
+
 add_executable(db_cbs
   src/db_cbs.cpp
   # src/robots.cpp
 )
+
+add_executable(multirobot_optimization
+  src/multirobot_optimization.cpp
+  # db_cbs.cpp
+  # src/robots.cpp
+)
+
+
+
+
 target_include_directories(db_cbs PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/dynoplan/include
 )
+
+
+target_link_libraries(multirobot_optimization PRIVATE 
+  dynobench::dynobench
+  idbastar::optimization
+  motion_planning_common
+  ${Boost_LIBRARIES}
+  ${YAML_LIBRARIES}
+  ompl
+  ${FCL_LIBRARIES}
+)
+
+
+
+
+
 target_link_libraries(db_cbs PRIVATE 
   idbastar::optimization
   motion_planning_common
