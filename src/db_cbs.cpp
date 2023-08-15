@@ -80,7 +80,6 @@ void print_solution(const std::vector<LowLevelPlan<AStarNode*,ob::State*, oc::Co
                 node_state = solution[i].trajectory[t];
             }
             const auto transform = all_robots[i]->getTransform(node_state,0);
-            // auto robot = new fcl::CollisionObjectf(all_robots[i]->getCollisionGeometry(0));
             std::cout << transform.translation() << std::endl;
         }
     }
@@ -89,7 +88,6 @@ void print_solution(const std::vector<LowLevelPlan<AStarNode*,ob::State*, oc::Co
 // export path to .yaml file
 void export_solutions(const std::vector<LowLevelPlan<AStarNode*,ob::State*, oc::Control*>>& solution, 
                         const std::vector<std::shared_ptr<Robot>>& robots, std::string outputFile){
-    // std::string outputFile = "db_solution_test.yaml";
     std::ofstream out(outputFile);
     std::vector<double> reals;
     float cost = 0;
@@ -108,14 +106,6 @@ void export_solutions(const std::vector<LowLevelPlan<AStarNode*,ob::State*, oc::
             printState(out, si, node_state);
             out << std::endl;
         }
-    }
-    auto si = robots.back()->getSpaceInformation();
-    out << "      - ";
-    // printState(out, si, solution.back().trajectory.back());
-    printState(out, si, solution.back().plan.back()->state);
-    out << std::endl;
-    for (size_t i = 0; i < solution.size(); ++i){ 
-        auto si = robots[i]->getSpaceInformation(); 
         out << "    actions:" << std::endl;
         for (size_t j = 0; j < solution[i].actions.size(); ++j){
             const auto& node_action = solution[i].actions[j];
@@ -124,7 +114,6 @@ void export_solutions(const std::vector<LowLevelPlan<AStarNode*,ob::State*, oc::
             printAction(out, si, node_action);
             out << std::endl;
         }
-
     }
 }
 
@@ -170,11 +159,6 @@ bool getEarliestConflict(
         fcl::DefaultCollisionData<float> collision_data;
         col_mng_robots->collide(&collision_data, fcl::DefaultCollisionFunction<float>);
         if (collision_data.result.isCollision()) {
-            //debug
-            // fcl::DefaultDistanceData<float> inter_robot_distance_data;
-            // inter_robot_distance_data.request.enable_signed_distance = true;
-            // col_mng_robots_->distance(&inter_robot_distance_data, fcl::DefaultDistanceFunction<float>);
-
             assert(collision_data.result.numContacts() > 0);
             const auto& contact = collision_data.result.getContact(0);
 

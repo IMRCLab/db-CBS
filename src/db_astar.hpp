@@ -189,11 +189,6 @@ public:
       std::cout << "constraint at time: " << constraint.time << std::endl;
       si->printState(constraint.constrained_state);
     }
-    //   const auto& other_state = constraint.constrained_state;
-    //     const auto& other_transform = robot->getTransform(other_state, 0);
-    //     fcl::CollisionObjectf other_robot_co(robot->getCollisionGeometry(0)); 
-    //     std::cout << "db constraints: " << other_transform.translation() << "time: " << constraint.time << std::endl;
-    // }
 
     ll_result.plan.clear();
     ll_result.trajectory.clear();
@@ -217,16 +212,6 @@ public:
     si->setStatePropagator(statePropagator);
 
     si->setup();
-
-    // debug
-    // std::vector<double> fake_conflict_state_ = {1.60426, 1.04635, 0.0};
-    // float fake_conflict_time_ = 0.4;
-    // auto f_state = si->allocState();
-    // si->getStateSpace()->copyFromReals(f_state, fake_conflict_state_);
-    // Constraint temp_const = {fake_conflict_time_, f_state}; // single state constraint
-    // std::map<size_t, std::vector<Constraint>> fake_constraints;
-    // fake_constraints[0].push_back(temp_const);
-    // create and set a start state
     auto startState = si->allocState();
     si->getStateSpace()->copyFromReals(startState, robot_start);
     
@@ -241,7 +226,6 @@ public:
     ob::RealVectorBounds position_bounds_no_bound(env_size);
     position_bounds_no_bound.setLow(-1e6);//std::numeric_limits<double>::lowest());
     position_bounds_no_bound.setHigh(1e6);//std::numeric_limits<double>::max());
-    // std::shared_ptr<Robot> robot_no_pos_bound = create_robot("unicyle_first_order_0", position_bounds_no_bound); // hard-coded
     std::shared_ptr<Robot> robot_no_pos_bound = create_robot(robot_type, position_bounds_no_bound); // hard-coded
     auto si_no_pos_bound = robot_no_pos_bound->getSpaceInformation();
     si_no_pos_bound->setPropagationStepSize(1);
@@ -660,9 +644,6 @@ public:
         const auto relative_pos = robot->getTransform(state).translation();
         robot->setPosition(tmpState, offset + relative_pos);
 
-        // std::cout << "check";
-        // si->printState(tmpState);
-
         if (!si->isValid(tmpState)) {
           motionValid = false;
           // std::cout << "invalid";
@@ -680,7 +661,6 @@ public:
       bool reachesGoal = si->distance(tmpState, goalState) <= delta;
 
       for (const auto& constraint : constraints) {
-      // for (const auto& constraint : fake_constraints[0]) {
         // a constraint violation can only occur between t in [current->gScore, tentative_gScore]
         float time_offset = constraint.time - current->gScore;
         int time_index = std::lround(time_offset / robot->dt());
@@ -696,8 +676,6 @@ public:
         }
 
         if (state_to_check) {
-          
-          // std::cout << constraint.time << " " << current->gScore << " " << time_offset << " " << time_index << std::endl;
           // compute translated state
           si->copyState(tmpStateconst, state_to_check);
           const auto relative_pos = robot->getTransform(state_to_check).translation();
@@ -718,9 +696,6 @@ public:
           other_robot_co.setTranslation(other_transform.translation());
           other_robot_co.setRotation(other_transform.rotation());
           other_robot_co.computeAABB();
-          // if (transform.translation() == other_transform.translation()){
-            // std::cout << "CATCH: " << transform.translation() << std::endl;
-          // }
           fcl::CollisionRequest<float> request;
           fcl::CollisionResult<float> result;
           // check two states for collision
@@ -823,24 +798,12 @@ public:
   std::reverse(result.begin(), result.end());
   ll_result.plan = result;
   ll_result.cost = nearest->gScore;
-
-  // std::ofstream out(outputFile);
-  // out << "delta: " << delta << std::endl;
-  // out << "epsilon: " << epsilon << std::endl;
-  // out << "cost: " << nearest->gScore << std::endl;
-  // out << "result:" << std::endl;
-  // out << "  - states:" << std::endl;
-  // for (size_t i = 0; i < result.size() - 1; ++i)
   for (size_t i = 0; i < result.size() - 1; ++i)
   {
     // Compute intermediate states
     const auto node_state = result[i]->state;
     const fcl::Vector3f current_pos = robot->getTransform(node_state).translation();
     const auto &motion = motions.at(result[i+1]->used_motion);
-    // out << "      # ";
-    // printState(out, si, node_state);
-    // out << std::endl;
-    // out << "      # motion " << motion.idx << " with cost " << motion.cost << std::endl;
     // skip last state each
     for (size_t k = 0; k < motion.states.size(); ++k)
     {
@@ -848,38 +811,10 @@ public:
       si->copyState(tmpState, state);
       const fcl::Vector3f relative_pos = robot->getTransform(state).translation();
       robot->setPosition(tmpState, current_pos + result[i+1]->used_offset + relative_pos);
-
-      // if (k < motion.states.size() - 1) {
-      //   out << "      - ";
-      // } else {
-      //   out << "      # ";
-      // }
-      // printState(out, si, tmpState);
-      // out << std::endl;
     }
-    // out << std::endl;
   }
-  // out << "      - ";
-  // printState(out, si, result.back()->state);
-  // out << std::endl;
-  // out << "    actions:" << std::endl;
-  // for (size_t i = 0; i < result.size() - 1; ++i)
-  // for (size_t i = 0; i < result.size() - 1; ++i)
-  // {
-  //   // const auto &motion = motions[result[i+1]->used_motion];
-  //   // out << "      # motion " << motion.idx << " with cost " << motion.cost << std::endl;
-  //   // for (size_t k = 0; k < motion.actions.size(); ++k)
-  //   // {
-  //   //   const auto& action = motion.actions[k];
-  //   //   // out << "      - ";
-  //   //   // printAction(out, si, action);
-  //   //   // out << std::endl;
-  //   // }
-  //   // out << std::endl;
-  // }
   // statistics for the motions used
   std::map<size_t, size_t> motionsCount; // motionId -> usage count
-  // for (size_t i = 0; i < result.size() - 1; ++i)
   for (size_t i = 0; i < result.size() - 1; ++i)
   {
     auto motionId = result[i+1]->used_motion;
@@ -890,10 +825,6 @@ public:
       iter->second += 1;
     }
   }
-  // out << "    motion_stats:" << std::endl;
-  // for (const auto& kv : motionsCount) {
-  //   out << "      " << motions[kv.first].idx << ": " << kv.second << std::endl;
-  // } //end of while loop
 
     return false;
   } // end of search function
