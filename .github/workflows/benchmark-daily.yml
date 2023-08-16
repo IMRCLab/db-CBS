@@ -1,9 +1,12 @@
 name: Benchmark
 
 on:
+  # every midnight
   schedule:
-    # every midnight
     - cron:  '0 0 * * *'
+  # manual trigger
+  workflow_dispatch
+
 
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
