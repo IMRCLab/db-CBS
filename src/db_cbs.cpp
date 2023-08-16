@@ -395,6 +395,8 @@ int main(int argc, char* argv[]) {
             std::string motionsFile;
             if (robotType == "unicycle_first_order_0") {
                 motionsFile = "../motions/dbg_motions.msgpack";
+            } else if (robotType == "car_first_order_with_1_trailers_0") {
+                motionsFile = "../motions/car_first_order_with_1_trailers_0_sorted.msgpack";
             } else {
                 throw std::runtime_error("Unknown motion filename for this robottype!");
             }
