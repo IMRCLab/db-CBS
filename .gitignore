@@ -1,4 +1,5 @@
 buildRelease/
 buildDebug/
 results/
+motions
 __pycache__/
