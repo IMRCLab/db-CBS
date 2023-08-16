@@ -421,9 +421,12 @@ int main(int argc, char* argv[]) {
         }
 
         DBAstar<Constraint> llplanner;
-        /*bool success =*/ llplanner.search(robot_motions.at(robot_types[i]).get(), starts[i], goals[i], 
+        bool success = llplanner.search(robot_motions.at(robot_types[i]).get(), starts[i], goals[i], 
             obstacles, robots[i], robot_types[i], env_min.size(), start.constraints[i], start.solution[i]);
-        // TODO: need to handle the failure case, too!
+        if (!success) {
+            std::cout << "Couldn't find initial solution." << std::endl;
+            return 0;
+        }
 
         start.cost += start.solution[i].cost;
         std::cout << "High Level Node Cost: " << start.cost << std::endl;
@@ -480,20 +483,20 @@ int main(int argc, char* argv[]) {
         DBAstar<Constraint> llplanner;
         bool success = llplanner.search(robot_motions.at(robot_types[i]).get(), starts[i], goals[i], 
             obstacles, robots[i], robot_types[i], env_min.size(), newNode.constraints[i], newNode.solution[i]); 
-        newNode.cost += newNode.solution[i].cost;
-        std::cout << "Updated New node cost: " << newNode.cost << std::endl;
 
         if (success) {
+          newNode.cost += newNode.solution[i].cost;
+          std::cout << "Updated New node cost: " << newNode.cost << std::endl;
         //   print_solution(newNode.solution, robots);
 
           auto handle = open.push(newNode);
           (*handle).handle = handle;
-          
+        
+          id++;
         }
         else {
 
         }
-        id++;
       }
 
     }
