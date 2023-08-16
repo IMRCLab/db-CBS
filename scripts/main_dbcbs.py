@@ -15,7 +15,6 @@ sys.path.append(os.getcwd())
 
 def run_dbcbs(filename_env, folder, timelimit, cfg):
     with tempfile.TemporaryDirectory() as tmpdirname:
-        filename_motions = Path("..") / "motions" / "dbg_motions.msgpack"
         print(filename_env)
         filename_stats = "{}/stats.yaml".format(folder)
         start = time.time()
@@ -30,7 +29,6 @@ def run_dbcbs(filename_env, folder, timelimit, cfg):
 
             cmd = ["./db_cbs", 
                 "-i", filename_env,
-                "-m", filename_motions,
                 "-o", filename_result_dbcbs,
                 "--joint", filename_result_dbcbs_joint,
                 "--opt", filename_result_dbcbs_opt]
