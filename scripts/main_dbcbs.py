@@ -31,7 +31,8 @@ def run_dbcbs(filename_env, folder, timelimit, cfg):
                 "-i", filename_env,
                 "-o", filename_result_dbcbs,
                 "--joint", filename_result_dbcbs_joint,
-                "--opt", filename_result_dbcbs_opt]
+                "--opt", filename_result_dbcbs_opt,
+                "--delta", str(0.5)]
             print(subprocess.list2cmdline(cmd))
             result = subprocess.run(cmd)
             t_dbcbs_stop = time.time()

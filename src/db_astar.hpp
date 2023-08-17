@@ -168,71 +168,53 @@ float heuristic(std::shared_ptr<Robot> robot, const ob::State *s, const ob::Stat
   // return 0;
   
 }
-template <typename Constraint>
-class DBAstar
+
+struct Motions
 {
-public: 
-  float delta = 0.5;
-  float epsilon = 1.0;
-  float alpha = 0.5;
-  bool filterDuplicates = true;
-  float maxCost = 1e6;
+  std::vector<Motion> motions;
+  ompl::NearestNeighbors<Motion*>* T_m;
+};
 
-  bool search(msgpack::object msg_obj, std::vector<double> robot_start, std::vector<double> robot_goal, std::vector<fcl::CollisionObjectf *> obstacles, 
-    std::shared_ptr<Robot> robot,std::string robot_type, size_t env_size, const std::vector<Constraint>& constraints, LowLevelPlan<AStarNode*,ob::State*,oc::Control*>& ll_result)
-
-  {
+void load_motions(
+  msgpack::object msg_obj,
+  std::shared_ptr<Robot> robot,
+  std::string robot_type,
+  size_t env_size,
+  float delta,
+  bool filterDuplicates,
+  float alpha,
+  Motions& result)
+{
     auto si = robot->getSpaceInformation();
 
-    std::cout << "Running dbA*" << std::endl;
-    for (const auto& constraint : constraints){
-      std::cout << "constraint at time: " << constraint.time << std::endl;
-      si->printState(constraint.constrained_state);
-    }
-
-    ll_result.plan.clear();
-    ll_result.trajectory.clear();
-    ll_result.actions.clear();
-    ll_result.cost = 0;
-
     std::shared_ptr<fcl::BroadPhaseCollisionManagerf> bpcm_env(new fcl::DynamicAABBTreeCollisionManagerf());
-    bpcm_env->registerObjects(obstacles);
     bpcm_env->setup();
-
-    // set number of control steps
-    si->setPropagationStepSize(1);
-    si->setMinMaxControlDuration(1, 1);
 
     // set state validity checking for this space
     auto stateValidityChecker(std::make_shared<fclStateValidityChecker>(si, bpcm_env, robot, false));
-    si->setStateValidityChecker(stateValidityChecker);
 
-    // set the state propagator
     std::shared_ptr<oc::StatePropagator> statePropagator(new RobotStatePropagator(si, robot));
-    si->setStatePropagator(statePropagator);
 
+    si->setPropagationStepSize(1);
+    si->setMinMaxControlDuration(1, 1);
+    si->setStateValidityChecker(stateValidityChecker);
+    si->setStatePropagator(statePropagator);
     si->setup();
-    auto startState = si->allocState();
-    si->getStateSpace()->copyFromReals(startState, robot_start);
-    
-    // set goal state
-    auto goalState = si->allocState();
-    si->getStateSpace()->copyFromReals(goalState, robot_goal);
-    std::vector<Motion> motions;
-    size_t num_states = 0;
-    size_t num_invalid_states = 0;
 
     // create a robot with no position bounds
     ob::RealVectorBounds position_bounds_no_bound(env_size);
     position_bounds_no_bound.setLow(-1e6);//std::numeric_limits<double>::lowest());
     position_bounds_no_bound.setHigh(1e6);//std::numeric_limits<double>::max());
-    std::shared_ptr<Robot> robot_no_pos_bound = create_robot(robot_type, position_bounds_no_bound); // hard-coded
+    std::shared_ptr<Robot> robot_no_pos_bound = create_robot(robot_type, position_bounds_no_bound);
     auto si_no_pos_bound = robot_no_pos_bound->getSpaceInformation();
     si_no_pos_bound->setPropagationStepSize(1);
     si_no_pos_bound->setMinMaxControlDuration(1, 1);
     si_no_pos_bound->setStateValidityChecker(stateValidityChecker);
     si_no_pos_bound->setStatePropagator(statePropagator);
     si_no_pos_bound->setup();
+
+    size_t num_states = 0;
+    size_t num_invalid_states = 0;
 
     if (msg_obj.type != msgpack::type::ARRAY) {
       throw msgpack::type_error();
@@ -286,7 +268,7 @@ public:
         }
       }
       m.cost = m.actions.size() * robot->dt(); 
-      m.idx = motions.size();
+      m.idx = result.motions.size();
 
       // generate collision objects and collision manager for saved motion
       for (const auto &state : m.states)
@@ -306,38 +288,30 @@ public:
 
       m.disabled = false; 
 
-      motions.push_back(m); 
+      result.motions.push_back(m); 
     } // end of for loop, looping over all 5k motions
     std::cout << "Info: " << num_invalid_states << " states are invalid of " << num_states << std::endl;
 
     auto rng = std::default_random_engine{};
-    std::shuffle(std::begin(motions), std::end(motions), rng);
-    for (size_t idx = 0; idx < motions.size(); ++idx) {
-      motions[idx].idx = idx;
+    std::shuffle(std::begin(result.motions), std::end(result.motions), rng);
+    for (size_t idx = 0; idx < result.motions.size(); ++idx) {
+      result.motions[idx].idx = idx;
     }
-    std::uniform_real_distribution<> dis_angle(0, 2 * M_PI);
 
     // build kd-tree for motion primitives
-    ompl::NearestNeighbors<Motion*>* T_m; // start states of motions
     if (si->getStateSpace()->isMetricSpace())
     {
-      T_m = new ompl::NearestNeighborsGNATNoThreadSafety<Motion*>();
+      result.T_m = new ompl::NearestNeighborsGNATNoThreadSafety<Motion*>();
     } else {
-      T_m = new ompl::NearestNeighborsSqrtApprox<Motion*>();
+      result.T_m = new ompl::NearestNeighborsSqrtApprox<Motion*>();
     }
-    T_m->setDistanceFunction([si, motions](const Motion* a, const Motion* b) { return si->distance(a->states[0], b->states[0]); });
+    result.T_m->setDistanceFunction([si](const Motion* a, const Motion* b) { return si->distance(a->states[0], b->states[0]); });
 
-    for (auto& motion : motions) {
-      T_m->add(&motion); // keep initial states
+    for (auto& motion : result.motions) {
+      result.T_m->add(&motion); // keep initial states
     }
 
-    std::cout << "There are " << motions.size() << " motions!" << std::endl;
-    std::cout << "Max cost is " << maxCost << std::endl;
-
-    if (alpha <= 0 || alpha >= 1) {
-      std::cerr << "Alpha needs to be between 0 and 1!" << std::endl;
-      return 1;
-    }
+    std::cout << "There are " << result.motions.size() << " motions!" << std::endl;
 
     //////////////////////////
     if (delta < 0) {
@@ -346,7 +320,7 @@ public:
       fakeMotion.states.push_back(si->allocState());
       std::vector<Motion *> neighbors_m;
       size_t num_desired_neighbors = (size_t)-delta; 
-      size_t num_samples = std::min<size_t>(1000, motions.size());
+      size_t num_samples = std::min<size_t>(1000, result.motions.size());
 
       auto state_sampler = si->allocStateSampler();
       float sum_delta = 0.0;
@@ -356,7 +330,7 @@ public:
         } while (!si->isValid(fakeMotion.states[0]));
         robot->setPosition(fakeMotion.states[0], fcl::Vector3f(0, 0, 0));
 
-        T_m->nearestK(&fakeMotion, num_desired_neighbors+1, neighbors_m); 
+        result.T_m->nearestK(&fakeMotion, num_desired_neighbors+1, neighbors_m); 
 
         float max_delta = si->distance(fakeMotion.states[0], neighbors_m.back()->states.front());
         sum_delta += max_delta;
@@ -375,13 +349,13 @@ public:
     fakeMotion.idx = -1;
     fakeMotion.states.push_back(si->allocState());
     std::vector<Motion *> neighbors_m;
-    for (const auto& m : motions) {
+    for (const auto& m : result.motions) {
       if (m.disabled) {
         continue;
       }
 
       si->copyState(fakeMotion.states[0], m.states[0]);
-      T_m->nearestR(&fakeMotion, delta*alpha, neighbors_m); // finding applicable motions with discont.
+      result.T_m->nearestR(&fakeMotion, delta*alpha, neighbors_m); // finding applicable motions with discont.
 
       for (Motion* nm : neighbors_m) {
         if (nm == &m || nm->disabled) { 
@@ -397,6 +371,76 @@ public:
     std::cout << "There are " << num_duplicates << " duplicate motions!" << std::endl;
 
   }
+
+}
+
+template <typename Constraint>
+class DBAstar
+{
+public:
+  DBAstar(float delta, float alpha)
+    : delta(delta)
+    , alpha(alpha)
+    , epsilon(1.0)
+    , maxCost(1e6)
+  {
+  }
+
+  bool search(
+    const Motions& motions,
+    std::vector<double> robot_start,
+    std::vector<double> robot_goal,
+    std::vector<fcl::CollisionObjectf *> obstacles, 
+    std::shared_ptr<Robot> robot,
+    const std::vector<Constraint>& constraints,
+    LowLevelPlan<AStarNode*,ob::State*,oc::Control*>& ll_result)
+
+  {
+    auto si = robot->getSpaceInformation();
+
+    std::cout << "Running dbA*" << std::endl;
+    for (const auto& constraint : constraints){
+      std::cout << "constraint at time: " << constraint.time << std::endl;
+      si->printState(constraint.constrained_state);
+    }
+
+    ll_result.plan.clear();
+    ll_result.trajectory.clear();
+    ll_result.actions.clear();
+    ll_result.cost = 0;
+
+    std::shared_ptr<fcl::BroadPhaseCollisionManagerf> bpcm_env(new fcl::DynamicAABBTreeCollisionManagerf());
+    bpcm_env->registerObjects(obstacles);
+    bpcm_env->setup();
+
+    // set number of control steps
+    si->setPropagationStepSize(1);
+    si->setMinMaxControlDuration(1, 1);
+
+    // set state validity checking for this space
+    auto stateValidityChecker(std::make_shared<fclStateValidityChecker>(si, bpcm_env, robot, false));
+    si->setStateValidityChecker(stateValidityChecker);
+
+    // set the state propagator
+    std::shared_ptr<oc::StatePropagator> statePropagator(new RobotStatePropagator(si, robot));
+    si->setStatePropagator(statePropagator);
+
+    si->setup();
+    auto startState = si->allocState();
+    si->getStateSpace()->copyFromReals(startState, robot_start);
+    
+    // set goal state
+    auto goalState = si->allocState();
+    si->getStateSpace()->copyFromReals(goalState, robot_goal);
+
+    std::cout << "Max cost is " << maxCost << std::endl;
+
+    if (alpha <= 0 || alpha >= 1) {
+      std::cerr << "Alpha needs to be between 0 and 1!" << std::endl;
+      return 1;
+    }
+
+
 
 //// db-A* search
   open_t open;
@@ -472,7 +516,7 @@ public:
         // Compute intermediate states
         const auto node_state = result[i]->state;
         const fcl::Vector3f current_pos = robot->getTransform(node_state).translation();
-        const auto &motion = motions.at(result[i+1]->used_motion);
+        const auto &motion = motions.motions.at(result[i+1]->used_motion);
         
         for (size_t k = 0; k < motion.states.size()-1; ++k) // skipping the last state
         {
@@ -489,7 +533,7 @@ public:
 
       for (size_t i = 0; i < result.size() - 1; ++i)
       {
-        const auto &motion = motions[result[i+1]->used_motion];
+        const auto &motion = motions.motions[result[i+1]->used_motion];
         for (size_t k = 0; k < motion.actions.size(); ++k)
         {
           const auto& action = motion.actions[k];
@@ -575,7 +619,7 @@ public:
     si->copyState(fakeMotion.states[0], current->state);
     robot->setPosition(fakeMotion.states[0], fcl::Vector3f(0,0,0));
 
-    T_m->nearestR(&fakeMotion, delta*alpha, neighbors_m); 
+    motions.T_m->nearestR(&fakeMotion, delta*alpha, neighbors_m); 
     // Loop over all potential applicable motions
     for (const Motion* motion : neighbors_m) {
       if (motion->disabled) {
@@ -803,7 +847,7 @@ public:
     // Compute intermediate states
     const auto node_state = result[i]->state;
     const fcl::Vector3f current_pos = robot->getTransform(node_state).translation();
-    const auto &motion = motions.at(result[i+1]->used_motion);
+    const auto &motion = motions.motions.at(result[i+1]->used_motion);
     // skip last state each
     for (size_t k = 0; k < motion.states.size(); ++k)
     {
@@ -828,6 +872,12 @@ public:
 
     return false;
   } // end of search function
+
+private:
+  float delta;
+  float alpha;
+  float epsilon;
+  float maxCost;
 
 
 }; // end of DBAstar class
