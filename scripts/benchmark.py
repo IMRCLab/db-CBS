@@ -88,22 +88,28 @@ def execute_task(task: ExecutionTask):
 def main():
 	parallel = True
 	instances = [
-		"parallelpark",
+		"swap2_unicycle",
+		"swap2_trailer",
+		"alcove_unicycle",
+		# "parallelpark",
 		# "bugtrap",
         # "wall",
 		# "swap",
 		# "classic",
 		# "alcove",
 		# "alcove_hard",
-		# "straight"
+		# "straight",
+		# "swap_cars",
+		# "swap2_hetero",
+		# "swap4_unicycle",
 	]
 	algs = [
-		# "sst",
-		# "s2m2",
-		# "k-cbs",
+		"sst",
+		"s2m2",
+		"k-cbs",
 		"db-cbs",
 	]
-	trials = 2
+	trials = 1
 	timelimit = 5*60 
 
 	tasks = []
