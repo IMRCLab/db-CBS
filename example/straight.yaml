@@ -1,0 +1,11 @@
+environment:
+  min: [0, 0]
+  max: [6, 6]
+  obstacles: []
+robots:
+  - type: unicycle_first_order_0
+    start: [1,1,0] # x,y,theta
+    goal: [2,1,0] # x,y,theta
+  - type: unicycle_first_order_0
+    start: [1,2,0] # x,y,theta
+    goal: [4,2,0] # x,y,theta

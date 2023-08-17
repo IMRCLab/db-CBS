@@ -27,6 +27,9 @@
 #include <boost/heap/d_ary_heap.hpp>
 
 
+#include "multirobot_trajectory.hpp"
+
+
 namespace ob = ompl::base;
 namespace oc = ompl::control;
 
@@ -464,7 +467,25 @@ int main(int argc, char* argv[]) {
         std::cout << "Final solution! cost: " << P.cost << std::endl;
         export_solutions(P.solution, robots, outputFile);
         export_joint_solutions(P.solution, robots, jointFile);
-        execute_optimization(inputFile, jointFile, optimizationFile);
+
+        const bool new_multirobot_optimization = false;
+
+      //   if (new_multirobot_optimization)
+      // {
+      execute_optimizationMultiRobot(inputFile,
+                                     outputFile, 
+                                     optimizationFile,
+                                     new_multirobot_optimization);
+
+      // }
+      //
+      //   else
+      //     {
+      //       execute_optimization(inputFile, jointFile, optimizationFile);
+      //     }
+
+
+
         return 0;
         break;
       }
