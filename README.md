@@ -8,6 +8,14 @@ The primitives are on the TUB cloud. The easiest is to use a symlink:
 ln -s /home/whoenig/tubCloud/projects/db-cbs/motions motions
 ```
 
+Alternatively, download a copy
+
+```
+wget https://tubcloud.tu-berlin.de/s/CijbRaJadf6JwH3/download
+unzip download
+rm download
+```
+
 ## Building
 
 Tested on Ubuntu 22.04.
