@@ -59,5 +59,5 @@ int main(int argc, char *argv[]) {
     return 1;
   }
 
-  execute_optimizationQ(envFile, initFile, outFile, sum_robots_cost);
+  execute_optimizationMultiRobot(envFile, initFile, outFile, sum_robots_cost);
 }

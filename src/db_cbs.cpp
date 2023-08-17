@@ -468,21 +468,21 @@ int main(int argc, char* argv[]) {
         export_solutions(P.solution, robots, outputFile);
         export_joint_solutions(P.solution, robots, jointFile);
 
-        const bool new_multirobot_optimization = true;
+        const bool new_multirobot_optimization = false;
 
-        if (new_multirobot_optimization)
-      {
+      //   if (new_multirobot_optimization)
+      // {
       execute_optimizationMultiRobot(inputFile,
                                      outputFile, 
                                      optimizationFile,
-                                     true);
+                                     new_multirobot_optimization);
 
-      }
-
-        else
-          {
-            execute_optimization(inputFile, jointFile, optimizationFile);
-          }
+      // }
+      //
+      //   else
+      //     {
+      //       execute_optimization(inputFile, jointFile, optimizationFile);
+      //     }
 
 
 

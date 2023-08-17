@@ -40,8 +40,9 @@ class TestStandAlone(unittest.TestCase):
             "../example/straight.yaml",
             "--result",
             "/tmp/check5.yaml",
-            "--video",
-            "straight_solution_optimized.mp4"]
+            # "--video",
+            # "straight_solution_optimized.mp4"
+        ]
 
 
 
@@ -77,8 +78,9 @@ class TestStandAlone(unittest.TestCase):
             "../example/straight.yaml",
             "--result",
             "/tmp/check5.yaml",
-            "--video",
-            "straight_solution_optimized.mp4"]
+            # "--video",
+            # "straight_solution_optimized.mp4"
+        ]
 
 
         print("old optimization")
@@ -91,8 +93,8 @@ class TestStandAlone(unittest.TestCase):
 
     def test_cbs(self):
         build_cmd = [ "make" , "db_cbs" ]
-        cmd_db_cbs = ["./db_cbs", "-i", "../example/classic.yaml", "-m", "../results/dbg/motions.msgpack", "-o", "classic_debug.yaml", "--jnt", "classic_debug_joint.yaml", "--opt", "classic_debug_opt.yaml" ]
-        cmd_vis = [ "python3", "../scripts/visualize.py", "../example/classic.yaml", "--result", "classic_debug_opt.yaml",  "--video", "bb.mp4" ]
+        cmd_db_cbs = ["./db_cbs", "-i", "../example/classic.yaml", "-o", "classic_debug.yaml", "--jnt", "classic_debug_joint.yaml", "--opt", "classic_debug_opt.yaml" ]
+        cmd_vis = [ "python3", "../scripts/visualize.py", "../example/classic.yaml", "--result", "classic_debug_opt.yaml" ]
         for i in [build_cmd, cmd_db_cbs, cmd_vis]:
             print("running cmd")
             print(' '.join(i))

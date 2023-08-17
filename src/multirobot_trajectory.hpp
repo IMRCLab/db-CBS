@@ -293,9 +293,9 @@ void execute_optimizationMultiRobot(const std::string &env_file,
 
   trajectory_optimization(problem, init_guess_joint, options_trajopt, sol,
                           result);
-  std::ofstream out(output_file);
-  std::cout << "cost is " << result.cost << std::endl;
-  result.write_yaml_joint(out);
+  // std::ofstream out(output_file);
+  // std::cout << "cost is " << result.cost << std::endl;
+  // result.write_yaml_joint(out);
 
   std::cout << "optimization done! " << std::endl;
   std::vector<int> index_time_goals;
@@ -312,6 +312,8 @@ void execute_optimizationMultiRobot(const std::string &env_file,
       index_time_goals);
 
   multi_out.to_yaml_format("/tmp/check5.yaml");
+  multi_out.to_yaml_format(output_file.c_str());
+
 
   // now I need to transform the joint trajectory to individual trajectories
 
