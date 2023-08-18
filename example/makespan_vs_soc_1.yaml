@@ -1,0 +1,12 @@
+environment:
+  min: [0, 0]
+  max: [5, 5]
+  obstacles: []
+robots:
+  - type: unicycle_first_order_0
+    start: [1,2.5,0] 
+    goal: [2,2.5,0] 
+  - type: unicycle_first_order_0
+    start: [4,2.5,3.14] 
+    goal: [1,2.5,3.14] 
+ 

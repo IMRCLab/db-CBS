@@ -91,6 +91,8 @@ def main():
 		"swap2_unicycle",
 		"swap2_trailer",
 		"alcove_unicycle",
+		"makespan_vs_soc_0",
+		"makespan_vs_soc_1",
 		# "parallelpark",
 		# "bugtrap",
         # "wall",
