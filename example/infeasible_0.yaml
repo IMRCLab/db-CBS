@@ -1,0 +1,14 @@
+environment:
+  min: [0, 0]
+  max: [5, 5]
+  obstacles: []
+
+# 2 robots with the same goal position
+robots:
+  - type: unicycle_first_order_0
+    start: [1,2.5,0]
+    goal: [2.5,2.5,0]
+  - type: unicycle_first_order_0
+    start: [4,2.5,3.14]
+    goal: [2.5,2.5,3.14]
+ 

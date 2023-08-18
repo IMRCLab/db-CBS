@@ -41,19 +41,23 @@ def run_dbcbs(filename_env, folder, timelimit, cfg):
                 print("db-cbs failed")
             else:
                 # shutil.copyfile(filename_result_dbcbs_opt, "{}/result_dbcbs_opt.yaml".format(folder))
-                cost = 0
-                with open(filename_result_dbcbs_opt) as f:
-                    result = yaml.safe_load(f)
-                    for r in result["result"]:
-                        cost += len(r["actions"]) * 0.1
-                #     cost = result["cost"] # cost*2
-                now = time.time()
-                t = now - start
-                print("success!", cost, t)
-                stats.write("  - t: {}\n".format(t))
-                stats.write("    cost: {}\n".format(cost))
-                stats.write("    duration_dbcbs: {}\n".format(duration_dbcbs))
-                stats.flush()
+                try:
+                    cost = 0
+                    with open(filename_result_dbcbs_opt) as f:
+                        result = yaml.safe_load(f)
+                        for r in result["result"]:
+                            cost += len(r["actions"]) * 0.1
+
+                    #     cost = result["cost"] # cost*2
+                    now = time.time()
+                    t = now - start
+                    print("success!", cost, t)
+                    stats.write("  - t: {}\n".format(t))
+                    stats.write("    cost: {}\n".format(cost))
+                    stats.write("    duration_dbcbs: {}\n".format(duration_dbcbs))
+                    stats.flush()
+                except:
+                    print("Failure!")
 
 
 
