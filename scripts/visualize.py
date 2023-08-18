@@ -41,6 +41,8 @@ class Animation:
     self.ax.set_ylim(env["environment"]["min"][1], env["environment"]["max"][1])
     self.robot_numbers = len(env["robots"])
     self.size = np.array([0.5, 0.25])
+    self.trailer_size = np.array([0.3, 0.25])
+    self.hitch_length = [0.5]
     self.robot_types = []
 
     for obstacle in env["environment"]["obstacles"]:
@@ -111,23 +113,33 @@ class Animation:
             self.robot_patches[k].set_transform(t + self.ax.transData)
 
         elif self.robot_types[k] == "car_first_order_with_1_trailers_0":
-          pos0 = state[0:2]
-          theta0 = state[2]
-          theta1 = state[3]
-          pos1 = pos0 - np.array([np.cos(theta1), np.sin(theta1)]
-                                ) * self.hitch_length[0]
+            pos0 = state[0:2]
+            theta0 = state[2]
+            theta1 = state[3]
+            pos1 = pos0 - np.array([np.cos(theta1), np.sin(theta1)]
+                                  ) * self.hitch_length[0]
 
-          xy = np.asarray(pos0) - np.asarray(self.size[0]) / 2
-          self.robot_patches[2*k].set_xy(xy)
-          t = matplotlib.transforms.Affine2D().rotate_around(
-              pos0[0], pos0[1], theta0)
-          self.robot_patches[2*k].set_transform(t + self.ax.transData)
+            xy = np.asarray(pos0) - np.asarray(self.size) / 2
+            self.robot_patches[k].set_xy(xy)
+            t = matplotlib.transforms.Affine2D().rotate_around(
+                pos0[0], pos0[1], theta0)
+            self.robot_patches[k].set_transform(t + self.ax.transData)
 
-          xy = np.asarray(pos1) - np.asarray(self.size[1]) / 2
-          self.robot_patches[2*k+1].set_xy(xy)
-          t = matplotlib.transforms.Affine2D().rotate_around(
-              pos1[0], pos1[1], theta1)
-          self.robot_patches[2*k+1].set_transform(t + self.ax.transData)
+            xy = np.asarray(pos1) - np.asarray(self.trailer_size) / 2
+            self.robot_patches[k+1].set_xy(xy)
+            t = matplotlib.transforms.Affine2D().rotate_around(
+                pos1[0], pos1[1], theta1)
+            self.robot_patches[k+1].set_transform(t + self.ax.transData)
+            # self.robot_patches[2*k].set_xy(xy)
+            # t = matplotlib.transforms.Affine2D().rotate_around(
+            #     pos0[0], pos0[1], theta0)
+            # self.robot_patches[2*k].set_transform(t + self.ax.transData)
+
+            # xy = np.asarray(pos1) - np.asarray(self.trailer_size) / 2
+            # self.robot_patches[2*k+1].set_xy(xy)
+            # t = matplotlib.transforms.Affine2D().rotate_around(
+            #     pos1[0], pos1[1], theta1)
+            # self.robot_patches[2*k+1].set_transform(t + self.ax.transData)
 
     return self.robot_patches
 
@@ -137,23 +149,18 @@ class Animation:
       pos = state
       patch.append(draw_sphere_patch(self.ax, state, 0.1, 0, **kwargs))
 
-    if type == 'unicycle_first_order_0' or type == 'car_first_order_0':
-      pos = state[:2]
-      yaw = state[2]
-      patch.append(draw_box_patch(self.ax, pos, self.size, yaw, **kwargs))  
+    elif type == 'unicycle_first_order_0' or type == 'car_first_order_0':
+        pos = state[:2]
+        yaw = state[2]
+        patch.append(draw_box_patch(self.ax, pos, self.size, yaw, **kwargs))  
 
-    if type == "car_first_order_with_1_trailers_0":
-        self.size = [np.array([0.5, 0.25]), np.array([0.3, 0.25])]
-        self.hitch_length = [0.5]
-
+    elif type == "car_first_order_with_1_trailers_0":
         xy = state[0:2]
         theta0 = state[2]
         theta1 = state[3]
-        patch.append(draw_box_patch(self.ax, xy, self.size[0], theta0, **kwargs))
+        patch.append(draw_box_patch(self.ax, xy, self.size, theta0, **kwargs))
         link1 = np.array([np.cos(theta1), np.sin(theta1)]) * self.hitch_length[0]
-        patch.append(draw_box_patch(self.ax, xy-link1,
-                      self.size[1], theta1, **kwargs))
-
+        patch.append(draw_box_patch(self.ax, xy-link1, self.trailer_size, theta1, **kwargs))
     return patch 
 
 def visualize(filename_env, filename_result = None, filename_video=None):
