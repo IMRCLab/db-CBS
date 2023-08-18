@@ -91,6 +91,9 @@ def main():
 		"swap2_unicycle",
 		"swap2_trailer",
 		"alcove_unicycle",
+		"makespan_vs_soc_0",
+		"makespan_vs_soc_1",
+		"infeasible_0",
 		# "parallelpark",
 		# "bugtrap",
         # "wall",
@@ -110,7 +113,7 @@ def main():
 		"db-cbs",
 	]
 	trials = 1
-	timelimit = 5*60 
+	timelimit = 5*60
 
 	tasks = []
 	for instance in instances:

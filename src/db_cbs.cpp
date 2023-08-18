@@ -27,6 +27,9 @@
 #include <boost/heap/d_ary_heap.hpp>
 
 
+#include "multirobot_trajectory.hpp"
+
+
 namespace ob = ompl::base;
 namespace oc = ompl::control;
 
@@ -309,13 +312,19 @@ int main(int argc, char* argv[]) {
     std::string outputFile;
     std::string jointFile;
     std::string optimizationFile;
+
+    bool filterDuplicates = true;
+    float delta;
+    float alpha = 0.5;
     // std::string outputFileSimple;
     desc.add_options()
       ("help", "produce help message")
       ("input,i", po::value<std::string>(&inputFile)->required(), "input file (yaml)")
       ("output,o", po::value<std::string>(&outputFile)->required(), "output file (yaml)")
       ("joint,jnt", po::value<std::string>(&jointFile)->required(), "joint output file (yaml)")
-      ("optimization,opt", po::value<std::string>(&optimizationFile)->required(), "optimization file (yaml)");
+      ("optimization,opt", po::value<std::string>(&optimizationFile)->required(), "optimization file (yaml)")
+      ("delta", po::value<float>(&delta)->default_value(0.5), "discont. bound");
+
       
     try {
       po::variables_map vm;
@@ -364,7 +373,7 @@ int main(int argc, char* argv[]) {
     std::vector<std::vector<double>> goals;
     std::vector<std::string> robot_types;
 
-    std::map<std::string, msgpack::object_handle> robot_motions;
+    std::map<std::string, Motions> robot_motions;
 
     std::vector<double> start_reals;
     std::vector<double> goal_reals;
@@ -412,17 +421,18 @@ int main(int argc, char* argv[]) {
             unpacker.reserve_buffer(length);
             is.read(unpacker.buffer(), length);
             unpacker.buffer_consumed(length);
-            // msgpack::object_handle oh;
-            unpacker.next(robot_motions[robotType]);
+            msgpack::object_handle oh;
+            unpacker.next(oh);
+            load_motions(oh.get(), robot, robotType, env_min.size(), delta, filterDuplicates, alpha, robot_motions[robotType]);
             // msgpack::object msg_objs = oh.get();
             // robot_motions.emplace(std::make_pair<std::string, msgpack::object_handle>(std::string(robotType), oh));
 
             std::cout << "loaded motions for " << robotType << std::endl;
         }
 
-        DBAstar<Constraint> llplanner;
-        bool success = llplanner.search(robot_motions.at(robot_types[i]).get(), starts[i], goals[i], 
-            obstacles, robots[i], robot_types[i], env_min.size(), start.constraints[i], start.solution[i]);
+        DBAstar<Constraint> llplanner(delta, alpha);
+        bool success = llplanner.search(robot_motions.at(robot_types[i]), starts[i], goals[i], 
+            obstacles, robots[i], start.constraints[i], start.solution[i]);
         if (!success) {
             std::cout << "Couldn't find initial solution." << std::endl;
             return 0;
@@ -464,7 +474,25 @@ int main(int argc, char* argv[]) {
         std::cout << "Final solution! cost: " << P.cost << std::endl;
         export_solutions(P.solution, robots, outputFile);
         export_joint_solutions(P.solution, robots, jointFile);
-        execute_optimization(inputFile, jointFile, optimizationFile);
+
+        const bool new_multirobot_optimization = false;
+
+      //   if (new_multirobot_optimization)
+      // {
+      execute_optimizationMultiRobot(inputFile,
+                                     outputFile, 
+                                     optimizationFile,
+                                     new_multirobot_optimization);
+
+      // }
+      //
+      //   else
+      //     {
+      //       execute_optimization(inputFile, jointFile, optimizationFile);
+      //     }
+
+
+
         return 0;
         break;
       }
@@ -480,9 +508,9 @@ int main(int argc, char* argv[]) {
         std::cout << "New node cost: " << newNode.cost << std::endl;
 
         // run the low level planner
-        DBAstar<Constraint> llplanner;
-        bool success = llplanner.search(robot_motions.at(robot_types[i]).get(), starts[i], goals[i], 
-            obstacles, robots[i], robot_types[i], env_min.size(), newNode.constraints[i], newNode.solution[i]); 
+        DBAstar<Constraint> llplanner(delta, alpha);
+        bool success = llplanner.search(robot_motions.at(robot_types[i]), starts[i], goals[i], 
+            obstacles, robots[i], newNode.constraints[i], newNode.solution[i]); 
 
         if (success) {
           newNode.cost += newNode.solution[i].cost;
