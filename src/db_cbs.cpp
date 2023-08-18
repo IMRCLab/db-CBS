@@ -306,7 +306,6 @@ int main(int argc, char* argv[]) {
     // Declare the supported options.
     po::options_description desc("Allowed options");
     std::string inputFile;
-    std::string motionsFile;
     std::string outputFile;
     std::string jointFile;
     std::string optimizationFile;
@@ -314,7 +313,6 @@ int main(int argc, char* argv[]) {
     desc.add_options()
       ("help", "produce help message")
       ("input,i", po::value<std::string>(&inputFile)->required(), "input file (yaml)")
-      ("motions,m", po::value<std::string>(&motionsFile)->required(), "motions file (yaml)")
       ("output,o", po::value<std::string>(&outputFile)->required(), "output file (yaml)")
       ("joint,jnt", po::value<std::string>(&jointFile)->required(), "joint output file (yaml)")
       ("optimization,opt", po::value<std::string>(&optimizationFile)->required(), "optimization file (yaml)");
@@ -333,20 +331,6 @@ int main(int argc, char* argv[]) {
       std::cerr << desc << std::endl;
       return 1;
     }
-    // load the msgpck
-    std::ifstream is( motionsFile.c_str(), std::ios::in | std::ios::binary );
-    // get length of file
-    is.seekg (0, is.end);
-    int length = is.tellg();
-    is.seekg (0, is.beg);
-    //
-    msgpack::unpacker unpacker;
-    unpacker.reserve_buffer(length);
-    is.read(unpacker.buffer(), length);
-    unpacker.buffer_consumed(length);
-    msgpack::object_handle oh;
-    unpacker.next(oh);
-    msgpack::object msg_objs = oh.get(); 
 
     // load problem description
     YAML::Node env = YAML::LoadFile(inputFile);
@@ -380,6 +364,8 @@ int main(int argc, char* argv[]) {
     std::vector<std::vector<double>> goals;
     std::vector<std::string> robot_types;
 
+    std::map<std::string, msgpack::object_handle> robot_motions;
+
     std::vector<double> start_reals;
     std::vector<double> goal_reals;
     HighLevelNode start;
@@ -403,10 +389,44 @@ int main(int argc, char* argv[]) {
         starts.push_back(start_reals);
         goals.push_back(goal_reals);
         robot_types.push_back(robotType);
+
+        auto iter = robot_motions.find(robotType);
+        if (iter == robot_motions.end()) {
+            std::string motionsFile;
+            if (robotType == "unicycle_first_order_0") {
+                motionsFile = "../motions/dbg_motions.msgpack";
+            } else if (robotType == "car_first_order_with_1_trailers_0") {
+                motionsFile = "../motions/car_first_order_with_1_trailers_0_sorted.msgpack";
+            } else {
+                throw std::runtime_error("Unknown motion filename for this robottype!");
+            }
+
+            // load the msgpck
+            std::ifstream is( motionsFile.c_str(), std::ios::in | std::ios::binary );
+            // get length of file
+            is.seekg (0, is.end);
+            int length = is.tellg();
+            is.seekg (0, is.beg);
+            //
+            msgpack::unpacker unpacker;
+            unpacker.reserve_buffer(length);
+            is.read(unpacker.buffer(), length);
+            unpacker.buffer_consumed(length);
+            // msgpack::object_handle oh;
+            unpacker.next(robot_motions[robotType]);
+            // msgpack::object msg_objs = oh.get();
+            // robot_motions.emplace(std::make_pair<std::string, msgpack::object_handle>(std::string(robotType), oh));
+
+            std::cout << "loaded motions for " << robotType << std::endl;
+        }
+
         DBAstar<Constraint> llplanner;
-        /*bool success =*/ llplanner.search(msg_objs, starts[i], goals[i], 
+        bool success = llplanner.search(robot_motions.at(robot_types[i]).get(), starts[i], goals[i], 
             obstacles, robots[i], robot_types[i], env_min.size(), start.constraints[i], start.solution[i]);
-        // TODO: need to handle the failure case, too!
+        if (!success) {
+            std::cout << "Couldn't find initial solution." << std::endl;
+            return 0;
+        }
 
         start.cost += start.solution[i].cost;
         std::cout << "High Level Node Cost: " << start.cost << std::endl;
@@ -461,22 +481,22 @@ int main(int argc, char* argv[]) {
 
         // run the low level planner
         DBAstar<Constraint> llplanner;
-        bool success = llplanner.search(msg_objs, starts[i], goals[i], 
+        bool success = llplanner.search(robot_motions.at(robot_types[i]).get(), starts[i], goals[i], 
             obstacles, robots[i], robot_types[i], env_min.size(), newNode.constraints[i], newNode.solution[i]); 
-        newNode.cost += newNode.solution[i].cost;
-        std::cout << "Updated New node cost: " << newNode.cost << std::endl;
 
         if (success) {
+          newNode.cost += newNode.solution[i].cost;
+          std::cout << "Updated New node cost: " << newNode.cost << std::endl;
         //   print_solution(newNode.solution, robots);
 
           auto handle = open.push(newNode);
           (*handle).handle = handle;
-          
+        
+          id++;
         }
         else {
 
         }
-        id++;
       }
 
     }

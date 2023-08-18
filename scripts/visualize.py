@@ -159,7 +159,7 @@ class Animation:
 def visualize(filename_env, filename_result = None, filename_video=None):
   anim = Animation(filename_env, filename_result)
   # anim.save(filename_video, 1)
-  anim.show()
+  # anim.show()
   if filename_video is not None:
     anim.save(filename_video, 1)
   else:
