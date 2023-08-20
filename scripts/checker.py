@@ -77,8 +77,8 @@ def check(filename_env: str, filename_result: str, file = None, expected_T=None)
 				success = False
 		# cost
 		cost += len(actions) * dt
-
-	print("Cost={}".format(cost), file=file)
+	if success:
+		print("Cost={}".format(cost), file=file)
 	return success
 
 def main() -> None:
