@@ -484,14 +484,6 @@ int main(int argc, char* argv[]) {
                                      optimizationFile,
                                      new_multirobot_optimization);
 
-      // }
-      //
-      //   else
-      //     {
-      //       execute_optimization(inputFile, jointFile, optimizationFile);
-      //     }
-
-
 
         return 0;
         break;

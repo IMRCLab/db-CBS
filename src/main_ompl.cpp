@@ -225,6 +225,7 @@ int main(int argc, char* argv[]) {
   assert(path->getStateCount() == path->getControlCount() + 1);
   std::vector<double>::iterator switchItr;
   std::vector<std::vector<std::vector<double>>> robot_states(state_lengths.size());
+  std::vector<std::vector<std::vector<double>>> robot_actions(state_lengths.size());
 
   for (size_t i = 0; i < path->getStateCount(); ++i) {
     const auto state = path->getState(i);
@@ -249,6 +250,25 @@ int main(int argc, char* argv[]) {
       }
     }
   }
+  const size_t dim = si->getControlSpace()->getDimension();
+  for (size_t i = 0; i < path->getControlCount(); ++i) {
+    const auto action = path->getControl(i);
+    std::vector<double> action_tmp;
+    int k = 0;
+    int j = 0;
+    for (size_t d = 0; d < dim; ++d)
+    {
+      double *address = si->getControlSpace()->getValueAddressAtIndex(action, d);
+      action_tmp.push_back(*address);
+      k ++;
+      if (k > 0 && k % 2 == 0){
+        robot_actions[j].push_back(action_tmp);
+        action_tmp.clear();
+        j += 1;
+      }
+    }
+  }
+
   std::ofstream out(outputFile);
   out << "result:" << std::endl;
   for (size_t i = 0; i < state_lengths.size(); ++i){
@@ -263,24 +283,17 @@ int main(int argc, char* argv[]) {
       }
       out << "]"<<std::endl;
     }
-  }
-
-  out << "    actions:" << std::endl;
-  for (size_t i = 0; i < path->getControlCount(); ++i) {
-
-    const size_t dim = si->getControlSpace()->getDimension();
-    out << "      - [";
-    for (size_t d = 0; d < dim; ++d)
-    {
-      const auto action = path->getControl(i);
-      double *address = si->getControlSpace()->getValueAddressAtIndex(action, d);
-      out << *address;
-      if (d < dim - 1)
-      {
-        out << ",";
+    out << "    actions:" << std::endl;
+    for (size_t j = 0; j < robot_actions[i].size(); j++){
+      out << "      - [";
+      for (auto it = robot_actions[i][j].begin(); it != robot_actions[i][j].end(); ++it){
+        out << *it;
+        if (next(it)!=robot_actions[i][j].end()){
+          out << ",";
+        }
       }
+      out << "]"<<std::endl;
     }
-    out << "]" << std::endl;
   }
 
   return 0;

@@ -10,7 +10,7 @@ from dataclasses import dataclass
 import multiprocessing as mp
 import tqdm
 import psutil
-# import checker
+import checker
 from benchmark_stats import run_benchmark_stats
 
 
@@ -78,8 +78,11 @@ def execute_task(task: ExecutionTask):
 		run_dbcbs(str(env), str(result_folder), task.timelimit, mycfg)
 		visualize_files = [p.name for p in result_folder.glob('result_*')]
 		check_files = [p.name for p in result_folder.glob('result_*')]
+	
+	for in_f in check_files:
+		with open((result_folder / in_f).with_suffix(".txt"), 'w') as out_f:
+			print("CHECK: ", checker.check(str(env), str(result_folder / in_f), out_f))
 
-	# for visualization
 	vis_script = scripts_path / "visualize.py"
 	for file in visualize_files:
 		run_visualize(vis_script, env, result_folder / file)
@@ -88,13 +91,13 @@ def execute_task(task: ExecutionTask):
 def main():
 	parallel = True
 	instances = [
-		"swap2_unicycle",
-		"swap2_trailer",
-		"alcove_unicycle",
-		"makespan_vs_soc_0",
-		"makespan_vs_soc_1",
-		"infeasible_0",
-		# "parallelpark",
+		# "swap2_unicycle",
+		# "swap2_trailer",
+		# "alcove_unicycle",
+		# "makespan_vs_soc_0",
+		# "makespan_vs_soc_1",
+		# "infeasible_0",
+		"parallelpark",
 		# "bugtrap",
         # "wall",
 		# "swap",
@@ -107,9 +110,9 @@ def main():
 		# "swap4_unicycle",
 	]
 	algs = [
-		"sst",
-		"s2m2",
-		"k-cbs",
+		# "sst",
+		# "s2m2",
+		# "k-cbs",
 		"db-cbs",
 	]
 	trials = 1
