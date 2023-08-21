@@ -102,6 +102,35 @@ class TestStandAlone(unittest.TestCase):
             out = subprocess.run(i)
             assert out.returncode == 0
 
+    def test_check1(self):
+        build_cmd = [ "make" , "main_check_multirobot" ]
+        cmd_check = ["./main_check_multirobot", "--result_file", "../more_testing/classic_solution.yaml",  "--env_file",  "../example/classic.yaml" , "--models_base_path" , "dynoplan/dynobench/models/" ] 
+        for i in [build_cmd, cmd_check ]:
+            print("running cmd")
+            print(' '.join(i))
+
+            out = subprocess.run(i)
+            assert out.returncode == 0
+
+    def test_check2(self):
+        build_cmd = [ "make" , "main_check_multirobot" ]
+        cmd_check = ["./main_check_multirobot", "--result_file", "../more_testing/result_dbcbs.yaml",
+                     "--env_file",  "../example/swap2_hetero.yaml" ,"--models_base_path" , "dynoplan/dynobench/models/" ] 
+        cmd = build_cmd
+        print("running cmd")
+        print(' '.join(build_cmd))
+
+        out = subprocess.run(cmd)
+        assert out.returncode == 0
+
+        cmd = cmd_check
+        print("running cmd")
+        print(' '.join(build_cmd))
+
+        out = subprocess.run(cmd)
+        assert out.returncode == 1
+
+
 
 
 if __name__ == "__main__":

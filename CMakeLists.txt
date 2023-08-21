@@ -58,6 +58,13 @@ target_include_directories(main_ompl PUBLIC
   ${FCL_INCLUDE_DIRS}
 )
 
+
+# checking script
+add_executable(main_check_multirobot
+  ./src/check_trajectory_multirobot.cpp
+)
+
+
 ## kcbs
 
 add_executable(main_kcbs
@@ -143,6 +150,15 @@ target_link_libraries(multirobot_optimization PRIVATE
 )
 
 
+target_link_libraries(main_check_multirobot PRIVATE 
+  dynobench::dynobench
+  idbastar::optimization
+  motion_planning_common
+  ${Boost_LIBRARIES}
+  ${YAML_LIBRARIES}
+  ompl
+  ${FCL_LIBRARIES}
+)
 
 
 
