@@ -32,12 +32,14 @@ def run_visualize(script, filename_env, filename_result):
 				"--result", filename_result,
 				"--video", filename_result.with_suffix(".mp4")])
 	
-def run_checker(filename_env, filename_result):
-	out = subprocess.run(["./main_check_multirobot",
-				"--result_file", filename_result,
-				"--env_file", filename_env,
-				"--models_base_path" , "../dynoplan/dynobench/models/",
-				"--goal_tol" , "0.2"])
+def run_checker(filename_env, filename_result, filename_log):
+	with open(filename_log, 'w') as f:
+		out = subprocess.run(["./main_check_multirobot",
+					"--result_file", filename_result,
+					"--env_file", filename_env,
+					"--models_base_path" , "../dynoplan/dynobench/models/",
+					"--goal_tol" , "0.2"],
+					stdout=f, stderr=f)
 	return out.returncode == 0
 
 def execute_task(task: ExecutionTask):
@@ -87,7 +89,7 @@ def execute_task(task: ExecutionTask):
 		check_files = [p.name for p in result_folder.glob('result_dbcbs_opt*')]
 	
 	for file in check_files:
-		if not run_checker(env, result_folder / file):
+		if not run_checker(env, result_folder / file, (result_folder / file).with_suffix(".check.txt")):
 			print("WARNING: CHECKER FAILED -> DELETING stats!")
 			(result_folder / "stats.yaml").unlink(missing_ok=True)
 
@@ -100,11 +102,11 @@ def main():
 	parallel = True
 	instances = [
 		"swap2_unicycle",
-		"swap2_trailer",
-		"alcove_unicycle",
-		"makespan_vs_soc_0",
-		"makespan_vs_soc_1",
-		"infeasible_0",
+		# "swap2_trailer",
+		# "alcove_unicycle",
+		# "makespan_vs_soc_0",
+		# "makespan_vs_soc_1",
+		# "infeasible_0",
 		# "parallelpark",
 		# "bugtrap",
         # "wall",
@@ -118,10 +120,10 @@ def main():
 		# "swap4_unicycle",
 	]
 	algs = [
-		"sst",
-		"s2m2",
+		# "sst",
+		# "s2m2",
 		"k-cbs",
-		"db-cbs",
+		# "db-cbs",
 	]
 	trials = 1
 	timelimit = 5*60
