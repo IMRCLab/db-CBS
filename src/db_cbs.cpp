@@ -124,15 +124,13 @@ bool getEarliestConflict(
     const std::vector<LowLevelPlan<AStarNode*,ob::State*, oc::Control*>>& solution,
     const std::vector<std::shared_ptr<Robot>>& all_robots,
     std::shared_ptr<fcl::BroadPhaseCollisionManagerf> col_mng_robots,
+    const std::vector<fcl::CollisionObjectf*>& col_mng_objs,
     Conflict& early_conflict)
 {
     size_t max_t = 0;
     for (const auto& sol : solution){
       max_t = std::max(max_t, sol.trajectory.size() - 1);
     }
-
-    std::vector<fcl::CollisionObjectf*> col_mng_objs;
-    col_mng_robots->getObjects(col_mng_objs);
 
     ob::State* node_state;
     std::vector<ob::State*> node_states;
@@ -460,7 +458,8 @@ int main(int argc, char* argv[]) {
     for (size_t i = 0; i < robots.size(); ++i) {
         for (size_t p = 0; p < robots[i]->numParts(); ++p) {
             auto coll_obj = new fcl::CollisionObjectf(robots[i]->getCollisionGeometry(p));
-            robots[i]->getCollisionGeometry(p)->setUserData((void*)i);
+            size_t userData = i;
+            robots[i]->getCollisionGeometry(p)->setUserData((void*)userData);
             col_mng_objs.push_back(coll_obj);
         }
     }
@@ -470,7 +469,7 @@ int main(int argc, char* argv[]) {
       HighLevelNode P = open.top();
       open.pop();
       Conflict inter_robot_conflict;
-      if (!getEarliestConflict(P.solution, robots, col_mng_robots, inter_robot_conflict)) {
+      if (!getEarliestConflict(P.solution, robots, col_mng_robots, col_mng_objs, inter_robot_conflict)) {
         std::cout << "Final solution! cost: " << P.cost << std::endl;
         export_solutions(P.solution, robots, outputFile);
         export_joint_solutions(P.solution, robots, jointFile);
