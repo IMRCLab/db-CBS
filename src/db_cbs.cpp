@@ -475,7 +475,8 @@ int main(int argc, char* argv[]) {
         export_solutions(P.solution, robots, outputFile);
         export_joint_solutions(P.solution, robots, jointFile);
 
-        const bool new_multirobot_optimization = false;
+      std::cout << "warning: using new multirobot optimization" << std::endl;
+        const bool new_multirobot_optimization = true;
 
       //   if (new_multirobot_optimization)
       // {
