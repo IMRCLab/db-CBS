@@ -71,7 +71,7 @@ class Animation:
       for robot in self.result["result"]:
         state = robot["states"][0]
         patches = self.draw_robot(state, self.robot_types[i], facecolor='blue')
-        self.robot_patches.extend(patches)
+        self.robot_patches.append(patches)
         i += 1
       self.anim = animation.FuncAnimation(self.fig, self.animate_func,
                                 frames=T,
@@ -99,18 +99,18 @@ class Animation:
         if self.robot_types[k] == 'single_integrator_0':
             pos = state
             xy = np.asarray(pos)
-            self.robot_patches[k].center = xy
+            self.robot_patches[k][0].center = xy
             t = matplotlib.transforms.Affine2D().rotate_around(
                 pos[0], pos[1], 0)
-            self.robot_patches[k].set_transform(t + self.ax.transData)
+            self.robot_patches[k][0].set_transform(t + self.ax.transData)
         elif self.robot_types[k] == 'unicycle_first_order_0' or self.robot_types[k] == 'car_first_order_0':
             pos = state[:2]
             yaw = state[2]
             xy = np.asarray(pos) - np.asarray(self.size) / 2
-            self.robot_patches[k].set_xy(xy)
+            self.robot_patches[k][0].set_xy(xy)
             t = matplotlib.transforms.Affine2D().rotate_around(
                 pos[0], pos[1], yaw)
-            self.robot_patches[k].set_transform(t + self.ax.transData)
+            self.robot_patches[k][0].set_transform(t + self.ax.transData)
 
         elif self.robot_types[k] == "car_first_order_with_1_trailers_0":
             pos0 = state[0:2]
@@ -120,16 +120,16 @@ class Animation:
                                   ) * self.hitch_length[0]
 
             xy = np.asarray(pos0) - np.asarray(self.size) / 2
-            self.robot_patches[k].set_xy(xy)
+            self.robot_patches[k][0].set_xy(xy)
             t = matplotlib.transforms.Affine2D().rotate_around(
                 pos0[0], pos0[1], theta0)
-            self.robot_patches[k].set_transform(t + self.ax.transData)
+            self.robot_patches[k][0].set_transform(t + self.ax.transData)
 
             xy = np.asarray(pos1) - np.asarray(self.trailer_size) / 2
-            self.robot_patches[k+1].set_xy(xy)
+            self.robot_patches[k][1].set_xy(xy)
             t = matplotlib.transforms.Affine2D().rotate_around(
                 pos1[0], pos1[1], theta1)
-            self.robot_patches[k+1].set_transform(t + self.ax.transData)
+            self.robot_patches[k][1].set_transform(t + self.ax.transData)
             # self.robot_patches[2*k].set_xy(xy)
             # t = matplotlib.transforms.Affine2D().rotate_around(
             #     pos0[0], pos0[1], theta0)
@@ -141,7 +141,7 @@ class Animation:
             #     pos1[0], pos1[1], theta1)
             # self.robot_patches[2*k+1].set_transform(t + self.ax.transData)
 
-    return self.robot_patches
+    return [item for row in self.robot_patches for item in row]
 
   def draw_robot(self, state, type, **kwargs):
     patch = []
