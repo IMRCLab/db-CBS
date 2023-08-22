@@ -101,12 +101,16 @@ def execute_task(task: ExecutionTask):
 def main():
 	parallel = True
 	instances = [
+		"swap1_unicycle",
+		"swap1_trailer",
 		"swap2_unicycle",
-		# "swap2_trailer",
-		# "alcove_unicycle",
-		# "makespan_vs_soc_0",
-		# "makespan_vs_soc_1",
-		# "infeasible_0",
+		"swap2_trailer",
+		"swap3_unicycle",
+		# "swap4_unicycle",
+		"alcove_unicycle",
+		"makespan_vs_soc_0",
+		"makespan_vs_soc_1",
+		"infeasible_0",
 		# "parallelpark",
 		# "bugtrap",
         # "wall",
@@ -120,10 +124,10 @@ def main():
 		# "swap4_unicycle",
 	]
 	algs = [
-		# "sst",
-		# "s2m2",
+		"sst",
+		"s2m2",
 		"k-cbs",
-		# "db-cbs",
+		"db-cbs",
 	]
 	trials = 1
 	timelimit = 5*60
