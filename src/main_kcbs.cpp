@@ -322,7 +322,23 @@ int main(int argc, char* argv[]){
                     }
                 }
                 resultFile << "]"<<std::endl;
-                
+            }
+            // for the action
+            resultFile << "    actions:" << std::endl;
+            for (size_t i = 0; i < path->getControlCount(); ++i) {
+                const size_t dim = si->getControlSpace()->getDimension();
+                resultFile << "      - [";
+                for (size_t d = 0; d < dim; ++d)
+                {
+                    const auto action = path->getControl(i);
+                    double *address = si->getControlSpace()->getValueAddressAtIndex(action, d);
+                    resultFile << *address;
+                    if (d < dim - 1)
+                    {
+                        resultFile << ",";
+                    }
+                }
+                resultFile << "]" << std::endl;
             }
             
           }

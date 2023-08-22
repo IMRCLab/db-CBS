@@ -91,6 +91,46 @@ class TestStandAlone(unittest.TestCase):
             out = subprocess.run(i)
             assert out.returncode == 0
 
+    def test_opti3(self):
+        run_cmd_old = [
+            "./multirobot_optimization",
+            "--env",
+            "../example/swap3_unicycle.yaml",
+            "--init",
+            "../more_testing/swap3_unicycle_solution_db.yaml",
+            "--out",
+            "buu.yaml",
+            "--s",
+            "1",
+            ">",
+            "/tmp/db_log.txt"]
+
+        build_cmd = [
+            "make", "multirobot_optimization"]
+
+        visualize_cmd = [
+            "python3",
+            "../scripts/visualize.py",
+            "../example/swap3_unicycle.yaml",
+            "--result",
+            "/tmp/check5.yaml",
+            # "--video",
+            # "straight_solution_optimized.mp4"
+        ]
+
+
+        print("old optimization")
+        for i in [build_cmd, run_cmd_old, visualize_cmd]:
+            print("running cmd")
+            print(' '.join(i))
+
+            out = subprocess.run(i)
+            assert out.returncode == 0
+
+
+
+
+
     def test_cbs(self):
         build_cmd = [ "make" , "db_cbs" ]
         cmd_db_cbs = ["./db_cbs", "-i", "../example/classic.yaml", "-o", "classic_debug.yaml", "--jnt", "classic_debug_joint.yaml", "--opt", "classic_debug_opt.yaml" ]
@@ -101,6 +141,35 @@ class TestStandAlone(unittest.TestCase):
 
             out = subprocess.run(i)
             assert out.returncode == 0
+
+    def test_check1(self):
+        build_cmd = [ "make" , "main_check_multirobot" ]
+        cmd_check = ["./main_check_multirobot", "--result_file", "../more_testing/classic_solution.yaml",  "--env_file",  "../example/classic.yaml" , "--models_base_path" , "dynoplan/dynobench/models/" ] 
+        for i in [build_cmd, cmd_check ]:
+            print("running cmd")
+            print(' '.join(i))
+
+            out = subprocess.run(i)
+            assert out.returncode == 0
+
+    def test_check2(self):
+        build_cmd = [ "make" , "main_check_multirobot" ]
+        cmd_check = ["./main_check_multirobot", "--result_file", "../more_testing/result_dbcbs.yaml",
+                     "--env_file",  "../example/swap2_hetero.yaml" ,"--models_base_path" , "dynoplan/dynobench/models/" ] 
+        cmd = build_cmd
+        print("running cmd")
+        print(' '.join(build_cmd))
+
+        out = subprocess.run(cmd)
+        assert out.returncode == 0
+
+        cmd = cmd_check
+        print("running cmd")
+        print(' '.join(build_cmd))
+
+        out = subprocess.run(cmd)
+        assert out.returncode == 1
+
 
 
 

@@ -16,6 +16,9 @@ s2m2:
     pruning_radius: 0.1  # delta_s in paper
     propagation_step_size: 0.1 #s
     control_duration: [1, 10] # multiples of step size
+    min_seg: 2
+    max_seg: 10
+    obs_seg: 10
 k-cbs:
   default:
     goal_epsilon: 0.1
