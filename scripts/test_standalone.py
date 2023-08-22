@@ -92,7 +92,7 @@ class TestStandAlone(unittest.TestCase):
             assert out.returncode == 0
 
     def test_opti3(self):
-        run_cmd_old = [
+        run_cmd = [
             "./multirobot_optimization",
             "--env",
             "../example/swap3_unicycle.yaml",
@@ -119,8 +119,7 @@ class TestStandAlone(unittest.TestCase):
         ]
 
 
-        print("old optimization")
-        for i in [build_cmd, run_cmd_old, visualize_cmd]:
+        for i in [build_cmd, run_cmd, visualize_cmd]:
             print("running cmd")
             print(' '.join(i))
 
@@ -128,6 +127,40 @@ class TestStandAlone(unittest.TestCase):
             assert out.returncode == 0
 
 
+    def test_opti4(self):
+        run_cmd = [
+            "./multirobot_optimization",
+            "--env",
+            "../example/swap2_trailer.yaml",
+            "--init",
+            "../more_testing/swap2_trailer_db.yaml",
+            "--out",
+            "buu.yaml",
+            "--s",
+            "1",
+            ">",
+            "/tmp/db_log.txt"]
+
+        build_cmd = [
+            "make", "multirobot_optimization"]
+
+        visualize_cmd = [
+            "python3",
+            "../scripts/visualize.py",
+            "../example/swap2_trailer.yaml",
+            "--result",
+            "/tmp/check5.yaml",
+            # "--video",
+            # "straight_solution_optimized.mp4"
+        ]
+
+
+        for i in [build_cmd, run_cmd, visualize_cmd]:
+            print("running cmd")
+            print(' '.join(i))
+
+            out = subprocess.run(i)
+            assert out.returncode == 0
 
 
 
