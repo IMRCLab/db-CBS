@@ -88,10 +88,7 @@ int main(int argc, char *argv[]) {
 
 
   traj.check(robot, verbose);
-
-  Feasibility_thresholds thresholds;
-
-  traj.update_feasibility(thresholds);
+  traj.update_feasibility(feasibility_thresholds);
 
   if (traj.feasible) {
     return 0;
