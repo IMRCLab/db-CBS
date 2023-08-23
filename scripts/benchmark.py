@@ -101,27 +101,24 @@ def execute_task(task: ExecutionTask):
 def main():
 	parallel = True
 	instances = [
+		# 1 robot cases
 		"swap1_unicycle",
 		"swap1_trailer",
+		# 2 robot cases
 		"swap2_unicycle",
 		"swap2_trailer",
-		"swap3_unicycle",
-		# "swap4_unicycle",
-		"alcove_unicycle",
-		"makespan_vs_soc_0",
+		"swap2_hetero",
 		"makespan_vs_soc_1",
+		"makespan_vs_soc_0",
+		"alcove_unicycle",
+		# 3 robot cases
+		"swap3_unicycle",
+		# 4 robot cases
+		"swap4_unicycle",
+
+		# special test cases
 		"infeasible_0",
-		# "parallelpark",
-		# "bugtrap",
-        # "wall",
-		# "swap",
-		# "classic",
-		# "alcove",
-		# "alcove_hard",
-		# "straight",
-		# "swap_cars",
-		# "swap2_hetero",
-		# "swap4_unicycle",
+
 	]
 	algs = [
 		"sst",
