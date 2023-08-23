@@ -111,6 +111,7 @@ def main():
 		"makespan_vs_soc_1",
 		"makespan_vs_soc_0",
 		"alcove_unicycle",
+		"at_goal_unicycle",
 		# 3 robot cases
 		"swap3_unicycle",
 		# 4 robot cases

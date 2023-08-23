@@ -497,7 +497,21 @@ public:
     
     // assert(current->fScore >= last_f_score);
     last_f_score = current->fScore;
-    if (si->distance(current->state, goalState) <= delta) {
+    bool is_at_goal = si->distance(current->state, goalState) <= delta;
+    if (is_at_goal) {
+      // check if we violate any constraint if we stay there
+      for (const auto& constraint : constraints) {
+        if (constraint.time >= current->gScore) {
+          bool violation = si->distance(current->state, constraint.constrained_state) <= delta;
+          if (violation) {
+            is_at_goal = false;
+            break;
+          }
+        }
+      }
+    }
+
+    if (is_at_goal) {
       std::cout << "SOLUTION FOUND !!!! cost: " << current->gScore << std::endl;
 
       std::vector<AStarNode*> result;
