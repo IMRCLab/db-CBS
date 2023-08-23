@@ -113,6 +113,7 @@ int main(int argc, char* argv[]) {
   std::shared_ptr<Robot> robot = create_joint_robot(robots);
   // load config file
   YAML::Node cfg = YAML::LoadFile(cfgFile);
+  cfg = cfg["sst"]["default"];
   auto si = robot->getSpaceInformation();
   // set number of control steps (use 0.1s as increment -> 0.1 to 1s per Steer function)
   si->setPropagationStepSize(cfg["propagation_step_size"].as<double>());
@@ -268,7 +269,18 @@ int main(int argc, char* argv[]) {
       }
     }
   }
-
+  // remove duplicate states in the solution
+  for (size_t i = 0; i < state_lengths.size(); ++i){
+    for (auto it = robot_states[i].begin(); it < robot_states[i].end(); ++it){
+        std::vector<double> state_to_compare = *it;
+        for (auto itj = it + 1; itj < robot_states[i].end(); ++itj){
+          if (state_to_compare == *itj){
+            robot_states[i].erase(itj);
+            robot_actions[i].erase(itj-1);
+          }
+        }
+    }
+  }
   std::ofstream out(outputFile);
   out << "result:" << std::endl;
   for (size_t i = 0; i < state_lengths.size(); ++i){
