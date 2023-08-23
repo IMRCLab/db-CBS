@@ -113,7 +113,6 @@ int main(int argc, char* argv[]) {
   std::shared_ptr<Robot> robot = create_joint_robot(robots);
   // load config file
   YAML::Node cfg = YAML::LoadFile(cfgFile);
-  cfg = cfg["sst"]["default"];
   auto si = robot->getSpaceInformation();
   // set number of control steps (use 0.1s as increment -> 0.1 to 1s per Steer function)
   si->setPropagationStepSize(cfg["propagation_step_size"].as<double>());
