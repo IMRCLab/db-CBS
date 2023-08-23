@@ -4,10 +4,10 @@ import plot_stats
 import argparse
 
 
-def run_benchmark_stats(instances,algs,trials):
+def run_benchmark_stats(instances, algs, trials, T):
 	results_path = Path("../results")
 
-	report = plot_stats.Report(results_path / "stats.pdf", trials, T=trials*60, dt=0.1)
+	report = plot_stats.Report(results_path / "stats.pdf", trials, T, dt=0.1)
 
 	for instance in instances:
 		for alg in algs:

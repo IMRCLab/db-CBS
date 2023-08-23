@@ -146,7 +146,7 @@ def main():
 		for task in tasks:
 			execute_task(task)
 	
-	run_benchmark_stats(instances,algs,trials)
+	run_benchmark_stats(instances, algs, trials, timelimit)
 	
 
 if __name__ == '__main__':
