@@ -34,15 +34,15 @@ def run_dbcbs(filename_env, folder, timelimit, cfg):
                 "--opt", filename_result_dbcbs_opt,
                 "--delta", str(0.5)]
             print(subprocess.list2cmdline(cmd))
-            with open("{}/log.txt".format(folder), 'w') as logfile: 
-                result = subprocess.run(cmd, timeout=timelimit, stdout=logfile, stderr=logfile)
-            t_dbcbs_stop = time.time()
-            duration_dbcbs += t_dbcbs_stop - t_dbcbs_start
-            if result.returncode != 0:
-                print("db-cbs failed")
-            else:
-                # shutil.copyfile(filename_result_dbcbs_opt, "{}/result_dbcbs_opt.yaml".format(folder))
-                try:
+            try:
+                with open("{}/log.txt".format(folder), 'w') as logfile:
+                    result = subprocess.run(cmd, timeout=timelimit, stdout=logfile, stderr=logfile)
+                t_dbcbs_stop = time.time()
+                duration_dbcbs += t_dbcbs_stop - t_dbcbs_start
+                if result.returncode != 0:
+                    print("db-cbs failed")
+                else:
+                    # shutil.copyfile(filename_result_dbcbs_opt, "{}/result_dbcbs_opt.yaml".format(folder))
                     cost = 0
                     with open(filename_result_dbcbs_opt) as f:
                         result = yaml.safe_load(f)
@@ -57,8 +57,8 @@ def run_dbcbs(filename_env, folder, timelimit, cfg):
                     stats.write("    cost: {}\n".format(cost))
                     stats.write("    duration_dbcbs: {}\n".format(duration_dbcbs))
                     stats.flush()
-                except:
-                    print("Failure!")
+            except:
+                print("Failure!")
 
 
 
