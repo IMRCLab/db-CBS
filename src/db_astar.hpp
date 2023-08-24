@@ -428,10 +428,12 @@ public:
     si->setup();
     auto startState = si->allocState();
     si->getStateSpace()->copyFromReals(startState, robot_start);
+    si->enforceBounds(startState);
     
     // set goal state
     auto goalState = si->allocState();
     si->getStateSpace()->copyFromReals(goalState, robot_goal);
+    si->enforceBounds(goalState);
 
     std::cout << "Max cost is " << maxCost << std::endl;
 
