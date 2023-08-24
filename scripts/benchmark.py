@@ -120,6 +120,11 @@ def main():
 		# special test cases
 		"infeasible_0",
 
+		# random cases
+		"gen_p10_n2_0",
+		"gen_p10_n4_0",
+		"gen_p10_n8_0",
+		"gen_p10_n16_0",
 	]
 	algs = [
 		"sst",

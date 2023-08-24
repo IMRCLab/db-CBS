@@ -47,11 +47,23 @@ def gen_env(min, max, obs_density, N, filename):
     filled_area = 0
     obs = []
     while filled_area < obs_density*area:
-        size = np.random.normal([1.0, 1.0], 1.0)
+        size = np.random.normal([0.5, 0.5], 0.5)
         if np.any(size < 0.1):
              continue
         filled_area += np.prod(size)
-        center = np.random.uniform(min, max)
+        center = np.random.uniform(min+size/2, max-size/2)
+        p1 = center - size/2
+        p2 = center + size/2
+        collision = False
+        for o in obs:
+            p1o = np.asarray(o["center"]) - np.asarray(o["size"]) / 2
+            p2o = np.asarray(o["center"]) + np.asarray(o["size"]) / 2
+            if p1[0] < p2o[0] and p1o[0] < p2[0] and p1[1] < p2o[1] and p1o[1] < p2[1]:
+                collision = True
+                break
+        if collision:
+            continue
+
         print(size, filled_area)
         obs.append({
              "type": "box",
@@ -62,8 +74,8 @@ def gen_env(min, max, obs_density, N, filename):
 
     r["robots"] = []
     while len(r["robots"]) < N:
-        start = np.random.uniform([min[0]+0.5, min[1]+0.5, 0], [max[0]-0.5, max[1]-0.5, 2*np.pi])
-        goal = np.random.uniform([min[0]+0.5, min[1]+0.5, 0], [max[0]-0.5, max[1]-0.5, 2*np.pi])
+        start = np.random.uniform([min[0]+0.5, min[1]+0.5, -np.pi], [max[0]-0.5, max[1]-0.5, np.pi])
+        goal = np.random.uniform([min[0]+0.5, min[1]+0.5, -np.pi], [max[0]-0.5, max[1]-0.5, np.pi])
         r["robots"].append({
             "type": "unicycle_first_order_0",
             "start": start.tolist(),
