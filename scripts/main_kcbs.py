@@ -11,13 +11,15 @@ def run_kcbs(filename_env, folder, timelimit, cfg):
 		filename_cfg = p / "cfg.yaml"
 		with open(filename_cfg, 'w') as f:
 			yaml.dump(cfg, f, Dumper=yaml.CSafeDumper)
-		result = subprocess.run(["./main_kcbs", 
-			"-i", filename_env,
-			"-o", "{}/result_kcbs.yaml".format(folder),
-			"--stats", "{}/stats.yaml".format(folder),
-			"--timelimit", str(timelimit),
-			"-p", "k-cbs",
-			"-c", str(filename_cfg)])
+		with open("{}/log.txt".format(folder), 'w') as logfile: 
+			result = subprocess.run(["./main_kcbs", 
+				"-i", filename_env,
+				"-o", "{}/result_kcbs.yaml".format(folder),
+				"--stats", "{}/stats.yaml".format(folder),
+				"--timelimit", str(timelimit),
+				"-p", "k-cbs",
+				"-c", str(filename_cfg)],
+				stdout=logfile, stderr=logfile)
 		if result.returncode != 0:
 			print("KCBS failed")
 
