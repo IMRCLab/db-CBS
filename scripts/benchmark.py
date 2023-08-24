@@ -123,8 +123,8 @@ def main():
 		# random cases
 		"gen_p10_n2_0",
 		"gen_p10_n4_0",
-		"gen_p10_n8_0",
-		"gen_p10_n16_0",
+		# "gen_p10_n8_0",
+		# "gen_p10_n16_0",
 	]
 	algs = [
 		"sst",

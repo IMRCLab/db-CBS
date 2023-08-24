@@ -30,7 +30,8 @@ def check_problem(cfg):
                     "--result_file", tmpdirname + "/result.yaml",
                     "--env_file", tmpdirname + "/env.yaml",
                     "--models_base_path" , "../dynoplan/dynobench/models/",
-                    "--traj_tol" , "9999999"])
+                    "--traj_tol" , "9999999",
+                    "--col_tol" , "1e-9"])
         return out.returncode == 0
 
 
