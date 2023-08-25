@@ -690,21 +690,21 @@ public:
     auto resultTyped = result->as<ob::CompoundStateSpace::StateType>();
 
     for (size_t i = 0; i < robots_.size(); ++i) {
-      if (!goals_->isSatisfied(startTyped, i)) {
+      // if (!goals_->isSatisfied(startTyped, i)) {
         robots_[i]->propagate(startTyped->components[i], (*controlTyped)[i], duration, (*resultTyped)[i]);
-      } else {
-        // if we are at the goal for this robot, just copy the previous state
-        auto csi = dynamic_cast<ompl::control::SpaceInformation*>(si_.get()); 
-        auto csp = csi->getStateSpace()->as<ompl::base::CompoundStateSpace>();
-        auto si_k = csp->getSubspace(i);
+      // } else {
+      //   // if we are at the goal for this robot, just copy the previous state
+      //   auto csi = dynamic_cast<ompl::control::SpaceInformation*>(si_.get()); 
+      //   auto csp = csi->getStateSpace()->as<ompl::base::CompoundStateSpace>();
+      //   auto si_k = csp->getSubspace(i);
 
-        // option 1
-        si_k->copyState((*resultTyped)[i], (*startTyped)[i]);
+      //   // option 1
+      //   si_k->copyState((*resultTyped)[i], (*startTyped)[i]);
 
-        // option 2
-        // std::vector<double> reals(si_k->getDimension(), nan(""));
-        // si_k->copyFromReals((*resultTyped)[i], reals); 
-      }
+      //   // option 2
+      //   // std::vector<double> reals(si_k->getDimension(), nan(""));
+      //   // si_k->copyFromReals((*resultTyped)[i], reals); 
+      // }
     }
   }
 
