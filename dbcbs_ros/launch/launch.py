@@ -12,7 +12,7 @@ from launch.substitutions import LaunchConfiguration, PythonExpression
 def generate_launch_description():
     # load crazyflies
     crazyflies_yaml = os.path.join(
-        get_package_share_directory('figure_trajectory'),
+        get_package_share_directory('dbcbs_ros'),
         'config',
         'crazyflies.yaml')
 
@@ -21,7 +21,7 @@ def generate_launch_description():
 
     # server params
     server_yaml = os.path.join(
-        get_package_share_directory('figure_trajectory'),
+        get_package_share_directory('dbcbs_ros'),
         'config',
         'server.yaml')
 
@@ -32,7 +32,7 @@ def generate_launch_description():
 
     # construct motion_capture_configuration
     motion_capture_yaml = os.path.join(
-        get_package_share_directory('figure_trajectory'),
+        get_package_share_directory('dbcbs_ros'),
         'config',
         'motion_capture.yaml')
 
@@ -55,7 +55,7 @@ def generate_launch_description():
 
     # teleop params
     teleop_params = os.path.join(
-        get_package_share_directory('figure_trajectory'),
+        get_package_share_directory('dbcbs_ros'),
         'config',
         'teleop.yaml')
 
@@ -78,8 +78,8 @@ def generate_launch_description():
                 ('emergency', 'all/emergency'),
                 ('takeoff', 'all/takeoff'),
                 ('land', 'all/land'),
-                ('cmd_vel_legacy', 'all/cmd_vel_legacy'),
-                ('cmd_full_state', 'all/cmd_full_state'),
+                ('cmd_vel_legacy', 'cf17/cmd_vel_legacy'),
+                ('cmd_full_state', 'cf17/cmd_full_state'),
                 ('notify_setpoints_stop', 'all/notify_setpoints_stop'),
             ],
             parameters=[teleop_params]
@@ -120,7 +120,7 @@ def generate_launch_description():
             namespace='',
             executable='rviz2',
             name='rviz2',
-            arguments=['-d' + os.path.join(get_package_share_directory('figure_trajectory'), 'config', 'config.rviz')],
+            arguments=['-d' + os.path.join(get_package_share_directory('dbcbs_ros'), 'config', 'config.rviz')],
             parameters=[{
                 "use_sim_time": True,
             }]
