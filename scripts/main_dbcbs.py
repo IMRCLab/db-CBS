@@ -15,6 +15,11 @@ sys.path.append(os.getcwd())
 
 def run_dbcbs(filename_env, folder, timelimit, cfg):
     with tempfile.TemporaryDirectory() as tmpdirname:
+        p = Path(tmpdirname)
+        filename_cfg = p / "cfg.yaml"
+        with open(filename_cfg, 'w') as f:
+            yaml.dump(cfg, f, Dumper=yaml.CSafeDumper)
+
         print(filename_env)
         filename_stats = "{}/stats.yaml".format(folder)
         start = time.time()
@@ -32,7 +37,7 @@ def run_dbcbs(filename_env, folder, timelimit, cfg):
                 "-o", filename_result_dbcbs,
                 "--joint", filename_result_dbcbs_joint,
                 "--opt", filename_result_dbcbs_opt,
-                "--delta", str(0.5)]
+                "-c", str(filename_cfg)]
             print(subprocess.list2cmdline(cmd))
             try:
                 with open("{}/log.txt".format(folder), 'w') as logfile:

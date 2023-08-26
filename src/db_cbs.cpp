@@ -310,10 +310,9 @@ int main(int argc, char* argv[]) {
     std::string outputFile;
     std::string jointFile;
     std::string optimizationFile;
+    std::string cfgFile;
 
     bool filterDuplicates = true;
-    float delta;
-    float alpha = 0.5;
     // std::string outputFileSimple;
     desc.add_options()
       ("help", "produce help message")
@@ -321,9 +320,8 @@ int main(int argc, char* argv[]) {
       ("output,o", po::value<std::string>(&outputFile)->required(), "output file (yaml)")
       ("joint,jnt", po::value<std::string>(&jointFile)->required(), "joint output file (yaml)")
       ("optimization,opt", po::value<std::string>(&optimizationFile)->required(), "optimization file (yaml)")
-      ("delta", po::value<float>(&delta)->default_value(0.5), "discont. bound");
+      ("cfg,c", po::value<std::string>(&cfgFile)->required(), "configuration file (yaml)");
 
-      
     try {
       po::variables_map vm;
       po::store(po::parse_command_line(argc, argv, desc), vm);
@@ -338,6 +336,11 @@ int main(int argc, char* argv[]) {
       std::cerr << desc << std::endl;
       return 1;
     }
+
+    // load config file
+    YAML::Node cfg = YAML::LoadFile(cfgFile);
+    float delta = cfg["delta"].as<float>();
+    float alpha = cfg["alpha"].as<float>();
 
     // load problem description
     YAML::Node env = YAML::LoadFile(inputFile);

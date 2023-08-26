@@ -24,4 +24,5 @@ k-cbs:
     control_duration: [1, 10] # multiples of step size
 db-cbs:
   default:
-    dummy: 0
+    delta: 0.5
+    alpha: 0.5
