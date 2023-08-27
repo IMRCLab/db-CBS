@@ -192,7 +192,7 @@ MultiRobotTrajectory from_joint_to_indiv_trajectory(
   for (size_t i = 0; i < num_robots; i++) {
     dynobench::Trajectory traj_out;
 
-    for (size_t k = 0; k < times.at(i); k++) {
+    for (int k = 0; k < times.at(i); k++) {
       traj_out.states.push_back(
           traj.states.at(k).segment(nxs_accumulated.at(i), nxs.at(i)));
       if (k < times.at(i) - 1)
@@ -206,7 +206,7 @@ MultiRobotTrajectory from_joint_to_indiv_trajectory(
 }
 
 
-void execute_optimizationMultiRobot(const std::string &env_file,
+bool execute_optimizationMultiRobot(const std::string &env_file,
                            const std::string &initial_guess_file,
                            const std::string &output_file,
                            bool sum_robots_cost) {
@@ -293,6 +293,10 @@ void execute_optimizationMultiRobot(const std::string &env_file,
 
   trajectory_optimization(problem, init_guess_joint, options_trajopt, sol,
                           result);
+  if (!result.feasible) {
+    std::cout << "optimization infeasible" << std::endl;
+    return false;
+  }
   // std::ofstream out(output_file);
   // std::cout << "cost is " << result.cost << std::endl;
   // result.write_yaml_joint(out);
@@ -314,6 +318,8 @@ void execute_optimizationMultiRobot(const std::string &env_file,
   multi_out.to_yaml_format("/tmp/check5.yaml");
   multi_out.to_yaml_format(output_file.c_str());
 
+
+  return true;
 
   // now I need to transform the joint trajectory to individual trajectories
 

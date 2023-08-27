@@ -180,9 +180,9 @@ void load_motions(
   std::shared_ptr<Robot> robot,
   std::string robot_type,
   size_t env_size,
-  float delta,
-  bool filterDuplicates,
-  float alpha,
+  // float delta,
+  // bool filterDuplicates,
+  // float alpha,
   Motions& result)
 {
     auto si = robot->getSpaceInformation();
@@ -313,6 +313,7 @@ void load_motions(
 
     std::cout << "There are " << result.motions.size() << " motions!" << std::endl;
 
+#if 0
     //////////////////////////
     if (delta < 0) {
       Motion fakeMotion; 
@@ -371,7 +372,7 @@ void load_motions(
     std::cout << "There are " << num_duplicates << " duplicate motions!" << std::endl;
 
   }
-
+#endif
 }
 
 template <typename Constraint>
