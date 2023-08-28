@@ -107,6 +107,7 @@ def main():
 		"swap1_trailer",
 		# 2 robot cases
 		"swap2_unicycle",
+		"swap2_double_integrator",
 		"swap2_trailer",
 		"swap2_hetero",
 		"makespan_vs_soc_1",
