@@ -271,7 +271,7 @@ int main(int argc, char* argv[]) {
   // remove duplicate states in the solution
   for (size_t i = 0; i < state_lengths.size(); ++i){
     int j = robot_states[i].size() - 1;
-    while (j >= 0 && robot_states[i][j] == robot_states[i][j-1]){
+    while (j >= 0 && gs->isSatisfied(path->getState(j), i) && gs->isSatisfied(path->getState(j-1), i)) {
       robot_states[i].pop_back();
       robot_actions[i].pop_back();
       j--;
