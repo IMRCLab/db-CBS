@@ -3,7 +3,7 @@ import yaml
 import numpy as np
 import subprocess
 
-def write_table(rows, algs, results_path, T):
+def write_table(rows, algs, results_path, trials, T):
 	with open(results_path / "table.tex", "w") as f:
 
 		f.write(r"\documentclass{standalone}")
@@ -35,7 +35,7 @@ def write_table(rows, algs, results_path, T):
 			"db-cbs": "db-CBS",
 		}
 
-		out = r"\begin{tabular}{c || c|c"
+		out = r"\begin{tabular}{c || c"
 		for _ in algs:
 			out += r" || r|r|r|r"
 		out += "}"
@@ -96,7 +96,7 @@ def write_table(rows, algs, results_path, T):
 				# out += " & ${:.1f} \pm {:.1f}$".format(np.mean(final_costs), np.std(final_costs))
 
 				result[alg] = {
-					'success': len(initial_times)/10,
+					'success': len(initial_times)/trials,
 					't^st_median': np.median(initial_times) if len(initial_times) > 0 else None,
 					'J^st_median': np.median(initial_costs) if len(initial_costs) > 0 else None,
 					'J^f_median': np.median(final_costs) if len(initial_costs) > 0 else None,

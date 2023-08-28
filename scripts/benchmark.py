@@ -154,8 +154,21 @@ def main():
 	
 	run_benchmark_stats(instances, algs, trials, timelimit)
 
-	write_table(instances, algs, Path("../results"), timelimit)
-	
+	write_table(instances, algs, Path("../results"), trials, timelimit)
+
+	subprocess.run(
+		['pdftk',
+		 Path("../results") / 'table.pdf',
+		 Path("../results") / 'stats.pdf',
+		 'cat', 'output',
+		 Path("../results") / 'results.pdf'
+		]
+	)
+	# delete temp files
+	(Path("../results") / 'table.pdf').unlink()
+	(Path("../results") / 'stats.pdf').unlink()
+	(Path("../results") / 'table.aux').unlink()
+	(Path("../results") / 'table.log').unlink()
 
 if __name__ == '__main__':
 	main()
