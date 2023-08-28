@@ -237,7 +237,7 @@ public:
       setName("RobotDoubleIntegrator2D" + getName());
       type_ = ob::STATE_SPACE_TYPE_COUNT + 1;
       addSubspace(std::make_shared<ob::RealVectorStateSpace>(2), 1.0);  // position
-      addSubspace(std::make_shared<ob::RealVectorStateSpace>(2), 1.0);  // velocity
+      addSubspace(std::make_shared<ob::RealVectorStateSpace>(2), 0.25);  // velocity
       lock();
     }
 
@@ -991,8 +991,8 @@ std::shared_ptr<Robot> create_robot(
         positionBounds,
         /*v_min*/ -0.5 /* m/s*/,
         /*v_max*/ 0.5 /* m/s*/,
-        /*a_min*/ -0.5 /* m/s^2*/,
-        /*a_max*/ 0.5 /* m/s^2*/
+        /*a_min*/ -2.0 /* m/s^2*/,
+        /*a_max*/ 2.0 /* m/s^2*/
         ));
   }
   
