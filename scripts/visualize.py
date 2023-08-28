@@ -43,6 +43,8 @@ class Animation:
     self.size = np.array([0.5, 0.25])
     self.trailer_size = np.array([0.3, 0.25])
     self.hitch_length = [0.5]
+    self.radius = 0.1
+    self.big_radius = 0.40
     self.robot_types = []
 
     for obstacle in env["environment"]["obstacles"]:
@@ -103,6 +105,14 @@ class Animation:
             t = matplotlib.transforms.Affine2D().rotate_around(
                 pos[0], pos[1], 0)
             self.robot_patches[k][0].set_transform(t + self.ax.transData)
+        elif self.robot_types[k] == 'unicycle_first_order_0_sphere':
+            pos = state[:2]
+            yaw = state[2]
+            xy = np.asarray(pos)
+            self.robot_patches[k][0].center = xy
+            t = matplotlib.transforms.Affine2D().rotate_around(
+                pos[0], pos[1], yaw)
+            self.robot_patches[k][0].set_transform(t + self.ax.transData)
         elif self.robot_types[k] == 'unicycle_first_order_0' or self.robot_types[k] == 'car_first_order_0':
             pos = state[:2]
             yaw = state[2]
@@ -147,13 +157,15 @@ class Animation:
     patch = []
     if type == 'single_integrator_0':
       pos = state
-      patch.append(draw_sphere_patch(self.ax, state, 0.1, 0, **kwargs))
-
+      patch.append(draw_sphere_patch(self.ax, state, self.radius, 0, **kwargs))
+    elif type == 'unicycle_first_order_0_sphere':
+        pos = state[:2]
+        yaw = state[2]
+        patch.append(draw_sphere_patch(self.ax, state, self.big_radius, yaw, **kwargs))
     elif type == 'unicycle_first_order_0' or type == 'car_first_order_0':
         pos = state[:2]
         yaw = state[2]
         patch.append(draw_box_patch(self.ax, pos, self.size, yaw, **kwargs))  
-
     elif type == "car_first_order_with_1_trailers_0":
         xy = state[0:2]
         theta0 = state[2]
