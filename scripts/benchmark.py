@@ -12,6 +12,7 @@ import tqdm
 import psutil
 # import checker
 from benchmark_stats import run_benchmark_stats
+from benchmark_table import write_table
 
 
 @dataclass
@@ -152,6 +153,8 @@ def main():
 			execute_task(task)
 	
 	run_benchmark_stats(instances, algs, trials, timelimit)
+
+	write_table(instances, algs, Path("../results"), timelimit)
 	
 
 if __name__ == '__main__':
