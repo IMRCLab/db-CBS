@@ -12,6 +12,7 @@ import tqdm
 import psutil
 # import checker
 from benchmark_stats import run_benchmark_stats
+from benchmark_table import write_table
 
 
 @dataclass
@@ -152,7 +153,22 @@ def main():
 			execute_task(task)
 	
 	run_benchmark_stats(instances, algs, trials, timelimit)
-	
+
+	write_table(instances, algs, Path("../results"), trials, timelimit)
+
+	subprocess.run(
+		['pdftk',
+		 Path("../results") / 'table.pdf',
+		 Path("../results") / 'stats.pdf',
+		 'cat', 'output',
+		 Path("../results") / 'results.pdf'
+		]
+	)
+	# delete temp files
+	(Path("../results") / 'table.pdf').unlink()
+	(Path("../results") / 'stats.pdf').unlink()
+	(Path("../results") / 'table.aux').unlink()
+	(Path("../results") / 'table.log').unlink()
 
 if __name__ == '__main__':
 	main()
