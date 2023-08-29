@@ -21,6 +21,7 @@ def multi_traj():
     for i in range(n):
         states = data[i]['states']
         states_list.append(states)
+    print('load finish')
 
     # check the num of UAV <= states_list
     if n < len(allcfs.crazyflies):
@@ -32,6 +33,7 @@ def multi_traj():
     for state_id in range(len(states_list[0])):  # can goto synchronized for multi drones?
         for drone_id in range(len(allcfs.crazyflies)): 
             togo_time = 5.0
+            # make sure all the crazyfiles are at the right intial position
             if state_id ==1:
                 pos = np.append(np.array(states_list[drone_id][state_id]), height)
                 print('drone_id',drone_id,'initial pos:',pos)
@@ -40,7 +42,7 @@ def multi_traj():
                 if drone_id == len(allcfs.crazyflies)-1:
                     print('if drone_id == len(allcfs.crazyflies)')
                     timeHelper.sleep(togo_time/2)
-                    # quit()
+            # run
             else:
                 pos = np.append(np.array(states_list[drone_id][state_id]), height)
                 allcfs.crazyflies[drone_id].goTo(pos, 0, togo_time)

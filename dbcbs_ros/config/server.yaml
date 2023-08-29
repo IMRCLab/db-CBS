@@ -8,8 +8,8 @@
       query_all_values_on_connect: False
     # simulation related
     sim:
-      max_dt: 0 #0.1              # artificially limit the step() function (set to 0 to disable)
-      backend: np                 # see backend folder for a list 
+      max_dt: 0.1 #0.1              # artificially limit the step() function (set to 0 to disable)
+      backend: none               # see backend folder for a list 
       visualizations:             # see visualization folder for a list
         rviz:
           enabled: true
@@ -34,4 +34,4 @@
               calibration:
                 tvec: [0,0,0]
                 rvec: [ 0.61394313, -0.61394313,  1.48218982]   # 45 deg tilt
-      controller: mellinger # none, pid, mellinger
+      controller: none # none, pid, mellinger
