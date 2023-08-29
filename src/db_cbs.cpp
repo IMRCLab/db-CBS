@@ -312,7 +312,6 @@ int main(int argc, char* argv[]) {
     std::string optimizationFile;
     std::string cfgFile;
 
-    // bool filterDuplicates = true;
     // std::string outputFileSimple;
     desc.add_options()
       ("help", "produce help message")
@@ -341,6 +340,7 @@ int main(int argc, char* argv[]) {
     YAML::Node cfg = YAML::LoadFile(cfgFile);
     // float delta = cfg["delta"].as<float>();
     float alpha = cfg["alpha"].as<float>();
+    bool filter_duplicates = cfg["filter_duplicates"].as<bool>();
 
     // load problem description
     YAML::Node env = YAML::LoadFile(inputFile);
@@ -459,14 +459,17 @@ int main(int argc, char* argv[]) {
             max_motions *= cfg["num_primitives_rate"].as<float>();
         }
 
+        std::cout << "Search with delta=" << delta << " and motions=" << max_motions << std::endl;
+
         // disable/enable motions
         for (auto& iter : robot_motions) {
-            for (size_t i = 0; i < iter.second.motions.size(); ++i) {
-                iter.second.motions[i].disabled = (i >= max_motions);
+            for (size_t i = 0; i < robot_types.size(); ++i) {
+                if (iter.first == robot_types[i]) {
+                    disable_motions(robots[i], delta, filter_duplicates, alpha, max_motions, iter.second);
+                    break;
+                }
             }
         }
-
-        std::cout << "Search with delta= " << delta << " and motions= " << max_motions << std::endl;
 
         solved_db = false;
         HighLevelNode start;

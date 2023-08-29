@@ -312,37 +312,52 @@ void load_motions(
     }
 
     std::cout << "There are " << result.motions.size() << " motions!" << std::endl;
+}
 
-#if 0
-    //////////////////////////
-    if (delta < 0) {
-      Motion fakeMotion; 
-      fakeMotion.idx = -1;
-      fakeMotion.states.push_back(si->allocState());
-      std::vector<Motion *> neighbors_m;
-      size_t num_desired_neighbors = (size_t)-delta; 
-      size_t num_samples = std::min<size_t>(1000, result.motions.size());
+void disable_motions(
+  std::shared_ptr<Robot> robot,
+  float delta,
+  bool filterDuplicates,
+  float alpha,
+  size_t num_max_motions,
+  Motions& result)
+{
+  auto si = robot->getSpaceInformation();
 
-      auto state_sampler = si->allocStateSampler();
-      float sum_delta = 0.0;
-      for (size_t k = 0; k < num_samples; ++k) { 
-        do {
-          state_sampler->sampleUniform(fakeMotion.states[0]);
-        } while (!si->isValid(fakeMotion.states[0]));
-        robot->setPosition(fakeMotion.states[0], fcl::Vector3f(0, 0, 0));
+  #if 0
+  if (delta < 0) {
+    Motion fakeMotion; 
+    fakeMotion.idx = -1;
+    fakeMotion.states.push_back(si->allocState());
+    std::vector<Motion *> neighbors_m;
+    size_t num_desired_neighbors = (size_t)-delta; 
+    size_t num_samples = std::min<size_t>(1000, result.motions.size());
 
-        result.T_m->nearestK(&fakeMotion, num_desired_neighbors+1, neighbors_m); 
+    auto state_sampler = si->allocStateSampler();
+    float sum_delta = 0.0;
+    for (size_t k = 0; k < num_samples; ++k) { 
+      do {
+        state_sampler->sampleUniform(fakeMotion.states[0]);
+      } while (!si->isValid(fakeMotion.states[0]));
+      robot->setPosition(fakeMotion.states[0], fcl::Vector3f(0, 0, 0));
 
-        float max_delta = si->distance(fakeMotion.states[0], neighbors_m.back()->states.front());
-        sum_delta += max_delta;
-      }
-      float adjusted_delta = (sum_delta / num_samples) / alpha;
-      std::cout << "Automatically adjusting delta to: " << adjusted_delta << std::endl;
-      delta = adjusted_delta;
+      result.T_m->nearestK(&fakeMotion, num_desired_neighbors+1, neighbors_m); 
 
+      float max_delta = si->distance(fakeMotion.states[0], neighbors_m.back()->states.front());
+      sum_delta += max_delta;
     }
-////////////////////////////
+    float adjusted_delta = (sum_delta / num_samples) / alpha;
+    std::cout << "Automatically adjusting delta to: " << adjusted_delta << std::endl;
+    delta = adjusted_delta;
+  }
+  #endif
 
+  // enable all motions
+  for (size_t i = 0; i < result.motions.size(); ++i) {
+      result.motions[i].disabled = false;
+  }
+
+  // disable duplicates
   if (filterDuplicates)
   {
     size_t num_duplicates = 0;
@@ -362,7 +377,7 @@ void load_motions(
         if (nm == &m || nm->disabled) { 
           continue;
         }
-        float goal_delta = si->distance(m.states.back(), nm->states.back()); // why distance between last elements ?
+        float goal_delta = si->distance(m.states.back(), nm->states.back());
         if (goal_delta < delta*(1-alpha)) {
           nm->disabled = true;
           ++num_duplicates;
@@ -372,7 +387,20 @@ void load_motions(
     std::cout << "There are " << num_duplicates << " duplicate motions!" << std::endl;
 
   }
-#endif
+
+  // limit to num_max_motions
+  size_t num_enabled_motions = 0;
+  for (size_t i = 0; i < result.motions.size(); ++i) {
+    if (!result.motions[i].disabled) {
+      if (num_enabled_motions >= num_max_motions) {
+        result.motions[i].disabled = true;
+      } else {
+        ++num_enabled_motions;
+      }
+    }
+  }
+
+  std::cout << "There are " << num_enabled_motions << " motions enabled." << std::endl;
 }
 
 template <typename Constraint>
