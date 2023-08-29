@@ -310,10 +310,8 @@ int main(int argc, char* argv[]) {
     std::string outputFile;
     std::string jointFile;
     std::string optimizationFile;
+    std::string cfgFile;
 
-    bool filterDuplicates = true;
-    float delta;
-    float alpha = 0.5;
     // std::string outputFileSimple;
     desc.add_options()
       ("help", "produce help message")
@@ -321,9 +319,8 @@ int main(int argc, char* argv[]) {
       ("output,o", po::value<std::string>(&outputFile)->required(), "output file (yaml)")
       ("joint,jnt", po::value<std::string>(&jointFile)->required(), "joint output file (yaml)")
       ("optimization,opt", po::value<std::string>(&optimizationFile)->required(), "optimization file (yaml)")
-      ("delta", po::value<float>(&delta)->default_value(0.5), "discont. bound");
+      ("cfg,c", po::value<std::string>(&cfgFile)->required(), "configuration file (yaml)");
 
-      
     try {
       po::variables_map vm;
       po::store(po::parse_command_line(argc, argv, desc), vm);
@@ -338,6 +335,12 @@ int main(int argc, char* argv[]) {
       std::cerr << desc << std::endl;
       return 1;
     }
+
+    // load config file
+    YAML::Node cfg = YAML::LoadFile(cfgFile);
+    // float delta = cfg["delta"].as<float>();
+    float alpha = cfg["alpha"].as<float>();
+    bool filter_duplicates = cfg["filter_duplicates"].as<bool>();
 
     // load problem description
     YAML::Node env = YAML::LoadFile(inputFile);
@@ -373,27 +376,23 @@ int main(int argc, char* argv[]) {
 
     std::map<std::string, Motions> robot_motions;
 
-    std::vector<double> start_reals;
-    std::vector<double> goal_reals;
-    HighLevelNode start;
-    
-    start.solution.resize(env["robots"].size());
-    start.constraints.resize(env["robots"].size());
-    start.cost = 0;
-    start.id = 0;
-    int i = 0;
+
     std::vector<std::shared_ptr<Robot>> robots;
     for (const auto &robot_node : env["robots"]) {
         auto robotType = robot_node["type"].as<std::string>();
         std::shared_ptr<Robot> robot = create_robot(robotType, position_bounds);
         robots.push_back(robot);
+
+        std::vector<double> start_reals;
         for (const auto& v : robot_node["start"]) {
             start_reals.push_back(v.as<double>());
         }
+        starts.push_back(start_reals);
+
+        std::vector<double> goal_reals;
         for (const auto& v : robot_node["goal"]) {
             goal_reals.push_back(v.as<double>());
         }
-        starts.push_back(start_reals);
         goals.push_back(goal_reals);
         robot_types.push_back(robotType);
 
@@ -421,33 +420,11 @@ int main(int argc, char* argv[]) {
             unpacker.buffer_consumed(length);
             msgpack::object_handle oh;
             unpacker.next(oh);
-            load_motions(oh.get(), robot, robotType, env_min.size(), delta, filterDuplicates, alpha, robot_motions[robotType]);
-            // msgpack::object msg_objs = oh.get();
-            // robot_motions.emplace(std::make_pair<std::string, msgpack::object_handle>(std::string(robotType), oh));
+            load_motions(oh.get(), robot, robotType, env_min.size(), /*delta, filterDuplicates, alpha,*/ robot_motions[robotType]);
 
             std::cout << "loaded motions for " << robotType << std::endl;
         }
-
-        DBAstar<Constraint> llplanner(delta, alpha);
-        bool success = llplanner.search(robot_motions.at(robot_types[i]), starts[i], goals[i], 
-            obstacles, robots[i], start.constraints[i], start.solution[i]);
-        if (!success) {
-            std::cout << "Couldn't find initial solution." << std::endl;
-            return 0;
-        }
-
-        start.cost += start.solution[i].cost;
-        std::cout << "High Level Node Cost: " << start.cost << std::endl;
-        start_reals.clear();
-        goal_reals.clear();
-        i++;  
-    } 
-    
-    typename boost::heap::d_ary_heap<HighLevelNode, boost::heap::arity<2>,
-                                     boost::heap::mutable_<true> > open;
-    auto handle = open.push(start);
-    (*handle).handle = handle;
-    int id = 1;
+    }
 
     // allocate data for conflict checking
     std::vector<fcl::CollisionObjectf*> col_mng_objs;
@@ -465,60 +442,116 @@ int main(int argc, char* argv[]) {
     }
     col_mng_robots->registerObjects(col_mng_objs);
 
-    while (!open.empty()) {
-      HighLevelNode P = open.top();
-      open.pop();
-      Conflict inter_robot_conflict;
-      if (!getEarliestConflict(P.solution, robots, col_mng_robots, col_mng_objs, inter_robot_conflict)) {
-        std::cout << "Final solution! cost: " << P.cost << std::endl;
-        export_solutions(P.solution, robots, outputFile);
-        export_joint_solutions(P.solution, robots, jointFile);
+    // actual search
 
-      std::cout << "warning: using new multirobot optimization" << std::endl;
-        const bool new_multirobot_optimization = true;
+    float delta = cfg["delta_0"].as<float>();
+    size_t max_motions = cfg["num_primitives_0"].as<size_t>();
+    bool solved_db = false;
 
-      //   if (new_multirobot_optimization)
-      // {
-      execute_optimizationMultiRobot(inputFile,
-                                     outputFile, 
-                                     optimizationFile,
-                                     new_multirobot_optimization);
+    for (size_t iteration = 0; ; ++iteration) {
 
+        if (iteration > 0) {
+            if (solved_db) {
+                delta *= cfg["delta_rate"].as<float>();
+            } else {
+                delta *= 0.99;
+            }
+            max_motions *= cfg["num_primitives_rate"].as<float>();
+        }
 
-        return 0;
-        break;
-      }
-      std::map<size_t, std::vector<Constraint>> constraints;
-      createConstraintsFromConflicts(inter_robot_conflict, constraints);
-      for (const auto& c : constraints){
-        HighLevelNode newNode = P;
-        size_t i = c.first;
-        newNode.id = id;
-        std::cout << "Node ID is " << id << std::endl;
-        newNode.constraints[i].insert(newNode.constraints[i].end(), c.second.begin(), c.second.end());
-        newNode.cost -= newNode.solution[i].cost;
-        std::cout << "New node cost: " << newNode.cost << std::endl;
+        std::cout << "Search with delta=" << delta << " and motions=" << max_motions << std::endl;
 
-        // run the low level planner
-        DBAstar<Constraint> llplanner(delta, alpha);
-        bool success = llplanner.search(robot_motions.at(robot_types[i]), starts[i], goals[i], 
-            obstacles, robots[i], newNode.constraints[i], newNode.solution[i]); 
+        // disable/enable motions
+        for (auto& iter : robot_motions) {
+            for (size_t i = 0; i < robot_types.size(); ++i) {
+                if (iter.first == robot_types[i]) {
+                    disable_motions(robots[i], delta, filter_duplicates, alpha, max_motions, iter.second);
+                    break;
+                }
+            }
+        }
 
-        if (success) {
-          newNode.cost += newNode.solution[i].cost;
-          std::cout << "Updated New node cost: " << newNode.cost << std::endl;
-        //   print_solution(newNode.solution, robots);
-
-          auto handle = open.push(newNode);
-          (*handle).handle = handle;
+        solved_db = false;
+        HighLevelNode start;
         
-          id++;
-        }
-        else {
+        start.solution.resize(env["robots"].size());
+        start.constraints.resize(env["robots"].size());
+        start.cost = 0;
+        start.id = 0;
+        int i = 0;
+        for (const auto &robot_node : env["robots"]) {
+            DBAstar<Constraint> llplanner(delta, alpha);
+            bool success = llplanner.search(robot_motions.at(robot_types[i]), starts[i], goals[i], 
+                obstacles, robots[i], start.constraints[i], start.solution[i]);
+            if (!success) {
+                std::cout << "Couldn't find initial solution." << std::endl;
+                continue;
+            }
 
-        }
-      }
+            start.cost += start.solution[i].cost;
+            std::cout << "High Level Node Cost: " << start.cost << std::endl;
+            i++;
+        } 
+        
+        typename boost::heap::d_ary_heap<HighLevelNode, boost::heap::arity<2>,
+                                        boost::heap::mutable_<true> > open;
+        auto handle = open.push(start);
+        (*handle).handle = handle;
+        int id = 1;
 
+        while (!open.empty()) {
+            HighLevelNode P = open.top();
+            open.pop();
+            Conflict inter_robot_conflict;
+            if (!getEarliestConflict(P.solution, robots, col_mng_robots, col_mng_objs, inter_robot_conflict)) {
+                solved_db = true;
+                std::cout << "Final solution! cost: " << P.cost << std::endl;
+                export_solutions(P.solution, robots, outputFile);
+                export_joint_solutions(P.solution, robots, jointFile);
+
+                std::cout << "warning: using new multirobot optimization" << std::endl;
+                const bool new_multirobot_optimization = true;
+
+                bool feasible = execute_optimizationMultiRobot(inputFile,
+                                        outputFile, 
+                                        optimizationFile,
+                                        new_multirobot_optimization);
+
+                if (feasible) {
+                    return 0;
+                }
+
+                break;
+            }
+        
+            std::map<size_t, std::vector<Constraint>> constraints;
+            createConstraintsFromConflicts(inter_robot_conflict, constraints);
+            for (const auto& c : constraints){
+                HighLevelNode newNode = P;
+                size_t i = c.first;
+                newNode.id = id;
+                std::cout << "Node ID is " << id << std::endl;
+                newNode.constraints[i].insert(newNode.constraints[i].end(), c.second.begin(), c.second.end());
+                newNode.cost -= newNode.solution[i].cost;
+                std::cout << "New node cost: " << newNode.cost << std::endl;
+
+                // run the low level planner
+                DBAstar<Constraint> llplanner(delta, alpha);
+                bool success = llplanner.search(robot_motions.at(robot_types[i]), starts[i], goals[i], 
+                    obstacles, robots[i], newNode.constraints[i], newNode.solution[i]); 
+
+                if (success) {
+                    newNode.cost += newNode.solution[i].cost;
+                    std::cout << "Updated New node cost: " << newNode.cost << std::endl;
+                    //   print_solution(newNode.solution, robots);
+
+                    auto handle = open.push(newNode);
+                    (*handle).handle = handle;
+                    
+                    id++;
+                }
+            }
+        }
     }
 
     return 0;
