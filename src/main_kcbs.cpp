@@ -287,7 +287,7 @@ int main(int argc, char* argv[]){
       // plan using Kinodynamic Conflict Based Search
       auto planner = std::make_shared<omrc::KCBS>(ma_si);
       planner->setProblemDefinition(ma_pdef); // be sure to set the problem definition
-      planner->setLowLevelSolveTime(0.5);
+      planner->setLowLevelSolveTime(cfg["ll_timelimit"].as<double>());
       bool solved = planner->as<omrb::Planner>()->solve(timelimit);
       if (solved)
       {

@@ -399,7 +399,7 @@ int main(int argc, char* argv[]) {
         auto iter = robot_motions.find(robotType);
         if (iter == robot_motions.end()) {
             std::string motionsFile;
-            if (robotType == "unicycle_first_order_0") {
+            if (robotType == "unicycle_first_order_0" || robotType == "unicycle_first_order_0_sphere") {
                 motionsFile = "../motions/dbg_motions.msgpack";
             } else if (robotType == "car_first_order_with_1_trailers_0") {
                 motionsFile = "../motions/car_first_order_with_1_trailers_0_sorted.msgpack";

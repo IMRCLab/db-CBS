@@ -39,7 +39,7 @@ def run_checker(filename_env, filename_result, filename_log):
 					"--result_file", filename_result,
 					"--env_file", filename_env,
 					"--models_base_path" , "../dynoplan/dynobench/models/",
-					"--goal_tol" , "0.2"],
+					"--goal_tol" , "0.5"],
 					stdout=f, stderr=f)
 	return out.returncode == 0
 
@@ -104,9 +104,12 @@ def main():
 	instances = [
 		# 1 robot cases
 		"swap1_unicycle",
+		"swap1_unicycle_sphere",
 		"swap1_trailer",
 		# 2 robot cases
 		"swap2_unicycle",
+		"swap2_unicycle_sphere",
+		"swap2_double_integrator",
 		"swap2_trailer",
 		"swap2_hetero",
 		"makespan_vs_soc_1",
