@@ -140,16 +140,6 @@ class Animation:
             t = matplotlib.transforms.Affine2D().rotate_around(
                 pos1[0], pos1[1], theta1)
             self.robot_patches[k][1].set_transform(t + self.ax.transData)
-            # self.robot_patches[2*k].set_xy(xy)
-            # t = matplotlib.transforms.Affine2D().rotate_around(
-            #     pos0[0], pos0[1], theta0)
-            # self.robot_patches[2*k].set_transform(t + self.ax.transData)
-
-            # xy = np.asarray(pos1) - np.asarray(self.trailer_size) / 2
-            # self.robot_patches[2*k+1].set_xy(xy)
-            # t = matplotlib.transforms.Affine2D().rotate_around(
-            #     pos1[0], pos1[1], theta1)
-            # self.robot_patches[2*k+1].set_transform(t + self.ax.transData)
 
     return [item for row in self.robot_patches for item in row]
 

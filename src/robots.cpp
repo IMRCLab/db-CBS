@@ -88,7 +88,197 @@ public:
     stateTyped->values[1]=position(1);
   }
 };
+/////////////////////////////////////////////////////////////////////////////////////////
 
+class RobotDoubleIntegrator2D : public Robot
+{
+public:
+  RobotDoubleIntegrator2D(
+    const ompl::base::RealVectorBounds& position_bounds,
+    float v_min, 
+    float v_max,
+    float a_min,
+    float a_max)
+  {
+    geom_.emplace_back(new fcl::Spheref(0.1));
+    auto space(std::make_shared<StateSpace>());
+    space->setPositionBounds(position_bounds);
+
+    ob::RealVectorBounds vel_bounds(2);
+    vel_bounds.setLow(v_min);
+    vel_bounds.setHigh(v_max);
+    space->setVelocityBounds(vel_bounds);
+
+    // create a control space
+    // R^1: turning speed
+    auto cspace(std::make_shared<oc::RealVectorControlSpace>(space, 2));
+
+    // set the bounds for the control space
+    ob::RealVectorBounds cbounds(2);
+    cbounds.setLow(a_min);
+    cbounds.setHigh(a_max);
+    cspace->setBounds(cbounds);
+
+    // construct an instance of  space information from this control space
+    si_ = std::make_shared<oc::SpaceInformation>(space, cspace);
+
+    dt_ = 0.1;
+    is2D_ = true;
+    max_speed_ = std::sqrt(2) * std::max(fabsf(v_min), fabsf(v_max));
+  }
+
+  void propagate(
+    const ompl::base::State *start,
+    const ompl::control::Control *control,
+    const double duration,
+    ompl::base::State *result) override
+  {
+    auto startTyped = start->as<StateSpace::StateType>();
+    const double *ctrl = control->as<ompl::control::RealVectorControlSpace::ControlType>()->values;
+
+    auto resultTyped = result->as<StateSpace::StateType>();
+
+    // use simple Euler integration
+    float x = startTyped->getX();
+    float y = startTyped->getY();
+    float v_x = startTyped->getVx();
+    float v_y = startTyped->getVy();
+
+    float remaining_time = duration;
+    do
+    {
+      float dt = std::min(remaining_time, dt_);
+
+      x += v_x * dt;
+      y += v_y * dt;
+      v_x += ctrl[0] * dt;
+      v_y += ctrl[1] * dt;
+
+      remaining_time -= dt;
+    } while (remaining_time >= dt_);
+
+    // update result
+
+    resultTyped->setX(x);
+    resultTyped->setY(y);
+    resultTyped->setVx(v_x);
+    resultTyped->setVy(v_y);
+
+  }
+
+  virtual fcl::Transform3f getTransform(
+      const ompl::base::State *state,
+      size_t /*part*/) override
+  {
+    auto stateTyped = state->as<StateSpace::StateType>();
+
+    fcl::Transform3f result;
+    result = Eigen::Translation<float, 3>(fcl::Vector3f(stateTyped->getX(), stateTyped->getY(), 0));
+    return result;
+  }
+  virtual void setPosition(ompl::base::State *state, const fcl::Vector3f position, size_t /*part*/) override
+  {
+    auto stateTyped = state->as<StateSpace::StateType>();
+    stateTyped->setX(position(0));
+    stateTyped->setY(position(1));
+  }
+
+  protected:
+  class StateSpace : public ob::CompoundStateSpace
+  {
+  public:
+    class StateType : public ob::CompoundStateSpace::StateType
+    {
+    public:
+      StateType() = default;
+
+      double getX() const
+      {
+        return as<ob::RealVectorStateSpace::StateType>(0)->values[0];
+      }
+
+      double getY() const
+      {
+        return as<ob::RealVectorStateSpace::StateType>(0)->values[1];
+      }
+
+      double getVx() const
+      {
+        return as<ob::RealVectorStateSpace::StateType>(1)->values[0];
+      }
+      double getVy() const
+      {
+        return as<ob::RealVectorStateSpace::StateType>(1)->values[1];
+      }
+
+      void setX(double x)
+      {
+        as<ob::RealVectorStateSpace::StateType>(0)->values[0] = x;
+      }
+
+      void setY(double y)
+      {
+        as<ob::RealVectorStateSpace::StateType>(0)->values[1] = y;
+      }
+
+      void setVx(double vx)
+      {
+        as<ob::RealVectorStateSpace::StateType>(1)->values[0] = vx;
+      }
+
+      void setVy(double vy)
+      {
+        as<ob::RealVectorStateSpace::StateType>(1)->values[1] = vy;
+      }
+    };
+
+    StateSpace()
+    {
+      setName("RobotDoubleIntegrator2D" + getName());
+      type_ = ob::STATE_SPACE_TYPE_COUNT + 1;
+      addSubspace(std::make_shared<ob::RealVectorStateSpace>(2), 1.0);  // position
+      addSubspace(std::make_shared<ob::RealVectorStateSpace>(2), 0.25);  // velocity
+      lock();
+    }
+
+    ~StateSpace() override = default;
+
+    void setPositionBounds(const ob::RealVectorBounds &bounds)
+    {
+      as<ob::RealVectorStateSpace>(0)->setBounds(bounds);
+    }
+
+    const ob::RealVectorBounds &getPositionBounds() const
+    {
+      return as<ob::RealVectorStateSpace>(0)->getBounds();
+    }
+
+    void setVelocityBounds(const ob::RealVectorBounds &bounds) 
+    {
+      as<ob::RealVectorStateSpace>(1)->setBounds(bounds);
+    }
+    
+    const ob::RealVectorBounds &getVelocityBounds() const 
+    {
+      return as<ob::RealVectorStateSpace>(1)->getBounds();
+    }
+
+
+    ob::State *allocState() const override
+    {
+      auto *state = new StateType();
+      allocStateComponents(state);
+      return state;
+    }
+
+    void freeState(ob::State *state) const override
+    {
+      CompoundStateSpace::freeState(state);
+    }
+
+  };
+
+};
 
 //////////////////////////////////////////////////////////////////////////////////////////
 class RobotUnicycleFirstOrder : public Robot
@@ -184,6 +374,99 @@ public:
   }
 };
 //////////////////////////////////////////////////////////////////////////////////////////////////
+class RobotUnicycleFirstOrderSphere : public Robot
+{
+public:
+  RobotUnicycleFirstOrderSphere(
+    const ompl::base::RealVectorBounds& position_bounds,
+    float v_min, float v_max,
+    float w_min, float w_max)
+  {
+    geom_.emplace_back(new fcl::Spheref(0.4));
+
+    auto space(std::make_shared<ob::SE2StateSpace>());
+    space->setBounds(position_bounds);
+
+    // create a control space
+    // R^1: turning speed
+    auto cspace(std::make_shared<oc::RealVectorControlSpace>(space, 2));
+
+    // set the bounds for the control space
+    ob::RealVectorBounds cbounds(2);
+    cbounds.setLow(0, v_min);
+    cbounds.setHigh(0, v_max);
+    cbounds.setLow(1, w_min);
+    cbounds.setHigh(1, w_max);
+
+    cspace->setBounds(cbounds);
+
+    // construct an instance of  space information from this control space
+    si_ = std::make_shared<oc::SpaceInformation>(space, cspace);
+
+    dt_ = 0.1;
+    is2D_ = true;
+    max_speed_ = std::max(fabsf(v_min), fabsf(v_max));
+  }
+
+  void propagate(
+    const ompl::base::State *start,
+    const ompl::control::Control *control,
+    const double duration,
+    ompl::base::State *result) override
+  {
+    auto startTyped = start->as<ob::SE2StateSpace::StateType>();
+    const double *ctrl = control->as<ompl::control::RealVectorControlSpace::ControlType>()->values;
+
+    auto resultTyped = result->as<ob::SE2StateSpace::StateType>();
+
+    // use simple Euler integration
+    float x = startTyped->getX();
+    float y = startTyped->getY();
+    float yaw = startTyped->getYaw();
+    float remaining_time = duration;
+    do
+    {
+      float dt = std::min(remaining_time, dt_);
+
+      x += ctrl[0] * cosf(yaw) * dt;
+      y += ctrl[0] * sinf(yaw) * dt;
+      yaw += ctrl[1] * dt;
+
+      remaining_time -= dt;
+    } while (remaining_time >= dt_);
+
+    // update result
+
+    resultTyped->setX(x);
+    resultTyped->setY(y);
+    resultTyped->setYaw(yaw);
+
+    // Normalize orientation
+    ob::SO2StateSpace SO2;
+    SO2.enforceBounds(resultTyped->as<ob::SO2StateSpace::StateType>(1));
+  }
+
+  virtual fcl::Transform3f getTransform(
+      const ompl::base::State *state,
+      size_t /*part*/) override
+  {
+    auto stateTyped = state->as<ob::SE2StateSpace::StateType>();
+
+    fcl::Transform3f result;
+    result = Eigen::Translation<float, 3>(fcl::Vector3f(stateTyped->getX(), stateTyped->getY(), 0));
+    float yaw = stateTyped->getYaw();
+    result.rotate(Eigen::AngleAxisf(yaw, Eigen::Vector3f::UnitZ()));
+    return result;
+  }
+
+  virtual void setPosition(ompl::base::State *state, const fcl::Vector3f position, size_t /*part*/) override
+  {
+    auto stateTyped = state->as<ob::SE2StateSpace::StateType>();
+    stateTyped->setX(position(0));
+    stateTyped->setY(position(1));
+  }
+};
+/////////////////////////////////////////////////////////////////////////////////////////////////
 class RobotCarFirstOrder : public Robot
 {
 public:
@@ -690,21 +973,21 @@ public:
     auto resultTyped = result->as<ob::CompoundStateSpace::StateType>();
 
     for (size_t i = 0; i < robots_.size(); ++i) {
-      if (!goals_->isSatisfied(startTyped, i)) {
+      // if (!goals_->isSatisfied(startTyped, i)) {
         robots_[i]->propagate(startTyped->components[i], (*controlTyped)[i], duration, (*resultTyped)[i]);
-      } else {
-        // if we are at the goal for this robot, just copy the previous state
-        auto csi = dynamic_cast<ompl::control::SpaceInformation*>(si_.get()); 
-        auto csp = csi->getStateSpace()->as<ompl::base::CompoundStateSpace>();
-        auto si_k = csp->getSubspace(i);
+      // } else {
+      //   // if we are at the goal for this robot, just copy the previous state
+      //   auto csi = dynamic_cast<ompl::control::SpaceInformation*>(si_.get()); 
+      //   auto csp = csi->getStateSpace()->as<ompl::base::CompoundStateSpace>();
+      //   auto si_k = csp->getSubspace(i);
 
-        // option 1
-        si_k->copyState((*resultTyped)[i], (*startTyped)[i]);
+      //   // option 1
+      //   si_k->copyState((*resultTyped)[i], (*startTyped)[i]);
 
-        // option 2
-        // std::vector<double> reals(si_k->getDimension(), nan(""));
-        // si_k->copyFromReals((*resultTyped)[i], reals); 
-      }
+      //   // option 2
+      //   // std::vector<double> reals(si_k->getDimension(), nan(""));
+      //   // si_k->copyFromReals((*resultTyped)[i], reals); 
+      // }
     }
   }
 
@@ -764,6 +1047,15 @@ std::shared_ptr<Robot> create_robot(
         /*w_min*/ -0.5 /*rad/s*/,
         /*w_max*/ 0.5 /*rad/s*/));
   }
+  else if (robotType == "unicycle_first_order_0_sphere")
+  {
+    robot.reset(new RobotUnicycleFirstOrderSphere(
+        positionBounds,
+        /*v_min*/ -0.5 /* m/s*/,
+        /*v_max*/ 0.5 /* m/s*/,
+        /*w_min*/ -0.5 /*rad/s*/,
+        /*w_max*/ 0.5 /*rad/s*/));
+  }
   else if (robotType == "car_first_order_0")
   {
     robot.reset(new RobotCarFirstOrder(
@@ -793,6 +1085,16 @@ std::shared_ptr<Robot> create_robot(
         positionBounds,
         /*v_min*/ -0.5 /* m/s*/,
         /*v_max*/ 0.5 /* m/s*/
+        ));
+  }
+  else if (robotType == "double_integrator_0")
+  {
+    robot.reset(new RobotDoubleIntegrator2D(
+        positionBounds,
+        /*v_min*/ -0.5 /* m/s*/,
+        /*v_max*/ 0.5 /* m/s*/,
+        /*a_min*/ -2.0 /* m/s^2*/,
+        /*a_max*/ 2.0 /* m/s^2*/
         ));
   }
   
