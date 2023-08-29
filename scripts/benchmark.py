@@ -104,6 +104,7 @@ def main():
 	instances = [
 		# 1 robot cases
 		"swap1_unicycle",
+		"swap1_unicycle_sphere",
 		"swap1_trailer",
 		# 2 robot cases
 		"swap2_unicycle",
