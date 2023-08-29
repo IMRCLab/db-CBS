@@ -94,6 +94,9 @@ public:
   std::vector<ob::State*> states;
   std::vector<oc::Control*> actions;
 
+  // Last state translated to origin (to support reverse search)
+  ob::State* last_state_translated;
+
   std::shared_ptr<ShiftableDynamicAABBTreeCollisionManager<float>> collision_manager;
   std::vector<fcl::CollisionObjectf *> collision_objects;
 
@@ -154,25 +157,33 @@ bool compareAStarNode::operator()(const AStarNode *a, const AStarNode *b) const
   }
 }
 
-float heuristic(std::shared_ptr<Robot> robot, const ob::State *s, const ob::State *g, float delta)
+float heuristic(std::shared_ptr<Robot> robot, const ob::State *s, const ob::State *g, float delta, ompl::NearestNeighbors<AStarNode*>* heuristic_nn)
 {
-  // heuristic is the time it might take to get to the goal
-  Eigen::Vector3f current_pos = robot->getTransform(s).translation();
-  Eigen::Vector3f goal_pos = robot->getTransform(g).translation();
+  if (heuristic_nn) {
+    AStarNode node;
+    node.state = const_cast<ob::State*>(s);
+    return heuristic_nn->nearest(&node)->gScore;
+  } else {
+    // heuristic is the time it might take to get to the goal
+    Eigen::Vector3f current_pos = robot->getTransform(s).translation();
+    Eigen::Vector3f goal_pos = robot->getTransform(g).translation();
 
-  float dist = (current_pos - goal_pos).norm();
-  const float max_vel = robot->maxSpeed(); // m/s./db_    
-  // const float time = dist / max_vel;
-  const float time = std::max((dist-delta) / max_vel, 0.0f);
-  return time;
-  // return 0;
-  
+    float dist = (current_pos - goal_pos).norm();
+    const float max_vel = robot->maxSpeed(); // m/s./db_    
+    // const float time = dist / max_vel;
+    const float time = std::max((dist-delta) / max_vel, 0.0f);
+    return time;
+    // return 0;
+  }
 }
 
 struct Motions
 {
   std::vector<Motion> motions;
-  ompl::NearestNeighbors<Motion*>* T_m;
+  // Kd-tree for the first state of each primitive
+  ompl::NearestNeighbors<Motion*>* T_m_start;
+  // Kd-tree for the last state of each primitive
+  ompl::NearestNeighbors<Motion*>* T_m_end;
 };
 
 void load_motions(
@@ -270,6 +281,10 @@ void load_motions(
       m.cost = m.actions.size() * robot->dt(); 
       m.idx = result.motions.size();
 
+      // add the last state translated to the origin
+      m.last_state_translated = si->cloneState(m.states.back());
+      robot->setPosition(m.last_state_translated, fcl::Vector3f(0,0,0));
+
       // generate collision objects and collision manager for saved motion
       for (const auto &state : m.states)
       {
@@ -298,17 +313,30 @@ void load_motions(
       result.motions[idx].idx = idx;
     }
 
-    // build kd-tree for motion primitives
+    // build kd-tree for motion primitives (start)
     if (si->getStateSpace()->isMetricSpace())
     {
-      result.T_m = new ompl::NearestNeighborsGNATNoThreadSafety<Motion*>();
+      result.T_m_start = new ompl::NearestNeighborsGNATNoThreadSafety<Motion*>();
     } else {
-      result.T_m = new ompl::NearestNeighborsSqrtApprox<Motion*>();
+      result.T_m_start = new ompl::NearestNeighborsSqrtApprox<Motion*>();
     }
-    result.T_m->setDistanceFunction([si](const Motion* a, const Motion* b) { return si->distance(a->states[0], b->states[0]); });
+    result.T_m_start->setDistanceFunction([si](const Motion* a, const Motion* b) { return si->distance(a->states[0], b->states[0]); });
 
     for (auto& motion : result.motions) {
-      result.T_m->add(&motion); // keep initial states
+      result.T_m_start->add(&motion); // keep initial states
+    }
+
+    // build kd-tree for motion primitives (end)
+    if (si->getStateSpace()->isMetricSpace())
+    {
+      result.T_m_end = new ompl::NearestNeighborsGNATNoThreadSafety<Motion*>();
+    } else {
+      result.T_m_end = new ompl::NearestNeighborsSqrtApprox<Motion*>();
+    }
+    result.T_m_end->setDistanceFunction([si](const Motion* a, const Motion* b) { return si->distance(a->last_state_translated, b->last_state_translated); });
+
+    for (auto& motion : result.motions) {
+      result.T_m_end->add(&motion); // keep initial states
     }
 
     std::cout << "There are " << result.motions.size() << " motions!" << std::endl;
@@ -341,7 +369,7 @@ void disable_motions(
       } while (!si->isValid(fakeMotion.states[0]));
       robot->setPosition(fakeMotion.states[0], fcl::Vector3f(0, 0, 0));
 
-      result.T_m->nearestK(&fakeMotion, num_desired_neighbors+1, neighbors_m); 
+        result.T_m_start->nearestK(&fakeMotion, num_desired_neighbors+1, neighbors_m); 
 
       float max_delta = si->distance(fakeMotion.states[0], neighbors_m.back()->states.front());
       sum_delta += max_delta;
@@ -371,7 +399,7 @@ void disable_motions(
       }
 
       si->copyState(fakeMotion.states[0], m.states[0]);
-      result.T_m->nearestR(&fakeMotion, delta*alpha, neighbors_m); // finding applicable motions with discont.
+      result.T_m_start->nearestR(&fakeMotion, delta*alpha, neighbors_m); // finding applicable motions with discont.
 
       for (Motion* nm : neighbors_m) {
         if (nm == &m || nm->disabled) { 
@@ -417,13 +445,15 @@ public:
 
   bool search(
     const Motions& motions,
-    std::vector<double> robot_start,
-    std::vector<double> robot_goal,
-    std::vector<fcl::CollisionObjectf *> obstacles, 
+    const std::vector<double>& robot_start,
+    const std::vector<double>& robot_goal,
+    const std::vector<fcl::CollisionObjectf *>& obstacles, 
     std::shared_ptr<Robot> robot,
     const std::vector<Constraint>& constraints,
-    LowLevelPlan<AStarNode*,ob::State*,oc::Control*>& ll_result)
-
+    bool reverse_search,
+    LowLevelPlan<AStarNode*,ob::State*,oc::Control*>& ll_result,
+    ompl::NearestNeighbors<AStarNode*>* heuristic_nn = nullptr,
+    ompl::NearestNeighbors<AStarNode*>** heuristic_result = nullptr)
   {
     auto si = robot->getSpaceInformation();
 
@@ -456,13 +486,27 @@ public:
 
     si->setup();
     auto startState = si->allocState();
-    si->getStateSpace()->copyFromReals(startState, robot_start);
+    if (!reverse_search) {
+      si->getStateSpace()->copyFromReals(startState, robot_start);
+    } else {
+      si->getStateSpace()->copyFromReals(startState, robot_goal);
+    }
     si->enforceBounds(startState);
     
     // set goal state
     auto goalState = si->allocState();
-    si->getStateSpace()->copyFromReals(goalState, robot_goal);
-    si->enforceBounds(goalState);
+    if (!reverse_search) {
+      si->getStateSpace()->copyFromReals(goalState, robot_goal);
+    } else {
+      si->getStateSpace()->copyFromReals(goalState, robot_start);
+    }
+
+    if (isnan(robot_start[0])) {
+      si->freeState(goalState);
+      goalState = nullptr;
+    } else {
+      si->enforceBounds(goalState);
+    }
 
     std::cout << "Max cost is " << maxCost << std::endl;
 
@@ -486,13 +530,20 @@ public:
   {
     T_n = new ompl::NearestNeighborsSqrtApprox<AStarNode*>();
   }
+  if (heuristic_result) {
+    *heuristic_result = T_n;
+  }
   T_n->setDistanceFunction([si](const AStarNode* a, const AStarNode* b)
                            { return si->distance(a->state, b->state); });
 
   auto start_node = new AStarNode();
   start_node->state = startState;
   start_node->gScore = 0;
-  start_node->fScore = epsilon * heuristic(robot, startState, goalState, delta);
+  if (goalState) {
+    start_node->fScore = goalState ? epsilon * heuristic(robot, startState, goalState, delta, heuristic_nn) : 0;
+  } else {
+    start_node->fScore = 0;
+  }
   start_node->came_from = nullptr;
   start_node->used_offset = fcl::Vector3f(0,0,0);
   start_node->used_motion = -1;
@@ -506,6 +557,7 @@ public:
   Motion fakeMotion;
   fakeMotion.idx = -1;
   fakeMotion.states.push_back(si->allocState());
+  fakeMotion.last_state_translated = si->allocState();
 
   AStarNode* query_n = new AStarNode();
 
@@ -528,7 +580,7 @@ public:
     
     // assert(current->fScore >= last_f_score);
     last_f_score = current->fScore;
-    bool is_at_goal = si->distance(current->state, goalState) <= delta;
+    bool is_at_goal = goalState && si->distance(current->state, goalState) <= delta;
     if (is_at_goal) {
       // check if we violate any constraint if we stay there
       for (const auto& constraint : constraints) {
@@ -664,7 +716,12 @@ public:
     si->copyState(fakeMotion.states[0], current->state);
     robot->setPosition(fakeMotion.states[0], fcl::Vector3f(0,0,0));
 
-    motions.T_m->nearestR(&fakeMotion, delta*alpha, neighbors_m); 
+    if (!reverse_search) {
+      motions.T_m_start->nearestR(&fakeMotion, delta*alpha, neighbors_m);
+    } else {
+      si->copyState(fakeMotion.last_state_translated, fakeMotion.states[0]);
+      motions.T_m_end->nearestR(&fakeMotion, delta*alpha, neighbors_m);
+    }
     // Loop over all potential applicable motions
     for (const Motion* motion : neighbors_m) {
       if (motion->disabled) {
@@ -703,13 +760,19 @@ public:
 
       // compute estimated cost
       float tentative_gScore = current->gScore + motion->cost;
-      si->copyState(tmpState, motion->states.back());
+      Eigen::Vector3f relative_pos;
+      if (!reverse_search) {
+        si->copyState(tmpState, motion->states.back());
+        relative_pos = robot->getTransform(motion->states.back()).translation();
+      } else {
+        si->copyState(tmpState, motion->states.front());
+        relative_pos = -robot->getTransform(motion->states.back()).translation();
+      }
       Eigen::Vector3f current_pos = robot->getTransform(current->state).translation();
       Eigen::Vector3f offset = current_pos + computed_offset;
-      Eigen::Vector3f relative_pos = robot->getTransform(tmpState).translation(); // after applying the considered motion prim.?
       robot->setPosition(tmpState, offset + relative_pos);
       // compute estimated fscore
-      float tentative_hScore = epsilon * heuristic(robot, tmpState, goalState, delta);
+      float tentative_hScore = goalState ? epsilon * heuristic(robot, tmpState, goalState, delta, heuristic_nn) : 0;
       float tentative_fScore = tentative_gScore + tentative_hScore;
 
       // skip motions that would exceed cost bound
@@ -747,7 +810,7 @@ public:
       motion->collision_manager->shift(-offset);
     
       // now check with dynamic constraints
-      bool reachesGoal = si->distance(tmpState, goalState) <= delta;
+      bool reachesGoal = goalState && si->distance(tmpState, goalState) <= delta;
 
       for (const auto& constraint : constraints) {
         // a constraint violation can only occur between t in [current->gScore, tentative_gScore]
@@ -859,6 +922,11 @@ public:
     }
 
   } // While OpenSet not empyt ends here
+
+
+  if (!goalState) {
+    return false;
+  }
 
   query_n->state = goalState;
   // const auto nearest = T_n->nearest(query_n); // why needed ?

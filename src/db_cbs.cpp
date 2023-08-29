@@ -426,6 +426,30 @@ int main(int argc, char* argv[]) {
         }
     }
 
+    // Heuristic computation
+    std::vector<ompl::NearestNeighbors<AStarNode*>*> heuristics(robots.size(), nullptr);
+
+    if (cfg["heuristic1"].as<std::string>() == "reverse-search") {
+        // disable/enable motions
+        for (auto& iter : robot_motions) {
+            for (size_t i = 0; i < robot_types.size(); ++i) {
+                if (iter.first == robot_types[i]) {
+                    disable_motions(robots[i], cfg["heuristic1_delta"].as<float>(), filter_duplicates, alpha, 99999, iter.second);
+                    break;
+                }
+            }
+        }
+
+        DBAstar<Constraint> llplanner(cfg["heuristic1_delta"].as<float>(), alpha);
+        for (size_t i = 0; i < robots.size(); ++i) {
+
+            LowLevelPlan<AStarNode*,ob::State*,oc::Control*> ll_result;
+            llplanner.search(robot_motions.at(robot_types[i]), {nanf(""), nanf(""), nanf("")}, goals[i], 
+                obstacles, robots[i], {}, /*reverse_search*/true, ll_result, nullptr, &heuristics[i]);
+            std::cout << "computed heuristic with " << heuristics[i]->size() << " entries." << std::endl;
+        }
+    }
+
     // allocate data for conflict checking
     std::vector<fcl::CollisionObjectf*> col_mng_objs;
     std::shared_ptr<fcl::BroadPhaseCollisionManagerf> col_mng_robots;
@@ -482,7 +506,7 @@ int main(int argc, char* argv[]) {
         for (const auto &robot_node : env["robots"]) {
             DBAstar<Constraint> llplanner(delta, alpha);
             bool success = llplanner.search(robot_motions.at(robot_types[i]), starts[i], goals[i], 
-                obstacles, robots[i], start.constraints[i], start.solution[i]);
+                obstacles, robots[i], start.constraints[i], /*reverse_search*/false, start.solution[i], heuristics[i]);
             if (!success) {
                 std::cout << "Couldn't find initial solution." << std::endl;
                 continue;
@@ -538,7 +562,7 @@ int main(int argc, char* argv[]) {
                 // run the low level planner
                 DBAstar<Constraint> llplanner(delta, alpha);
                 bool success = llplanner.search(robot_motions.at(robot_types[i]), starts[i], goals[i], 
-                    obstacles, robots[i], newNode.constraints[i], newNode.solution[i]); 
+            		obstacles, robots[i], newNode.constraints[i], /*reverse_search*/false, newNode.solution[i], heuristics[i]); 
 
                 if (success) {
                     newNode.cost += newNode.solution[i].cost;
