@@ -20,12 +20,12 @@ robots:
     initial_position: [0, 0.5, 0]
     type: cf21  # see robot_types
   cf15:
-    enabled: true
+    enabled: false
     uri: radio://0/80/2M/E7E7E7E70F
     initial_position: [0.5, 0, 0]
     type: cf21  # see robot_types
   cf14:
-    enabled: true
+    enabled: false
     uri: radio://0/80/2M/E7E7E7E70E
     initial_position: [0.5, 0.5, 0]
     type: cf21  # see robot_types    
