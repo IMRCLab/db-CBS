@@ -60,7 +60,7 @@ def test_multi_UAV():
     allcfs = swarm.allcfs   # CrazyflieServer.crazyflies[0] --> Crazyflie
 
     rate = 10.0
-    rate = 1.0
+    rate = 3.0
     Z = 0.5
 
     allcfs.takeoff(targetHeight=Z, duration=Z+1.0)
@@ -83,14 +83,14 @@ def test_multi_UAV():
         print(f'not enough trajectory for {len(allcfs.crazyflies)} crazyfile')
         quit()
 
-    # for state_id in range(len(states_list[0])):
-    for state_id in range(3):
+    for state_id in range(len(states_list[0])):
+    # for state_id in range(6):
         for drone_id in range(len(allcfs.crazyflies)):
             cf = allcfs.crazyflies[drone_id]   
             pos = np.append(np.array(states_list[drone_id][state_id]), Z)
             print('drone_id',drone_id,'initial pos:',pos)
             cf.cmdFullState(pos, np.zeros(3), np.zeros(3), 0, np.zeros(3))
-        if state_id ==1:
+        if state_id == 0:
             timeHelper.sleep(Z+1.0)    
         timeHelper.sleepForRate(rate)
 
