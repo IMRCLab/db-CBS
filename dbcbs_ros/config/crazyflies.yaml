@@ -15,17 +15,17 @@ robots:
     #       frequency: 1
     #       vars: ["acc.x", "acc.y"]
   cf16:
-    enabled: false
+    enabled: true
     uri: radio://0/80/2M/E7E7E7E716
     initial_position: [0, 0.5, 0]
     type: cf21  # see robot_types
   cf15:
-    enabled: false
+    enabled: true
     uri: radio://0/80/2M/E7E7E7E70F
     initial_position: [0.5, 0, 0]
     type: cf21  # see robot_types
   cf14:
-    enabled: false
+    enabled: true
     uri: radio://0/80/2M/E7E7E7E70E
     initial_position: [0.5, 0.5, 0]
     type: cf21  # see robot_types    
