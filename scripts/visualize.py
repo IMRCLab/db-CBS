@@ -54,10 +54,11 @@ class Animation:
       else:
         print("ERROR: unknown obstacle type")
 
-    for robot in env["robots"]:  
+    for robot in env["robots"]:
       self.robot_types.append(robot["type"])  
-      self.draw_robot(robot["start"], robot["type"], facecolor='red')
-      self.draw_robot(robot["goal"], robot["type"], facecolor='none', edgecolor='red')
+      if filename_result is None:
+        self.draw_robot(robot["start"], robot["type"], facecolor='blue', alpha=0.3)
+      self.draw_robot(robot["goal"], robot["type"], facecolor='none', edgecolor='green', alpha=0.3)
 
     if filename_result is not None:
       with open(filename_result) as result_file:
@@ -72,7 +73,7 @@ class Animation:
       i = 0
       for robot in self.result["result"]:
         state = robot["states"][0]
-        patches = self.draw_robot(state, self.robot_types[i], facecolor='blue')
+        patches = self.draw_robot(state, self.robot_types[i], facecolor='blue', alpha=0.8)
         self.robot_patches.append(patches)
         i += 1
       self.anim = animation.FuncAnimation(self.fig, self.animate_func,
@@ -110,9 +111,10 @@ class Animation:
             yaw = state[2]
             xy = np.asarray(pos)
             self.robot_patches[k][0].center = xy
-            t = matplotlib.transforms.Affine2D().rotate_around(
-                pos[0], pos[1], yaw)
-            self.robot_patches[k][0].set_transform(t + self.ax.transData)
+            pos2 = xy + np.array([np.cos(yaw), np.sin(yaw)])*self.big_radius*0.8
+            self.robot_patches[k][1].center = pos2
+
+
         elif self.robot_types[k] == 'unicycle_first_order_0' or self.robot_types[k] == 'car_first_order_0':
             pos = state[:2]
             yaw = state[2]
@@ -144,26 +146,28 @@ class Animation:
     return [item for row in self.robot_patches for item in row]
 
   def draw_robot(self, state, type, **kwargs):
-    patch = []
+    patches = []
     if type == 'single_integrator_0':
       pos = state
-      patch.append(draw_sphere_patch(self.ax, state, self.radius, 0, **kwargs))
+      patches.append(draw_sphere_patch(self.ax, state, self.radius, 0, **kwargs))
     elif type == 'unicycle_first_order_0_sphere':
         pos = state[:2]
         yaw = state[2]
-        patch.append(draw_sphere_patch(self.ax, state, self.big_radius, yaw, **kwargs))
+        pos2 = pos + np.array([np.cos(yaw), np.sin(yaw)])*self.big_radius*0.8
+        patches.append(draw_sphere_patch(self.ax, pos, self.big_radius, 0, **kwargs))
+        patches.append(draw_sphere_patch(self.ax, pos2, 0.05, 0, facecolor='black'))
     elif type == 'unicycle_first_order_0' or type == 'car_first_order_0':
         pos = state[:2]
         yaw = state[2]
-        patch.append(draw_box_patch(self.ax, pos, self.size, yaw, **kwargs))  
+        patches.append(draw_box_patch(self.ax, pos, self.size, yaw, **kwargs))  
     elif type == "car_first_order_with_1_trailers_0":
         xy = state[0:2]
         theta0 = state[2]
         theta1 = state[3]
-        patch.append(draw_box_patch(self.ax, xy, self.size, theta0, **kwargs))
+        patches.append(draw_box_patch(self.ax, xy, self.size, theta0, **kwargs))
         link1 = np.array([np.cos(theta1), np.sin(theta1)]) * self.hitch_length[0]
-        patch.append(draw_box_patch(self.ax, xy-link1, self.trailer_size, theta1, **kwargs))
-    return patch 
+        patches.append(draw_box_patch(self.ax, xy-link1, self.trailer_size, theta1, **kwargs))
+    return patches
 
 def visualize(filename_env, filename_result = None, filename_video=None):
   anim = Animation(filename_env, filename_result)

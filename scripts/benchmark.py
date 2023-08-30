@@ -115,11 +115,15 @@ def main():
 		"makespan_vs_soc_1",
 		"makespan_vs_soc_0",
 		"alcove_unicycle",
+		"alcove_unicycle_sphere",
 		"at_goal_unicycle",
+		"at_goal_unicycle_sphere",
 		# 3 robot cases
 		"swap3_unicycle",
+		"swap3_unicycle_sphere",
 		# 4 robot cases
 		"swap4_unicycle",
+		"swap4_unicycle_sphere",
 
 		# special test cases
 		"infeasible_0",
