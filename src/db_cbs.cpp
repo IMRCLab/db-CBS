@@ -19,6 +19,7 @@
 #include "robotStatePropagator.hpp"
 #include "fclStateValidityChecker.hpp"
 
+// #define DBG_PRINTS
 #include "db_astar.hpp"
 #include "planresult.hpp"
 
@@ -170,11 +171,13 @@ bool getEarliestConflict(
             early_conflict.robot_state_i = node_states[early_conflict.robot_idx_i];
             early_conflict.robot_state_j = node_states[early_conflict.robot_idx_j];
 
+#ifdef DBG_PRINTS
             std::cout << "CONFLICT at time " << t << " " << early_conflict.robot_idx_i << " " << early_conflict.robot_idx_j << std::endl;
             auto si_i = all_robots[early_conflict.robot_idx_i]->getSpaceInformation();
             si_i->printState(early_conflict.robot_state_i);
             auto si_j = all_robots[early_conflict.robot_idx_j]->getSpaceInformation();
             si_j->printState(early_conflict.robot_state_j);
+#endif
             return true;
         } 
     }
@@ -554,10 +557,14 @@ int main(int argc, char* argv[]) {
                 HighLevelNode newNode = P;
                 size_t i = c.first;
                 newNode.id = id;
+#ifdef DBG_PRINTS
                 std::cout << "Node ID is " << id << std::endl;
+#endif
                 newNode.constraints[i].insert(newNode.constraints[i].end(), c.second.begin(), c.second.end());
                 newNode.cost -= newNode.solution[i].cost;
+#ifdef DBG_PRINTS
                 std::cout << "New node cost: " << newNode.cost << std::endl;
+#endif
 
                 // run the low level planner
                 DBAstar<Constraint> llplanner(delta, alpha);
@@ -566,7 +573,9 @@ int main(int argc, char* argv[]) {
 
                 if (success) {
                     newNode.cost += newNode.solution[i].cost;
+#ifdef DBG_PRINTS
                     std::cout << "Updated New node cost: " << newNode.cost << std::endl;
+#endif
                     //   print_solution(newNode.solution, robots);
 
                     auto handle = open.push(newNode);
