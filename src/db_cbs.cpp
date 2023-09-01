@@ -339,6 +339,7 @@ int main(int argc, char* argv[]) {
     // load config file
     YAML::Node cfg = YAML::LoadFile(cfgFile);
     // float delta = cfg["delta"].as<float>();
+    // cfg = cfg["db-cbs"]["default"];
     float alpha = cfg["alpha"].as<float>();
     bool filter_duplicates = cfg["filter_duplicates"].as<bool>();
 
@@ -401,6 +402,10 @@ int main(int argc, char* argv[]) {
             std::string motionsFile;
             if (robotType == "unicycle_first_order_0" || robotType == "unicycle_first_order_0_sphere") {
                 motionsFile = "../motions/dbg_motions.msgpack";
+            } else if (robotType == "unicycle_second_order_0") {
+                motionsFile = "../motions/unicycle_second_order_0_sorted.msgpack";
+            } else if (robotType == "double_integrator_0") {
+                motionsFile = "../motions/double_integrator_0_sorted.msgpack";
             } else if (robotType == "car_first_order_with_1_trailers_0") {
                 motionsFile = "../motions/car_first_order_with_1_trailers_0_sorted.msgpack";
             } else {
