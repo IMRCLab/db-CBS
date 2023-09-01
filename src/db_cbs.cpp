@@ -401,6 +401,10 @@ int main(int argc, char* argv[]) {
             std::string motionsFile;
             if (robotType == "unicycle_first_order_0" || robotType == "unicycle_first_order_0_sphere") {
                 motionsFile = "../motions/dbg_motions.msgpack";
+             } else if (robotType == "unicycle_second_order_0") {
+                motionsFile = "../motions/unicycle_second_order_0_sorted.msgpack";
+            } else if (robotType == "double_integrator_0") {
+                motionsFile = "../motions/double_integrator_0_sorted.msgpack";
             } else if (robotType == "car_first_order_with_1_trailers_0") {
                 motionsFile = "../motions/car_first_order_with_1_trailers_0_sorted.msgpack";
             } else {
@@ -444,7 +448,8 @@ int main(int argc, char* argv[]) {
         for (size_t i = 0; i < robots.size(); ++i) {
 
             LowLevelPlan<AStarNode*,ob::State*,oc::Control*> ll_result;
-            llplanner.search(robot_motions.at(robot_types[i]), {nanf(""), nanf(""), nanf("")}, goals[i], 
+            std::vector<double> v_nanf(starts[i].size(), nanf(""));
+            llplanner.search(robot_motions.at(robot_types[i]), v_nanf, goals[i], 
                 obstacles, robots[i], {}, /*reverse_search*/true, ll_result, nullptr, &heuristics[i]);
             std::cout << "computed heuristic with " << heuristics[i]->size() << " entries." << std::endl;
         }
