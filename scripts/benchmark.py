@@ -105,10 +105,12 @@ def main():
 		# 1 robot cases
 		"swap1_unicycle",
 		"swap1_unicycle_sphere",
+		"swap1_unicycle_second",
 		"swap1_trailer",
 		# 2 robot cases
 		"swap2_unicycle",
 		"swap2_unicycle_sphere",
+		"swap2_unicycle_second",
 		"swap2_double_integrator",
 		"swap2_trailer",
 		"swap2_hetero",

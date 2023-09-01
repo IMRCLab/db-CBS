@@ -449,7 +449,7 @@ int main(int argc, char* argv[]) {
         for (size_t i = 0; i < robots.size(); ++i) {
 
             LowLevelPlan<AStarNode*,ob::State*,oc::Control*> ll_result;
-            llplanner.search(robot_motions.at(robot_types[i]), {nanf(""), nanf(""), nanf("")}, goals[i], 
+            llplanner.search(robot_motions.at(robot_types[i]), starts[i], goals[i], 
                 obstacles, robots[i], {}, /*reverse_search*/true, ll_result, nullptr, &heuristics[i]);
             std::cout << "computed heuristic with " << heuristics[i]->size() << " entries." << std::endl;
         }
