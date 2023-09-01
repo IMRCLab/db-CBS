@@ -603,8 +603,11 @@ public:
     if (is_at_goal) {
       // check if we violate any constraint if we stay there
       for (const auto& constraint : constraints) {
-        if (constraint.time >= current->gScore) {
+        if (constraint.time >= current->gScore - 1e-6) {
           bool violation = si->distance(current->state, constraint.constrained_state) <= delta;
+#ifdef DBG_PRINTS
+          std::cout << "is_at_goal " << constraint.time << " " << current->gScore << " " << si->distance(current->state, constraint.constrained_state) << std::endl;
+#endif
           if (violation) {
             is_at_goal = false;
             break;
@@ -652,6 +655,7 @@ public:
         }
       } // writing result states
 #ifdef DBG_PRINTS
+      std::cout << "node-id " << result.back()->id << std::endl;
       si->printState(result.back()->state);
 #endif
       ll_result.trajectory.push_back(si->cloneState(result.back()->state));
@@ -933,7 +937,7 @@ public:
         node->reaches_goal = reachesGoal;
         T_n->add(node);
 #ifdef DBG_PRINTS
-        std::cout << "added node-id " << node->id << " gScore " << tentative_gScore << std::endl;
+        std::cout << "added node-id " << node->id << " gScore " << tentative_gScore << " rG " << node->reaches_goal << " m " << node->used_motion << std::endl;
 #endif
       }
       else
@@ -945,7 +949,7 @@ public:
           float delta_score = entry->gScore - tentative_gScore;
           if (delta_score > 0) {
 #ifdef DBG_PRINTS
-            std::cout << "attempt to update node-id " << entry->id << " (from " << entry->gScore << " to " << tentative_gScore << std::endl;
+            std::cout << "attempt to update node-id " << entry->id << " (from " << entry->gScore << " to " << tentative_gScore << " rG " << entry->reaches_goal << ")" << std::endl;
 #endif
             // check if an update would not violate our additional constraints
 
@@ -953,7 +957,10 @@ public:
             bool update_valid = true;
             if (entry->reaches_goal) {
               for (const auto& constraint : constraints) {
-                if (constraint.time >= tentative_gScore) {
+#ifdef DBG_PRINTS
+                std::cout << "check ctr " << constraint.time << " " << tentative_gScore << " " << (constraint.time >= tentative_gScore - 1e-6) << " " << si->distance(entry->state, constraint.constrained_state) << std::endl;
+#endif
+                if (constraint.time >= tentative_gScore - 1e-6) {
                   bool violation = si->distance(entry->state, constraint.constrained_state) <= delta;
                   if (violation) {
                     update_valid = false;
