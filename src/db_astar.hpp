@@ -457,11 +457,13 @@ public:
   {
     auto si = robot->getSpaceInformation();
 
+#ifdef DBG_PRINTS
     std::cout << "Running dbA*" << std::endl;
     for (const auto& constraint : constraints){
       std::cout << "constraint at time: " << constraint.time << std::endl;
       si->printState(constraint.constrained_state);
     }
+#endif
 
     ll_result.plan.clear();
     ll_result.trajectory.clear();
@@ -508,10 +510,13 @@ public:
       si->enforceBounds(goalState);
     }
 
+#ifdef DBG_PRINTS
     std::cout << "Max cost is " << maxCost << std::endl;
-
+#endif
     if (alpha <= 0 || alpha >= 1) {
+#ifdef DBG_PRINTS
       std::cerr << "Alpha needs to be between 0 and 1!" << std::endl;
+#endif
       return 1;
     }
 
@@ -595,7 +600,9 @@ public:
     }
 
     if (is_at_goal) {
+#ifdef DBG_PRINTS
       std::cout << "SOLUTION FOUND !!!! cost: " << current->gScore << std::endl;
+#endif
 
       std::vector<AStarNode*> result;
       AStarNode* n = current;
@@ -645,10 +652,14 @@ public:
 
       #ifndef NDEBUG
       // Sanity check here, that verifies that we obey all constraints
+#ifdef DBG_PRINTS
       std::cout << "checking constraints " << std::endl;
+#endif
       for (const auto& constraint : constraints) {
+#ifdef DBG_PRINTS
         std::cout << "constraint t=" << constraint.time << std::endl;
         si->printState(constraint.constrained_state);
+#endif
         int time_index = std::lround(constraint.time / robot->dt());
         assert(time_index >= 0);
         time_index = std::min<int>(time_index, (int)ll_result.trajectory.size()-1);
@@ -840,7 +851,9 @@ public:
           motion_state_co.setRotation(transform.rotation());
           motion_state_co.computeAABB();
 
+#ifdef DBG_PRINTS
           si->printState(tmpStateconst);
+#endif
 
           const auto& other_state = constraint.constrained_state;
           const auto& other_transform = robot->getTransform(other_state, 0);
@@ -933,15 +946,19 @@ public:
   auto nearest = T_n->nearest(query_n); // why needed ?
 
   if (nearest->gScore == 0) {
+#ifdef DBG_PRINTS
     std::cout << "No solution found (not even approxmite)" << std::endl;
+#endif
     // return 1;
     return false;
   }
 
   float nearest_distance = si->distance(nearest->state, goalState);
+#ifdef DBG_PRINTS
   std::cout << "Nearest to goal: " << nearest_distance << " (delta: " << delta << ")" << std::endl;
 
   std::cout << "Using approximate solution cost: " << nearest->gScore << std::endl;
+#endif
 
   // std::vector<const AStarNode*> result;
   std::vector<AStarNode*> result;
