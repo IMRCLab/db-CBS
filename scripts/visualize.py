@@ -115,7 +115,7 @@ class Animation:
             self.robot_patches[k][1].center = pos2
 
 
-        elif self.robot_types[k] == 'unicycle_first_order_0' or self.robot_types[k] == 'car_first_order_0':
+        elif self.robot_types[k] == 'unicycle_first_order_0' or self.robot_types[k] == 'car_first_order_0' or self.robot_types[k] == 'unicycle_second_order_0':
             pos = state[:2]
             yaw = state[2]
             xy = np.asarray(pos) - np.asarray(self.size) / 2
@@ -156,7 +156,7 @@ class Animation:
         pos2 = pos + np.array([np.cos(yaw), np.sin(yaw)])*self.big_radius*0.8
         patches.append(draw_sphere_patch(self.ax, pos, self.big_radius, 0, **kwargs))
         patches.append(draw_sphere_patch(self.ax, pos2, 0.05, 0, facecolor='black'))
-    elif type == 'unicycle_first_order_0' or type == 'car_first_order_0':
+    elif type == 'unicycle_first_order_0' or type == 'car_first_order_0' or type == 'unicycle_second_order_0':
         pos = state[:2]
         yaw = state[2]
         patches.append(draw_box_patch(self.ax, pos, self.size, yaw, **kwargs))  
