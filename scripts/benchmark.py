@@ -107,6 +107,7 @@ def main():
 		"swap1_unicycle_sphere",
 		"swap1_trailer",
 		"swap1_unicycle2",
+		"swap1_double_integrator",
 		# 2 robot cases
 		"swap2_unicycle",
 		"swap2_unicycle_sphere",
@@ -126,15 +127,16 @@ def main():
 		# 4 robot cases
 		"swap4_unicycle",
 		"swap4_unicycle_sphere",
+		"swap4_double_integrator",
 
-		# special test cases
+		# # special test cases
 		"infeasible_0",
 
 		# random cases
 		"gen_p10_n2_0",
 		"gen_p10_n4_0",
-		# "gen_p10_n8_0",
-		# "gen_p10_n16_0",
+		"gen_p10_n8_0",
+		"gen_p10_n16_0",
 	]
 	algs = [
 		"sst",

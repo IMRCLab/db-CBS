@@ -106,6 +106,13 @@ class Animation:
             t = matplotlib.transforms.Affine2D().rotate_around(
                 pos[0], pos[1], 0)
             self.robot_patches[k][0].set_transform(t + self.ax.transData)
+        elif self.robot_types[k] == 'double_integrator_0':
+            pos = state[:2]
+            xy = np.asarray(pos)
+            self.robot_patches[k][0].center = xy
+            t = matplotlib.transforms.Affine2D().rotate_around(
+                pos[0], pos[1], 0)
+            self.robot_patches[k][0].set_transform(t + self.ax.transData)
         elif self.robot_types[k] == 'unicycle_first_order_0_sphere':
             pos = state[:2]
             yaw = state[2]
@@ -150,6 +157,9 @@ class Animation:
     if type == 'single_integrator_0':
       pos = state
       patches.append(draw_sphere_patch(self.ax, state, self.radius, 0, **kwargs))
+    elif type == 'double_integrator_0':
+        pos = state[:2]
+        patches.append(draw_sphere_patch(self.ax, state, self.radius, 0, **kwargs))
     elif type == 'unicycle_first_order_0_sphere':
         pos = state[:2]
         yaw = state[2]
