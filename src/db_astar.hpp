@@ -435,9 +435,10 @@ template <typename Constraint>
 class DBAstar
 {
 public:
-  DBAstar(float delta, float alpha)
+  DBAstar(float delta, float alpha, float time_weight)
     : delta(delta)
     , alpha(alpha)
+    , time_weight(time_weight)
     , epsilon(1.0)
     , maxCost(1e6)
   {
@@ -456,6 +457,11 @@ public:
     ompl::NearestNeighbors<AStarNode*>** heuristic_result = nullptr)
   {
     auto si = robot->getSpaceInformation();
+
+    float last_constrained_time = -1;
+    for (const auto& constraint : constraints) {
+      last_constrained_time = std::max(last_constrained_time, constraint.time);
+    }
 
 #ifdef DBG_PRINTS
     std::cout << "Running dbA*" << std::endl;
@@ -570,6 +576,7 @@ public:
   ob::State* tmpStateconst = si->allocState();
   std::vector<Motion*> neighbors_m; // applicable
   std::vector<AStarNode*> neighbors_n; // explored
+  std::vector<AStarNode*> neighbors_n_spacetime; // explored
 
   float last_f_score = start_node->fScore;
   size_t expands = 0;
@@ -896,16 +903,20 @@ public:
       // We plan in space-time iff there are temporal constraints; thus, we need to add a new node if we are spatially and temporally outside of delta
       // For efficiency, we don't add time as an additional dimension to the state-space. Instead, we check the 
       // temporal delta here
-      bool need_to_add_new_node = true;
-      const float time_weight = constraints.size() > 0 ? 0.5 : 0.0;
+      const float lambda = constraints.empty() ? 0.0 : time_weight;
+      neighbors_n_spacetime.clear();
       for (AStarNode* entry : neighbors_n) {
-        float delta_time = fabs(entry->gScore - tentative_gScore);
-        if (delta_time * time_weight < radius) {
-          need_to_add_new_node = false;
+        float temporal_dist = fabs(entry->gScore - tentative_gScore);
+        float spatial_dist = si->distance(tmpState, entry->state);
+        float dist = spatial_dist + lambda * temporal_dist;
+        if (dist <= radius) {
+          neighbors_n_spacetime.push_back(entry);
         }
       }
 
-      if (need_to_add_new_node)
+      // std::cout << lambda << " " << neighbors_n.size() << " " << neighbors_n_spacetime.size() << std::endl;
+
+      if (neighbors_n_spacetime.empty())
       // if (nearest_distance > radius)
       {
         // new state -> add it to open and T_n
@@ -922,34 +933,49 @@ public:
         T_n->add(node);
 
       }
-#if 0
       else
       {
         // check if we have a better path now
         // note that we only allow changes that are within the search radius "fabs(delta_score) < radius * time_weight"
-        for (AStarNode* entry : neighbors_n) {
+        for (AStarNode* entry : neighbors_n_spacetime) {
         // AStarNode* entry = nearest;
           assert(si->distance(entry->state, tmpState) <= delta);
           float delta_score = entry->gScore - tentative_gScore;
-          if (delta_score > 0 && fabs(delta_score * time_weight) < radius) {
-            entry->gScore = tentative_gScore;
-            entry->fScore -= delta_score;
-            assert(entry->fScore >= 0);
-            entry->came_from = current;
-            entry->used_motion = motion->idx;
-            entry->used_offset = computed_offset;
-            if (entry->is_in_open) {
-              open.increase(entry->handle);
+          if (delta_score > 0) {
+            // since we operate in space-time, create a new node
+            // updating the existing node might cause temporal constraint violation
+            if (last_constrained_time > tentative_gScore) {
+              // std::cout << last_constrained_time << " " << tentative_gScore << std::endl;
+              auto node = new AStarNode();
+              node->state = si->cloneState(entry->state);
+              node->gScore = tentative_gScore;
+              node->fScore = entry->fScore - delta_score;
+              node->came_from = current;
+              node->used_motion = motion->idx;
+              node->used_offset = computed_offset;
+              node->is_in_open = true;
+              auto handle = open.push(node);
+              node->handle = handle;
+              T_n->add(node);
             } else {
-              // TODO: is this correct?
-              auto handle = open.push(entry);
-              entry->handle = handle;
-              entry->is_in_open = true;
+              entry->gScore = tentative_gScore;
+              entry->fScore -= delta_score;
+              assert(entry->fScore >= 0);
+              entry->came_from = current;
+              entry->used_motion = motion->idx;
+              entry->used_offset = computed_offset;
+              if (entry->is_in_open) {
+                open.increase(entry->handle);
+              } else {
+                // TODO: is this correct?
+                auto handle = open.push(entry);
+                entry->handle = handle;
+                entry->is_in_open = true;
+              }
             }
           }
         }
       }
-#endif
     }
 
   } // While OpenSet not empyt ends here
@@ -1024,6 +1050,7 @@ public:
 private:
   float delta;
   float alpha;
+  float time_weight;
   float epsilon;
   float maxCost;
 

@@ -343,6 +343,7 @@ int main(int argc, char* argv[]) {
     YAML::Node cfg = YAML::LoadFile(cfgFile);
     // float delta = cfg["delta"].as<float>();
     float alpha = cfg["alpha"].as<float>();
+    float time_weight = cfg["time_weight"].as<float>();
     bool filter_duplicates = cfg["filter_duplicates"].as<bool>();
 
     // load problem description
@@ -447,7 +448,7 @@ int main(int argc, char* argv[]) {
             }
         }
 
-        DBAstar<Constraint> llplanner(cfg["heuristic1_delta"].as<float>(), alpha);
+        DBAstar<Constraint> llplanner(cfg["heuristic1_delta"].as<float>(), alpha, time_weight);
         for (size_t i = 0; i < robots.size(); ++i) {
 
             LowLevelPlan<AStarNode*,ob::State*,oc::Control*> ll_result;
@@ -513,7 +514,7 @@ int main(int argc, char* argv[]) {
         int i = 0;
         bool start_node_valid = true;
         for (const auto &robot_node : env["robots"]) {
-            DBAstar<Constraint> llplanner(delta, alpha);
+            DBAstar<Constraint> llplanner(delta, alpha, time_weight);
             bool success = llplanner.search(robot_motions.at(robot_types[i]), starts[i], goals[i], 
                 obstacles, robots[i], start.constraints[i], /*reverse_search*/false, start.solution[i], heuristics[i]);
             if (!success) {
@@ -577,7 +578,7 @@ int main(int argc, char* argv[]) {
 #endif
 
                 // run the low level planner
-                DBAstar<Constraint> llplanner(delta, alpha);
+                DBAstar<Constraint> llplanner(delta, alpha, time_weight);
                 bool success = llplanner.search(robot_motions.at(robot_types[i]), starts[i], goals[i], 
             		obstacles, robots[i], newNode.constraints[i], /*reverse_search*/false, newNode.solution[i], heuristics[i]); 
 

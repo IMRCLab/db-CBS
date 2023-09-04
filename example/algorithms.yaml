@@ -42,6 +42,7 @@ db-cbs:
     num_primitives_0: 1000
     num_primitives_rate: 1.5
     alpha: 0.5
+    time_weight: 0.001
     filter_duplicates: True
     heuristic1: "reverse-search"
     heuristic1_delta: 1.0
