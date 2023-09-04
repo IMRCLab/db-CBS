@@ -133,7 +133,6 @@ struct AStarNode
 
   // const AStarNode* came_from;
   AStarNode* came_from;
-  fcl::Vector3f used_offset;
   size_t used_motion;
 
   open_t::handle_type handle;
@@ -457,11 +456,13 @@ public:
   {
     auto si = robot->getSpaceInformation();
 
+#ifdef DBG_PRINTS
     std::cout << "Running dbA*" << std::endl;
     for (const auto& constraint : constraints){
       std::cout << "constraint at time: " << constraint.time << std::endl;
       si->printState(constraint.constrained_state);
     }
+#endif
 
     ll_result.plan.clear();
     ll_result.trajectory.clear();
@@ -508,10 +509,13 @@ public:
       si->enforceBounds(goalState);
     }
 
+#ifdef DBG_PRINTS
     std::cout << "Max cost is " << maxCost << std::endl;
-
+#endif
     if (alpha <= 0 || alpha >= 1) {
+#ifdef DBG_PRINTS
       std::cerr << "Alpha needs to be between 0 and 1!" << std::endl;
+#endif
       return 1;
     }
 
@@ -545,7 +549,6 @@ public:
     start_node->fScore = 0;
   }
   start_node->came_from = nullptr;
-  start_node->used_offset = fcl::Vector3f(0,0,0);
   start_node->used_motion = -1;
 
   auto handle = open.push(start_node); 
@@ -595,7 +598,9 @@ public:
     }
 
     if (is_at_goal) {
+#ifdef DBG_PRINTS
       std::cout << "SOLUTION FOUND !!!! cost: " << current->gScore << std::endl;
+#endif
 
       std::vector<AStarNode*> result;
       AStarNode* n = current;
@@ -621,7 +626,7 @@ public:
           ob::State* motion_state = si->allocState(); // alternative 
           si->copyState(motion_state, state);
           const fcl::Vector3f relative_pos = robot->getTransform(state).translation();
-          robot->setPosition(motion_state, current_pos + result[i+1]->used_offset + relative_pos);
+          robot->setPosition(motion_state, current_pos + relative_pos);
           // si->printState(motion_state);
           ll_result.trajectory.push_back(motion_state);
         }
@@ -645,10 +650,14 @@ public:
 
       #ifndef NDEBUG
       // Sanity check here, that verifies that we obey all constraints
+#ifdef DBG_PRINTS
       std::cout << "checking constraints " << std::endl;
+#endif
       for (const auto& constraint : constraints) {
+#ifdef DBG_PRINTS
         std::cout << "constraint t=" << constraint.time << std::endl;
         si->printState(constraint.constrained_state);
+#endif
         int time_index = std::lround(constraint.time / robot->dt());
         assert(time_index >= 0);
         time_index = std::min<int>(time_index, (int)ll_result.trajectory.size()-1);
@@ -728,36 +737,6 @@ public:
         continue;
       }
 
-#if 1
-      fcl::Vector3f computed_offset(0, 0, 0);
-#else
-      float motion_dist = si->distance(fakeMotion.states[0], motion->states[0]);
-      float translation_slack = delta/2 - motion_dist;
-      assert(translation_slack >= 0);
-
-      // ideally, solve the following optimization problem
-      // min_translation fScore
-      //     s.t. ||translation|| <= translation_slack // i.e., stay within delta/2
-      //          no collisions
-
-      const auto current_pos2 = robot->getTransform(current->state).translation();
-      const auto goal_pos = robot->getTransform(goalState).translation();
-      fcl::Vector3f computed_offset = (goal_pos - current_pos2).normalized() * translation_slack;
-
-      #ifndef NDEBUG
-      {
-        // check that the computed starting state stays within delta/2
-        si->copyState(tmpState, motion->states.front());
-        const auto current_pos = robot->getTransform(current->state).translation();
-        const auto offset = current_pos + computed_offset;
-        const auto relative_pos = robot->getTransform(tmpState).translation();
-        robot->setPosition(tmpState, offset + relative_pos);
-        std::cout << si->distance(tmpState, current->state)  << std::endl;
-        assert(si->distance(tmpState, current->state) <= delta/2 + 1e-5);
-      }
-      #endif
-#endif
-
       // compute estimated cost
       float tentative_gScore = current->gScore + motion->cost;
       Eigen::Vector3f relative_pos;
@@ -769,7 +748,7 @@ public:
         relative_pos = -robot->getTransform(motion->states.back()).translation();
       }
       Eigen::Vector3f current_pos = robot->getTransform(current->state).translation();
-      Eigen::Vector3f offset = current_pos + computed_offset;
+      Eigen::Vector3f offset = current_pos;
       robot->setPosition(tmpState, offset + relative_pos);
       // compute estimated fscore
       float tentative_hScore = goalState ? epsilon * heuristic(robot, tmpState, goalState, delta, heuristic_nn) : 0;
@@ -840,7 +819,9 @@ public:
           motion_state_co.setRotation(transform.rotation());
           motion_state_co.computeAABB();
 
+#ifdef DBG_PRINTS
           si->printState(tmpStateconst);
+#endif
 
           const auto& other_state = constraint.constrained_state;
           const auto& other_transform = robot->getTransform(other_state, 0);
@@ -887,7 +868,6 @@ public:
         node->fScore = tentative_fScore;
         node->came_from = current;
         node->used_motion = motion->idx;
-        node->used_offset = computed_offset;
         node->is_in_open = true;
         auto handle = open.push(node);
         node->handle = handle;
@@ -907,7 +887,6 @@ public:
             assert(entry->fScore >= 0);
             entry->came_from = current;
             entry->used_motion = motion->idx;
-            entry->used_offset = computed_offset;
             if (entry->is_in_open) {
               open.increase(entry->handle);
             } else {
@@ -921,67 +900,7 @@ public:
       }
     }
 
-  } // While OpenSet not empyt ends here
-
-
-  if (!goalState) {
-    return false;
-  }
-
-  query_n->state = goalState;
-  // const auto nearest = T_n->nearest(query_n); // why needed ?
-  auto nearest = T_n->nearest(query_n); // why needed ?
-
-  if (nearest->gScore == 0) {
-    std::cout << "No solution found (not even approxmite)" << std::endl;
-    // return 1;
-    return false;
-  }
-
-  float nearest_distance = si->distance(nearest->state, goalState);
-  std::cout << "Nearest to goal: " << nearest_distance << " (delta: " << delta << ")" << std::endl;
-
-  std::cout << "Using approximate solution cost: " << nearest->gScore << std::endl;
-
-  // std::vector<const AStarNode*> result;
-  std::vector<AStarNode*> result;
-
-  // const AStarNode* n = nearest;
-  AStarNode* n = nearest;
-  while (n != nullptr) {
-    result.push_back(n);
-    n = n->came_from;
-  }
-  std::reverse(result.begin(), result.end());
-  ll_result.plan = result;
-  ll_result.cost = nearest->gScore;
-  for (size_t i = 0; i < result.size() - 1; ++i)
-  {
-    // Compute intermediate states
-    const auto node_state = result[i]->state;
-    const fcl::Vector3f current_pos = robot->getTransform(node_state).translation();
-    const auto &motion = motions.motions.at(result[i+1]->used_motion);
-    // skip last state each
-    for (size_t k = 0; k < motion.states.size(); ++k)
-    {
-      const auto state = motion.states[k];
-      si->copyState(tmpState, state);
-      const fcl::Vector3f relative_pos = robot->getTransform(state).translation();
-      robot->setPosition(tmpState, current_pos + result[i+1]->used_offset + relative_pos);
-    }
-  }
-  // statistics for the motions used
-  std::map<size_t, size_t> motionsCount; // motionId -> usage count
-  for (size_t i = 0; i < result.size() - 1; ++i)
-  {
-    auto motionId = result[i+1]->used_motion;
-    auto iter = motionsCount.find(motionId);
-    if (iter == motionsCount.end()) {
-      motionsCount[motionId] = 1;
-    } else {
-      iter->second += 1;
-    }
-  }
+    } // While OpenSet not empyt ends here
 
     return false;
   } // end of search function
