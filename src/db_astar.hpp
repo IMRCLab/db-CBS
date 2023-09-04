@@ -589,7 +589,7 @@ public:
     if (is_at_goal) {
       // check if we violate any constraint if we stay there
       for (const auto& constraint : constraints) {
-        if (constraint.time >= current->gScore) {
+        if (constraint.time >= current->gScore - 1e-6) {
           bool violation = si->distance(current->state, constraint.constrained_state) <= delta;
           if (violation) {
             is_at_goal = false;
@@ -629,7 +629,9 @@ public:
           si->copyState(motion_state, state);
           const fcl::Vector3f relative_pos = robot->getTransform(state).translation();
           robot->setPosition(motion_state, current_pos + result[i+1]->used_offset + relative_pos);
-          // si->printState(motion_state);
+#ifdef DBG_PRINTS
+          si->printState(motion_state);
+#endif
           ll_result.trajectory.push_back(motion_state);
         }
       } // writing result states
@@ -650,7 +652,7 @@ public:
       // sanity check on the sizes
       assert(ll_result.actions.size() + 1 == ll_result.trajectory.size());
 
-      #ifndef NDEBUG
+      // #ifndef NDEBUG
       // Sanity check here, that verifies that we obey all constraints
 #ifdef DBG_PRINTS
       std::cout << "checking constraints " << std::endl;
@@ -668,8 +670,9 @@ public:
         float dist = si->distance(ll_result.trajectory.at(time_index), constraint.constrained_state);
 
         if (dist <= delta){
-          std::cout << "VIOLATION " << dist << std::endl;
+          std::cout << "VIOLATION " << dist << " " << time_index << " " << ll_result.trajectory.size() << std::endl;
           si->printState(ll_result.trajectory.at(time_index));
+          throw std::runtime_error("Internal error: constraint violation in solution!");
         }
 
         assert(dist > delta);
@@ -700,7 +703,7 @@ public:
         assert(!result.isCollision());
         #endif
       }
-      #endif
+      // #endif
 
       // statistics for the motions used
       std::map<size_t, size_t> motionsCount; 
@@ -890,7 +893,19 @@ public:
       float radius = delta*(1-alpha);
       T_n->nearestR(query_n, radius, neighbors_n);
 
-      if (neighbors_n.size() == 0)
+      // We plan in space-time iff there are temporal constraints; thus, we need to add a new node if we are spatially and temporally outside of delta
+      // For efficiency, we don't add time as an additional dimension to the state-space. Instead, we check the 
+      // temporal delta here
+      bool need_to_add_new_node = true;
+      const float time_weight = constraints.size() > 0 ? 0.5 : 0.0;
+      for (AStarNode* entry : neighbors_n) {
+        float delta_time = fabs(entry->gScore - tentative_gScore);
+        if (delta_time * time_weight < radius) {
+          need_to_add_new_node = false;
+        }
+      }
+
+      if (need_to_add_new_node)
       // if (nearest_distance > radius)
       {
         // new state -> add it to open and T_n
@@ -907,14 +922,16 @@ public:
         T_n->add(node);
 
       }
+#if 0
       else
       {
         // check if we have a better path now
+        // note that we only allow changes that are within the search radius "fabs(delta_score) < radius * time_weight"
         for (AStarNode* entry : neighbors_n) {
         // AStarNode* entry = nearest;
           assert(si->distance(entry->state, tmpState) <= delta);
           float delta_score = entry->gScore - tentative_gScore;
-          if (delta_score > 0) {
+          if (delta_score > 0 && fabs(delta_score * time_weight) < radius) {
             entry->gScore = tentative_gScore;
             entry->fScore -= delta_score;
             assert(entry->fScore >= 0);
@@ -932,6 +949,7 @@ public:
           }
         }
       }
+#endif
     }
 
   } // While OpenSet not empyt ends here
