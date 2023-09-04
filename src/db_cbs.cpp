@@ -511,19 +511,24 @@ int main(int argc, char* argv[]) {
         start.cost = 0;
         start.id = 0;
         int i = 0;
+        bool start_node_valid = true;
         for (const auto &robot_node : env["robots"]) {
             DBAstar<Constraint> llplanner(delta, alpha);
             bool success = llplanner.search(robot_motions.at(robot_types[i]), starts[i], goals[i], 
                 obstacles, robots[i], start.constraints[i], /*reverse_search*/false, start.solution[i], heuristics[i]);
             if (!success) {
                 std::cout << "Couldn't find initial solution." << std::endl;
-                continue;
+                start_node_valid = false;
+                break;
             }
 
             start.cost += start.solution[i].cost;
             std::cout << "High Level Node Cost: " << start.cost << std::endl;
             i++;
         } 
+        if (!start_node_valid) {
+            continue;
+        }
         
         typename boost::heap::d_ary_heap<HighLevelNode, boost::heap::arity<2>,
                                         boost::heap::mutable_<true> > open;
