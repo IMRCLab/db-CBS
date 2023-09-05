@@ -1312,8 +1312,8 @@ std::shared_ptr<Robot> create_robot(
         positionBounds,
         /*v_min*/ -0.5 /* m/s*/,
         /*v_max*/ 0.5 /* m/s*/,
-        /*w_min*/ -0.5 /*rad/s*/,
-        /*w_max*/ 0.5 /*rad/s*/));
+        /*w_min*/ -2.0 /*rad/s*/,
+        /*w_max*/ 2.0 /*rad/s*/));
   }
   else if (robotType == "unicycle_second_order_0")
   {
