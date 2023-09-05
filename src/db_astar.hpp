@@ -849,8 +849,8 @@ public:
         node->is_in_open = true;
         auto handle = open.push(node);
         node->handle = handle;
-        start_node->current_arrival_idx = 0;
-        start_node->reaches_goal = reachesGoal;
+        node->current_arrival_idx = 0;
+        node->reaches_goal = reachesGoal;
         T_n->add(node);
 
       }
@@ -866,7 +866,6 @@ public:
 //             std::cout << "attempt to update node-id " << entry->id << " (from " << entry->gScore << " to " << tentative_gScore << " rG " << entry->reaches_goal << ")" << std::endl;
 // #endif
             // check if an update would not violate our additional constraints
-
             // check if we now violate a final constraint
             bool update_valid = true;
             if (entry->reaches_goal) {
@@ -891,12 +890,13 @@ public:
 // #ifdef DBG_PRINTS
 //               std::cout << "update node-id " << entry->id << " " << affected_nodes.size() << std::endl;
 // #endif
+              // std::cout << "update " << entry->gScore << " to " << tentative_gScore << " " << entry->arrivals.size() << std::endl;
 
               entry->gScore = tentative_gScore;
               entry->fScore -= delta_score;
               assert(entry->fScore >= 0);
               entry->arrivals.push_back({.gScore = tentative_gScore, .came_from = current, .used_motion = motion->idx, .arrival_idx = current->current_arrival_idx});
-              ++start_node->current_arrival_idx;
+              ++entry->current_arrival_idx;
               if (entry->is_in_open) {
                 open.increase(entry->handle);
               } else {
