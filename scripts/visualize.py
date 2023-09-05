@@ -120,8 +120,6 @@ class Animation:
             self.robot_patches[k][0].center = xy
             pos2 = xy + np.array([np.cos(yaw), np.sin(yaw)])*self.big_radius*0.8
             self.robot_patches[k][1].center = pos2
-
-
         elif self.robot_types[k] == 'unicycle_first_order_0' or self.robot_types[k] == 'car_first_order_0' or self.robot_types[k] == 'unicycle_second_order_0':
             pos = state[:2]
             yaw = state[2]
@@ -130,7 +128,8 @@ class Animation:
             t = matplotlib.transforms.Affine2D().rotate_around(
                 pos[0], pos[1], yaw)
             self.robot_patches[k][0].set_transform(t + self.ax.transData)
-
+            pos2 = pos + np.array([np.cos(yaw), np.sin(yaw)])*self.size[0]/2*0.8
+            self.robot_patches[k][1].center = pos2
         elif self.robot_types[k] == "car_first_order_with_1_trailers_0":
             pos0 = state[0:2]
             theta0 = state[2]
@@ -169,7 +168,9 @@ class Animation:
     elif type == 'unicycle_first_order_0' or type == 'car_first_order_0' or type == 'unicycle_second_order_0':
         pos = state[:2]
         yaw = state[2]
-        patches.append(draw_box_patch(self.ax, pos, self.size, yaw, **kwargs))  
+        pos2 = pos + np.array([np.cos(yaw), np.sin(yaw)])*self.size[0]/2*0.8
+        patches.append(draw_box_patch(self.ax, pos, self.size, yaw, **kwargs))
+        patches.append(draw_sphere_patch(self.ax, pos2, 0.05, 0, facecolor='black'))
     elif type == "car_first_order_with_1_trailers_0":
         xy = state[0:2]
         theta0 = state[2]

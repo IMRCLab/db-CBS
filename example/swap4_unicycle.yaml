@@ -16,9 +16,9 @@ robots:
     start: [4,2.5,3.14]
     goal: [1,2.5,3.14]
   - type: unicycle_first_order_0
-    start: [2.5,1,-1.57]
-    goal: [2.5,4,-1.57]
+    start: [2.5,1,1.57]
+    goal: [2.5,4,1.57]
   - type: unicycle_first_order_0
-    start: [2.5,4,1.57]
-    goal: [2.5,1,1.57]
+    start: [2.5,4,-1.57]
+    goal: [2.5,1,-1.57]
  
