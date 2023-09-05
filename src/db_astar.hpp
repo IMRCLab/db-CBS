@@ -131,12 +131,19 @@ struct AStarNode
   float fScore;
   float gScore;
 
-  // const AStarNode* came_from;
-  AStarNode* came_from;
-  size_t used_motion;
+  // can arrive at this node at time gScore, starting from came_from, using motion used_motion
+  struct arrival {
+    float gScore;
+    AStarNode* came_from;
+    size_t used_motion;
+    size_t arrival_idx;
+  };
+  std::vector<arrival> arrivals;
 
   open_t::handle_type handle;
   bool is_in_open;
+  size_t current_arrival_idx;
+  bool reaches_goal;
 };
 
 bool compareAStarNode::operator()(const AStarNode *a, const AStarNode *b) const
@@ -464,7 +471,7 @@ public:
     }
 #endif
 
-    ll_result.plan.clear();
+    // ll_result.plan.clear();
     ll_result.trajectory.clear();
     ll_result.actions.clear();
     ll_result.cost = 0;
@@ -548,12 +555,13 @@ public:
   } else {
     start_node->fScore = 0;
   }
-  start_node->came_from = nullptr;
-  start_node->used_motion = -1;
+  start_node->arrivals.push_back({.gScore = 0, .came_from = nullptr, .used_motion = (size_t)-1, .arrival_idx = (size_t)-1});
 
   auto handle = open.push(start_node); 
   start_node->handle = handle;
   start_node->is_in_open = true;
+  start_node->current_arrival_idx = 0;
+  start_node->reaches_goal = (goalState && si->distance(startState, goalState) <= delta);
 
   T_n->add(start_node);
 
@@ -583,11 +591,11 @@ public:
     
     // assert(current->fScore >= last_f_score);
     last_f_score = current->fScore;
-    bool is_at_goal = goalState && si->distance(current->state, goalState) <= delta;
+    bool is_at_goal = current->reaches_goal;
     if (is_at_goal) {
       // check if we violate any constraint if we stay there
       for (const auto& constraint : constraints) {
-        if (constraint.time >= current->gScore) {
+        if (constraint.time >= current->gScore - 1e-6) {
           bool violation = si->distance(current->state, constraint.constrained_state) <= delta;
           if (violation) {
             is_at_goal = false;
@@ -602,23 +610,26 @@ public:
       std::cout << "SOLUTION FOUND !!!! cost: " << current->gScore << std::endl;
 #endif
 
-      std::vector<AStarNode*> result;
+      std::vector<std::pair<AStarNode*, size_t>> result;
       AStarNode* n = current;
 
+      size_t arrival_idx = current->current_arrival_idx;
       while (n != nullptr) {
-        result.push_back(n);
-        n = n->came_from;
+        result.push_back(std::make_pair(n, arrival_idx));
+        const auto& arrival = n->arrivals[arrival_idx];
+        n = arrival.came_from;
+        arrival_idx = arrival.arrival_idx;
       }
       std::reverse(result.begin(), result.end());
-      ll_result.plan = result;
+      // ll_result.plan = result;
       ll_result.cost = current->gScore;
 
       for (size_t i = 0; i < result.size() - 1; ++i)
       {
         // Compute intermediate states
-        const auto node_state = result[i]->state;
+        const auto node_state = result[i].first->state;
         const fcl::Vector3f current_pos = robot->getTransform(node_state).translation();
-        const auto &motion = motions.motions.at(result[i+1]->used_motion);
+        const auto &motion = motions.motions.at(result[i+1].first->arrivals[result[i+1].second].used_motion);
         
         for (size_t k = 0; k < motion.states.size()-1; ++k) // skipping the last state
         {
@@ -631,11 +642,12 @@ public:
           ll_result.trajectory.push_back(motion_state);
         }
       } // writing result states
-      ll_result.trajectory.push_back(si->cloneState(result.back()->state));
+      ll_result.trajectory.push_back(si->cloneState(result.back().first->state));
 
       for (size_t i = 0; i < result.size() - 1; ++i)
       {
-        const auto &motion = motions.motions[result[i+1]->used_motion];
+        const auto &motion = motions.motions.at(result[i+1].first->arrivals[result[i+1].second].used_motion);
+
         for (size_t k = 0; k < motion.actions.size(); ++k)
         {
           const auto& action = motion.actions[k];
@@ -648,7 +660,7 @@ public:
       // sanity check on the sizes
       assert(ll_result.actions.size() + 1 == ll_result.trajectory.size());
 
-      #ifndef NDEBUG
+      // #ifndef NDEBUG
       // Sanity check here, that verifies that we obey all constraints
 #ifdef DBG_PRINTS
       std::cout << "checking constraints " << std::endl;
@@ -668,6 +680,7 @@ public:
         if (dist <= delta){
           std::cout << "VIOLATION " << dist << std::endl;
           si->printState(ll_result.trajectory.at(time_index));
+          throw std::runtime_error("");
         }
 
         assert(dist > delta);
@@ -698,20 +711,7 @@ public:
         assert(!result.isCollision());
         #endif
       }
-      #endif
-
-      // statistics for the motions used
-      std::map<size_t, size_t> motionsCount; 
-      for (size_t i = 0; i < result.size() - 1; ++i)
-      {
-        auto motionId = result[i+1]->used_motion;
-        auto iter = motionsCount.find(motionId);
-        if (iter == motionsCount.end()) {
-          motionsCount[motionId] = 1;
-        } else {
-          iter->second += 1;
-        }
-      }
+      // #endif
 
       return true;
       // break;
@@ -788,6 +788,10 @@ public:
       bool motionValid = !collision_data.result.isCollision();
       motion->collision_manager->shift(-offset);
     
+      if (!motionValid) {
+        // std::cout << "skip invalid motion" << std::endl;
+        continue;
+      }
       // now check with dynamic constraints
       bool reachesGoal = goalState && si->distance(tmpState, goalState) <= delta;
 
@@ -811,32 +815,7 @@ public:
           si->copyState(tmpStateconst, state_to_check);
           const auto relative_pos = robot->getTransform(state_to_check).translation();
           robot->setPosition(tmpStateconst, offset + relative_pos);
-          #if 0
-          // std::cout << "p " << offset + relative_pos << std::endl;
-          const auto& transform = robot->getTransform(tmpStateconst, 0);
-          fcl::CollisionObjectf motion_state_co(robot->getCollisionGeometry(0)); 
-          motion_state_co.setTranslation(transform.translation());
-          motion_state_co.setRotation(transform.rotation());
-          motion_state_co.computeAABB();
-
-#ifdef DBG_PRINTS
-          si->printState(tmpStateconst);
-#endif
-
-          const auto& other_state = constraint.constrained_state;
-          const auto& other_transform = robot->getTransform(other_state, 0);
-          fcl::CollisionObjectf other_robot_co(robot->getCollisionGeometry(0)); 
-          other_robot_co.setTranslation(other_transform.translation());
-          other_robot_co.setRotation(other_transform.rotation());
-          other_robot_co.computeAABB();
-          fcl::CollisionRequest<float> request;
-          fcl::CollisionResult<float> result;
-          // check two states for collision
-          collide(&motion_state_co, &other_robot_co, request, result);
-          bool violation = result.isCollision();
-          #else
           bool violation = si->distance(tmpStateconst, constraint.constrained_state) <= delta;
-          #endif
           if (violation) {
             motionValid = false;
             break;
@@ -866,11 +845,12 @@ public:
         node->state = si->cloneState(tmpState);
         node->gScore = tentative_gScore;
         node->fScore = tentative_fScore;
-        node->came_from = current;
-        node->used_motion = motion->idx;
+        node->arrivals.push_back({.gScore = tentative_gScore, .came_from = current, .used_motion = motion->idx, .arrival_idx = current->current_arrival_idx});
         node->is_in_open = true;
         auto handle = open.push(node);
         node->handle = handle;
+        node->current_arrival_idx = 0;
+        node->reaches_goal = reachesGoal;
         T_n->add(node);
 
       }
@@ -882,18 +862,49 @@ public:
           assert(si->distance(entry->state, tmpState) <= delta);
           float delta_score = entry->gScore - tentative_gScore;
           if (delta_score > 0) {
-            entry->gScore = tentative_gScore;
-            entry->fScore -= delta_score;
-            assert(entry->fScore >= 0);
-            entry->came_from = current;
-            entry->used_motion = motion->idx;
-            if (entry->is_in_open) {
-              open.increase(entry->handle);
-            } else {
-              // TODO: is this correct?
-              auto handle = open.push(entry);
-              entry->handle = handle;
-              entry->is_in_open = true;
+// #ifdef DBG_PRINTS
+//             std::cout << "attempt to update node-id " << entry->id << " (from " << entry->gScore << " to " << tentative_gScore << " rG " << entry->reaches_goal << ")" << std::endl;
+// #endif
+            // check if an update would not violate our additional constraints
+            // check if we now violate a final constraint
+            bool update_valid = true;
+            if (entry->reaches_goal) {
+              for (const auto& constraint : constraints) {
+// #ifdef DBG_PRINTS
+//                 std::cout << "check ctr " << constraint.time << " " << tentative_gScore << " " << (constraint.time >= tentative_gScore - 1e-6) << " " << si->distance(entry->state, constraint.constrained_state) << std::endl;
+// #endif
+                if (constraint.time >= tentative_gScore - 1e-6) {
+                  bool violation = si->distance(entry->state, constraint.constrained_state) <= delta;
+                  if (violation) {
+                    update_valid = false;
+// #ifdef DBG_PRINTS
+//                     std::cout << "would violate future constraint!" << std::endl;
+// #endif
+                    break;
+                  }
+                }
+              }
+            }
+
+            if (update_valid) {
+// #ifdef DBG_PRINTS
+//               std::cout << "update node-id " << entry->id << " " << affected_nodes.size() << std::endl;
+// #endif
+              // std::cout << "update " << entry->gScore << " to " << tentative_gScore << " " << entry->arrivals.size() << std::endl;
+
+              entry->gScore = tentative_gScore;
+              entry->fScore -= delta_score;
+              assert(entry->fScore >= 0);
+              entry->arrivals.push_back({.gScore = tentative_gScore, .came_from = current, .used_motion = motion->idx, .arrival_idx = current->current_arrival_idx});
+              ++entry->current_arrival_idx;
+              if (entry->is_in_open) {
+                open.increase(entry->handle);
+              } else {
+                // TODO: is this correct?
+                auto handle = open.push(entry);
+                entry->handle = handle;
+                entry->is_in_open = true;
+              }
             }
           }
         }
@@ -902,6 +913,7 @@ public:
 
     } // While OpenSet not empyt ends here
 
+    std::cout << "No solution found!" << std::endl;
     return false;
   } // end of search function
 
