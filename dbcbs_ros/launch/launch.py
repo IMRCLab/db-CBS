@@ -78,8 +78,8 @@ def generate_launch_description():
                 ('emergency', 'all/emergency'),
                 ('takeoff', 'all/takeoff'),
                 ('land', 'all/land'),
-                ('cmd_vel_legacy', 'cf17/cmd_vel_legacy'),
-                ('cmd_full_state', 'cf17/cmd_full_state'),
+                ('cmd_vel_legacy', 'all/cmd_vel_legacy'),
+                ('cmd_full_state', 'all/cmd_full_state'),
                 ('notify_setpoints_stop', 'all/notify_setpoints_stop'),
             ],
             parameters=[teleop_params]
