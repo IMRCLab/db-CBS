@@ -137,6 +137,12 @@ def main():
 		"gen_p10_n4_0",
 		"gen_p10_n8_0",
 		"gen_p10_n16_0",
+
+		# windows cases
+		"window2_unicycle,"
+		"window3_unicycle,"
+		"window4_unicycle,"
+
 	]
 	algs = [
 		"sst",
