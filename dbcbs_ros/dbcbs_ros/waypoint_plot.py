@@ -15,7 +15,7 @@ save the xyz format and use uav gen to visualise it
 '''
 def plot_1yaml_2traj():
     # load yaml file contains smooth waypoint
-    yaml_path = Path(__file__).parent / "data/result_ompl_4.yaml"
+    yaml_path = Path(__file__).parent / "data/db_cbs_opt_4.yaml"
     with open(yaml_path, 'r') as ymlfile:
         data = yaml.safe_load(ymlfile)['result']  # a list  elements are dictionaries
     print('load finish')
@@ -69,6 +69,7 @@ def plot_all():
         
         # Number of states to consider for each trajectory
         number = 70
+        number = -1
         
         # Create a new figure for each YAML file
         plt.figure()
@@ -93,8 +94,106 @@ def plot_all():
     # Show all figures
     plt.show()
 
+def plot_one_figure():
+    yaml_path = Path(__file__).parent / "data/db_cbs_opt_4.yaml"
+    with open(yaml_path, 'r') as ymlfile:
+        data = yaml.safe_load(ymlfile)['result']  # a list where elements are dictionaries
+    
+    # Extract file name without extension
+    file_name = yaml_path.stem
+    
+    # Number of states to consider for each trajectory
+    number = 20
+    # number = -1
+    
+    # Create a new figure for each YAML file
+    plt.figure()
+    
+    # Plot all trajectories in the current YAML file
+    for i, traj in enumerate(data):
+        states = traj['states'][:number]
+        
+        # Extract x and y coordinates from the states
+        x_coords = [point[0] for point in states]
+        y_coords = [point[1] for point in states]
+        
+        # Plot the points for the current trajectory
+        plt.scatter(x_coords, y_coords, label=f'Trajectory {i+1}')
+        
+        plt.xlabel('X')
+        plt.ylabel('Y')
+        plt.title(f'position Plot - {file_name}')
+        plt.grid(True)
+        plt.legend()
+
+    # Create actions figure
+    actions_flag = 0
+    if actions_flag == 1:
+        plt.figure(figsize=(12, 6))
+        # Plot all trajectories in the current YAML file for actions
+        for i, traj in enumerate(data):
+            actions = traj['actions'][:number]
+
+            # Plot the actions for the current trajectory
+            plt.plot(range(len(actions)), actions, label=f'Trajectory {i + 1}')
+
+        plt.xlabel('Time Step')
+        plt.ylabel('Action Value')
+        plt.title(f'Action Plot - {file_name}')
+        plt.grid(True)
+        plt.legend()
+
+    # Show all figures
+    plt.show()
+
+def test():
+    Z = 0.5
+    yaml_path = Path(__file__).parent / "data/db_cbs_opt_4.yaml"
+    with open(yaml_path, 'r') as ymlfile:
+        data = yaml.safe_load(ymlfile)['result']  # a list where elements are dictionaries
+    n = len(data) # number of trajectories
+    if len(data[0]['states'][0]) == 4:
+        print("The length of data[0]['states'] is 4.------------")
+        states_list = []
+        velocity_list = []
+        acceleration_list = []
+        for trajectory in data:
+            states = [row[0:2] + [Z] for row in trajectory['states']]  
+            velocity = [row[2:4] + [0.0] for row in trajectory['states']]  
+            acceleration = [row[0:2] + [Z] for row in trajectory['actions']]
+            # print(states)
+            states_list.append(states)
+            velocity_list.append(velocity)
+            acceleration_list.append(acceleration)
+        # print(states_list)
+
+    elif len(data[0]['states'][0]) == 2:
+        print("The length of data[0]['states'] is 2.")
+
+    states_array = np.array(states_list, dtype=np.float64)
+    velocity_array = np.array(velocity_list, dtype=np.float64)
+    acceleration_array = np.array(acceleration_list, dtype=np.float64)
+    num_waypoints = states_array.shape[1]
+    print('number of waypoints:',num_waypoints)
+    file_name = yaml_path.stem
+    print(f'load {file_name} finish')
+
+    # ------ run data
+    for state_id in range(num_waypoints):
+    # for state_id in range(6):
+        for drone_id in range(2): 
+            pos = states_array[drone_id][state_id]
+            # print('drone_id',drone_id,'pos:',pos)
+            vel = velocity_array[drone_id][state_id]
+            acc = acceleration_array[drone_id][state_id]
+            print('drone_id',drone_id,'pos:',pos,'vel',vel,'acc',acc)
+
+    print('1')
+
 def main():
-    plot_all()
+    # plot_all()
     # plot_1yaml_2traj()
+    plot_one_figure()
+    # test()
 if __name__ == "__main__":
     main()
