@@ -100,7 +100,7 @@ public:
     float a_min,
     float a_max)
   {
-    geom_.emplace_back(new fcl::Spheref(0.1));
+    geom_.emplace_back(new fcl::Spheref(0.15));
     auto space(std::make_shared<StateSpace>());
     space->setPositionBounds(position_bounds);
 
