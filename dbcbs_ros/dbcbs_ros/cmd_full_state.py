@@ -7,108 +7,95 @@ from crazyflie_py import *
 from crazyflie_py.uav_trajectory import Trajectory
 import yaml
 
-def executeTrajectory(timeHelper, allcfs, trajpath, Z, rate=100):
-    # load yaml file contains smooth waypoint
+def parse_data(trajpath,Z):
     yaml_path = trajpath
     with open(yaml_path, 'r') as ymlfile:
         data = yaml.safe_load(ymlfile)['result']  # a list  elements are dictionaries
-    n = len(data) # number of trajectories
+    num_traj = len(data) # number of trajectories
+    print('number of trajectories',num_traj)
+    if len(data[0]['states'][0]) == 4:
+        print("The length of data[0]['states'] is 4.------------")
+    elif len(data[0]['states'][0]) == 2:
+        print("The length of data[0]['states'] is 2.")
+        quit()
+    else:
+        print("The length of data[0]['states'] is",len(data[0]['states'][0]))
+
+    # ----- calculate the maximum waypoint
+    num_waypoints = max([len(trajectory['states']) for trajectory in data])
+    print("Minimum number of waypoints:", num_waypoints)
+
+    # create para lists
     states_list = []
-    for i in range(n):
-        states = data[i]['states']
-        states_list.append(states)
-    print('number of waypoints:',len(states_list[0]))
-    print('load finish')
+    velocity_list = []
+    acceleration_list = []
+    for trajectory in data:
+        states = [row[0:2] + [Z] for row in trajectory['states']]  
+        velocity = [row[2:4] + [0] for row in trajectory['states']]  
+        acceleration = [row[0:2] + [0] for row in trajectory['actions']]
+        # print("Length of 'states':", len(states))
+        # print("Length of 'velocity':", len(velocity))
+        # print("Length of 'acceleration':", len(acceleration))      
+        while len(states) < num_waypoints:
+            states.append(states[-1])  # Append the last line of states
+            
+        while len(velocity) < num_waypoints:
+            velocity.append([0, 0, 0])  # Append [0, 0, 0] to velocity
+            
+        while len(acceleration) < num_waypoints:
+            acceleration.append([0, 0, 0])  # Append [0, 0, Z] to acceleration
+        # print('after')
+        # print("Length of 'states':", len(states))
+        # print("Length of 'velocity':", len(velocity))
+        # print("Length of 'acceleration':", len(acceleration))    
+        states_list.append(np.array(states, dtype=np.float64))
+        velocity_list.append(np.array(velocity, dtype=np.float64))
+        acceleration_list.append(np.array(acceleration, dtype=np.float64))
+
+    file_name = yaml_path.stem
+    print(f'load {file_name} finish')
+    return num_traj,num_waypoints,states_list,velocity_list,acceleration_list
+
+def test_vel_acc():
+    swarm = Crazyswarm()
+    timeHelper = swarm.timeHelper
+    allcfs = swarm.allcfs   # CrazyflieServer.crazyflies[0] --> Crazyflie
+
+    rate = 10.0
+    Z = 0.5
+
+    allcfs.takeoff(targetHeight=Z, duration=Z+1.0)
+    timeHelper.sleep(Z+2.0)
+
+    # ------parse data
+    trajpath = Path(__file__).parent / "data/result_dbcbs_opt.yaml"
+    num_traj,num_waypoints,states_list,velocity_list,acceleration_list = parse_data(trajpath,Z)
+
     # check the num of UAV <= states_list
-    if n < len(allcfs.crazyflies):
+    if num_traj < len(allcfs.crazyflies):
         print(f'not enough trajectory for {len(allcfs.crazyflies)} crazyfile')
         quit()
 
-    togo_time = 5.0
-    zero_vec = np.array([0.0,0.0,0.0])
-    for state_id in range(len(states_list[0])):  # can goto synchronized for multi drones?
-        for drone_id in range(len(allcfs.crazyflies)): 
-            cf = allcfs.crazyflies[drone_id]
-            # make sure all the crazyfiles are at the right intial position
-            if state_id ==1:
-                pos = np.append(np.array(states_list[drone_id][state_id]), Z) + np.array(cf.initialPosition) 
-                # print('drone_id',drone_id,'initial pos:',pos)
-                # cf.goTo(pos, 0, togo_time)
-                cf.cmdPosition(pos, yaw=0.0)
-                # pos vel acc yaw omega
-                # cf.cmdFullState(pos,zero_vec,zero_vec,0,zero_vec)   # must be something here wrong, so it will go to 0,0,0
-                if drone_id == len(allcfs.crazyflies)-1:
-                    print('if drone_id == len(allcfs.crazyflies)')
-                    timeHelper.sleep(togo_time/2)
-                    # quit()
-            # run
-            else:
-                pos = np.append(np.array(states_list[drone_id][state_id]), Z)
-                # cf.goTo(pos, 0, togo_time)
-                cf.cmdPosition(pos, yaw=0.0)
-                # cf.cmdFullState(pos,zero_vec,zero_vec,0,zero_vec)
-                print('drone_id',drone_id,'state_id',state_id)
+    # ------ run data
+    for state_id in range(num_waypoints):
+        for drone_id in range(len(allcfs.crazyflies)):
+            cf = allcfs.crazyflies[drone_id]   
+            pos = states_list[drone_id][state_id]
+            vel = velocity_list[drone_id][state_id]
+            acc = acceleration_list[drone_id][state_id]
+            print('drone_id',drone_id,'pos:',pos,'vel',vel,'acc',acc)
+            cf.cmdFullState(pos, vel, acc, 0, np.zeros(3))  
+        timeHelper.sleepForRate(rate)
 
+    timeHelper.sleep(2.0)
+    for cf in allcfs.crazyflies:
+        cf.notifySetpointsStop()
 
-            timeHelper.sleepForRate(rate)
-
-def setUp(extra_args=""):
-    crazyflies_yaml = """
-    crazyflies:
-    - channel: 100
-      id: 1
-      initialPosition: [1.0, 0.0, 0.0]
-    """
-    swarm = Crazyswarm(crazyflies_yaml=crazyflies_yaml, args="--sim --vis null " + extra_args)
-    timeHelper = swarm.timeHelper
-    return swarm.allcfs, timeHelper
-
-
-def test_cmdFullState_zeroVel(timeHelper, allcfs,Z):
-    cf = allcfs.crazyflies[0]
-    print('cf.initialPosition',cf.initialPosition)
-
-    pos = np.array(cf.initialPosition) + np.array([1, 1, Z])
-    cf.cmdFullState(pos, np.zeros(3), np.zeros(3), 0, np.zeros(3))
-    timeHelper.sleep(1.0)
-    print('test_cmdFullState_zeroVel over')
-
-    # assert np.all(np.isclose(cf.position(), pos))
-
-def test_cmdPosition(timeHelper, allcfs,Z):
-    cf = allcfs.crazyflies[0]
-    print('cf.initialPosition',cf.initialPosition)
-    pos = np.array(cf.initialPosition) + np.array([1, 1, Z])
-    cf.cmdPosition(pos,yaw=0.0)
-    timeHelper.sleep(1.0)
-    print('test_cmdPosition over')
-    # assert np.all(np.isclose(cf.position(), pos))
-
+    allcfs.land(targetHeight=0.03, duration=Z+1.0)
+    timeHelper.sleep(Z+2.0)
 
 def main():
-    swarm = Crazyswarm()
-    timeHelper = swarm.timeHelper
-    # cf = swarm.allcfs.crazyflies[0]
-    allcfs = swarm.allcfs 
-
-    rate = 30.0
-    rate = 10.0
-    rate = 1.0
-    Z = 1.5
-
-
-    # allcfs.takeoff(targetHeight=Z, duration=Z+1.0)
-    # timeHelper.sleep(Z+2.0)
-    trajpath = Path(__file__).parent / "data/result_ompl2.yaml"
-    # test_cmdFullState_zeroVel(timeHelper, allcfs,Z)
-    test_cmdPosition(timeHelper, allcfs,Z)
-    # executeTrajectory(timeHelper, allcfs, trajpath,Z, rate)
-
-    # for cf in allcfs.crazyflies:
-    #     cf.notifySetpointsStop()
-    # allcfs.land(targetHeight=0.03, duration=Z+1.0)
-    # timeHelper.sleep(Z+2.0)
-
+    test_vel_acc()
 
 if __name__ == "__main__":
     main()
