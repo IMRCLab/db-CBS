@@ -95,7 +95,7 @@ def plot_all():
     plt.show()
 
 def plot_one_figure():
-    yaml_path = Path(__file__).parent / "data/db_cbs_opt_4.yaml"
+    yaml_path = Path(__file__).parent / "data/result_dbcbs_opt.yaml"
     with open(yaml_path, 'r') as ymlfile:
         data = yaml.safe_load(ymlfile)['result']  # a list where elements are dictionaries
     
@@ -103,8 +103,8 @@ def plot_one_figure():
     file_name = yaml_path.stem
     
     # Number of states to consider for each trajectory
-    number = 20
-    # number = -1
+    # number = 20
+    number = -1
     
     # Create a new figure for each YAML file
     plt.figure()
@@ -148,7 +148,7 @@ def plot_one_figure():
 
 def test():
     Z = 0.5
-    yaml_path = Path(__file__).parent / "data/db_cbs_opt_4.yaml"
+    yaml_path = Path(__file__).parent / "data/result_dbcbs_opt.yaml"
     with open(yaml_path, 'r') as ymlfile:
         data = yaml.safe_load(ymlfile)['result']  # a list where elements are dictionaries
     n = len(data) # number of trajectories
@@ -161,39 +161,23 @@ def test():
             states = [row[0:2] + [Z] for row in trajectory['states']]  
             velocity = [row[2:4] + [0.0] for row in trajectory['states']]  
             acceleration = [row[0:2] + [Z] for row in trajectory['actions']]
-            # print(states)
-            states_list.append(states)
+            states_list.append(np.array(states, dtype=np.float64))
             velocity_list.append(velocity)
             acceleration_list.append(acceleration)
         # print(states_list)
-
     elif len(data[0]['states'][0]) == 2:
         print("The length of data[0]['states'] is 2.")
 
-    states_array = np.array(states_list, dtype=np.float64)
+    # states_array = np.array(states_list, dtype=np.float64)
     velocity_array = np.array(velocity_list, dtype=np.float64)
     acceleration_array = np.array(acceleration_list, dtype=np.float64)
-    num_waypoints = states_array.shape[1]
-    print('number of waypoints:',num_waypoints)
-    file_name = yaml_path.stem
-    print(f'load {file_name} finish')
-
-    # ------ run data
-    for state_id in range(num_waypoints):
-    # for state_id in range(6):
-        for drone_id in range(2): 
-            pos = states_array[drone_id][state_id]
-            # print('drone_id',drone_id,'pos:',pos)
-            vel = velocity_array[drone_id][state_id]
-            acc = acceleration_array[drone_id][state_id]
-            print('drone_id',drone_id,'pos:',pos,'vel',vel,'acc',acc)
-
+    num_waypoints = states_list[0].shape[1]
     print('1')
 
 def main():
     # plot_all()
     # plot_1yaml_2traj()
-    plot_one_figure()
-    # test()
+    # plot_one_figure()
+    test()
 if __name__ == "__main__":
     main()
