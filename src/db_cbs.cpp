@@ -19,7 +19,7 @@
 #include "robotStatePropagator.hpp"
 #include "fclStateValidityChecker.hpp"
 
-#define DBG_PRINTS
+// #define DBG_PRINTS
 #include "db_astar.hpp"
 #include "planresult.hpp"
 

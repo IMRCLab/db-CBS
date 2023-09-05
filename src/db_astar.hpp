@@ -607,7 +607,7 @@ public:
 
     if (is_at_goal) {
 #ifdef DBG_PRINTS
-      std::cout << "SOLUTION FOUND !!!! cost: " << current->gScore << std::endl;
+      std::cout << "SOLUTION FOUND !!!! cost: " << current->gScore << " dist " << si->distance(current->state, goalState) << std::endl;
 #endif
 
       std::vector<std::pair<AStarNode*, size_t>> result;
@@ -638,10 +638,15 @@ public:
           si->copyState(motion_state, state);
           const fcl::Vector3f relative_pos = robot->getTransform(state).translation();
           robot->setPosition(motion_state, current_pos + relative_pos);
-          // si->printState(motion_state);
+#ifdef DBG_PRINTS
+          si->printState(motion_state);
+#endif
           ll_result.trajectory.push_back(motion_state);
         }
       } // writing result states
+#ifdef DBG_PRINTS
+      si->printState(result.back().first->state);
+#endif
       ll_result.trajectory.push_back(si->cloneState(result.back().first->state));
 
       for (size_t i = 0; i < result.size() - 1; ++i)
@@ -659,6 +664,18 @@ public:
 
       // sanity check on the sizes
       assert(ll_result.actions.size() + 1 == ll_result.trajectory.size());
+
+      // sanity check on the bounds
+      double largest_dist = si->distance(startState, ll_result.trajectory[0]);
+      for (size_t i = 1; i < ll_result.trajectory.size(); ++i) {
+        double dist = si->distance(ll_result.trajectory[i-1], ll_result.trajectory[i]);
+        // std::cout << i << " " << dist << std::endl;
+        largest_dist = std::max(largest_dist, dist);
+      }
+      largest_dist = std::max(largest_dist, si->distance(ll_result.trajectory.back(), goalState));
+      if (largest_dist > delta){
+        std::cerr << "Warning: delta violation " << std::to_string(largest_dist) << std::endl;
+      }
 
       // #ifndef NDEBUG
       // Sanity check here, that verifies that we obey all constraints
@@ -678,9 +695,9 @@ public:
         float dist = si->distance(ll_result.trajectory.at(time_index), constraint.constrained_state);
 
         if (dist <= delta){
-          std::cout << "VIOLATION " << dist << std::endl;
+          std::cout << "VIOLATION " << dist << " " << time_index << " " << ll_result.trajectory.size() << std::endl;
           si->printState(ll_result.trajectory.at(time_index));
-          throw std::runtime_error("");
+          throw std::runtime_error("Internal error: constraint violation in solution!");
         }
 
         assert(dist > delta);
