@@ -75,10 +75,21 @@ def gen_env(min, max, obs_density, N, filename):
 
     r["robots"] = []
     while len(r["robots"]) < N:
-        start = np.random.uniform([min[0]+0.5, min[1]+0.5, -np.pi], [max[0]-0.5, max[1]-0.5, np.pi])
-        goal = np.random.uniform([min[0]+0.5, min[1]+0.5, -np.pi], [max[0]-0.5, max[1]-0.5, np.pi])
+        type = str(np.random.choice(["unicycle_first_order_0", "car_first_order_with_1_trailers_0", "double_integrator_0"]))
+        # type = str(np.random.choice(["car_first_order_with_1_trailers_0"]))
+        if type == "unicycle_first_order_0":
+            start = np.random.uniform([min[0]+0.5, min[1]+0.5, -np.pi], [max[0]-0.5, max[1]-0.5, np.pi])
+            goal = np.random.uniform([min[0]+0.5, min[1]+0.5, -np.pi], [max[0]-0.5, max[1]-0.5, np.pi])
+        if type == "car_first_order_with_1_trailers_0":
+            start = np.random.uniform([min[0]+0.5, min[1]+0.5, -np.pi, -0.4], [max[0]-0.5, max[1]-0.5, np.pi, 0.4])
+            goal = np.random.uniform([min[0]+0.5, min[1]+0.5, -np.pi, -0.4], [max[0]-0.5, max[1]-0.5, np.pi, 0.4])
+            start[3] = start[2] + start[3]
+            goal[3] = goal[2] + goal[3]
+        elif type == "double_integrator_0":
+            start = np.random.uniform([min[0]+0.5, min[1]+0.5, -0.25, -0.25], [max[0]-0.5, max[1]-0.5, 0.25, 0.25])
+            goal = np.random.uniform([min[0]+0.5, min[1]+0.5, -0.25, -0.25], [max[0]-0.5, max[1]-0.5, 0.25, 0.25])
         r["robots"].append({
-            "type": "unicycle_first_order_0",
+            "type": type,
             "start": start.tolist(),
             "goal": goal.tolist()
         })
@@ -95,9 +106,9 @@ def main():
     N = 2 # number of robots
     K = 1 # num instances
 
-    for N in [2, 4, 8, 16]:
+    for N in [2, 4, 8]:
         for k in range(K):
-            filename = "../example/gen_p{}_n{}_{}.yaml".format(obs_density, N, k)
+            filename = "../example/gen_hetero_p{}_n{}_{}.yaml".format(obs_density, N, k)
             gen_env(min, max, obs_density / 100.0, N, filename)
 
 if __name__ == '__main__':

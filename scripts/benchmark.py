@@ -129,20 +129,23 @@ def main():
 		"swap4_unicycle_sphere",
 		"swap4_double_integrator",
 
-		# # special test cases
+		# special test cases
 		"infeasible_0",
 
 		# random cases
 		"gen_p10_n2_0",
 		"gen_p10_n4_0",
 		"gen_p10_n8_0",
-		"gen_p10_n16_0",
+		# "gen_p10_n16_0",
+
+		"gen_hetero_p10_n2_0",
+		"gen_hetero_p10_n4_0",
+		"gen_hetero_p10_n8_0",
 
 		# windows cases
-		"window2_unicycle,"
-		"window3_unicycle,"
-		"window4_unicycle,"
-
+		"window2_unicycle",
+		"window3_unicycle",
+		"window4_unicycle",
 	]
 	algs = [
 		"sst",
