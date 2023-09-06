@@ -31,7 +31,7 @@ def draw_box_patch(ax, center, size, angle = 0, **kwargs):
 
 
 class Animation:
-  def __init__(self, filename_env, filename_result = None):
+  def __init__(self, filename_env, filename_result = None, filename_output = None):
     with open(filename_env) as env_file:
       env = yaml.safe_load(env_file)
 
@@ -54,26 +54,53 @@ class Animation:
       else:
         print("ERROR: unknown obstacle type")
 
-    for robot in env["robots"]:
+    cmap = matplotlib.cm.get_cmap('jet')
+
+    self.colors = cmap(np.linspace(0, 1, len(env["robots"]), True))
+
+    for robot, color in zip(env["robots"], self.colors):
       self.robot_types.append(robot["type"])  
       if filename_result is None:
-        self.draw_robot(robot["start"], robot["type"], facecolor='blue', alpha=0.3)
-      self.draw_robot(robot["goal"], robot["type"], facecolor='none', edgecolor='green', alpha=0.3)
+        self.draw_robot(robot["start"], robot["type"], facecolor=color, alpha=0.3)
+      if filename_output is None:
+        self.draw_robot(robot["goal"], robot["type"], facecolor='none', edgecolor=color, alpha=0.3)
 
     if filename_result is not None:
       with open(filename_result) as result_file:
         self.result = yaml.safe_load(result_file)
+
+      # draw trajectory
+      for robot, robot_type, color in zip(self.result["result"], self.robot_types, self.colors):
+        self.draw_trajectory(robot["states"], robot_type, color=color, alpha=0.5)
 
       T = 0
       for robot in self.result["result"]:
         T = max(T, len(robot["states"]))
       print("T", T)
 
+      if filename_output is not None:
+        from pathlib import Path
+
+        add_patches = []
+        for robot, robot_type, color in zip(self.result["result"], self.robot_types, self.colors):
+          for t in np.arange(0, T+21, 20):
+            if t >= len(robot["states"]):
+              state = robot["states"][-1]
+            else:
+              state = robot["states"][t]
+            print(t, state, len(robot["states"]))
+            add_patches.extend(self.draw_robot(state, robot_type, facecolor=color, alpha=0.2+0.6*t/T))
+            if t >= len(robot["states"]):
+              break
+        self.fig.savefig(Path(filename_output).with_suffix(".pdf"))
+        for p in add_patches:
+          p.remove()
+
       self.robot_patches = []
       i = 0
-      for robot in self.result["result"]:
+      for robot, color in zip(self.result["result"], self.colors):
         state = robot["states"][0]
-        patches = self.draw_robot(state, self.robot_types[i], facecolor='blue', alpha=0.8)
+        patches = self.draw_robot(state, self.robot_types[i], facecolor=color, alpha=0.8)
         self.robot_patches.append(patches)
         i += 1
       self.anim = animation.FuncAnimation(self.fig, self.animate_func,
@@ -149,6 +176,9 @@ class Animation:
                 pos1[0], pos1[1], theta1)
             self.robot_patches[k][1].set_transform(t + self.ax.transData)
 
+            pos2 = pos0 + np.array([np.cos(theta0), np.sin(theta0)])*self.size[0]/2*0.8
+            self.robot_patches[k][2].center = pos2
+
     return [item for row in self.robot_patches for item in row]
 
   def draw_robot(self, state, type, **kwargs):
@@ -164,24 +194,58 @@ class Animation:
         yaw = state[2]
         pos2 = pos + np.array([np.cos(yaw), np.sin(yaw)])*self.big_radius*0.8
         patches.append(draw_sphere_patch(self.ax, pos, self.big_radius, 0, **kwargs))
-        patches.append(draw_sphere_patch(self.ax, pos2, 0.05, 0, facecolor='black'))
+        kwargs['facecolor'] = 'black'
+        patches.append(draw_sphere_patch(self.ax, pos2, 0.03, 0, **kwargs))
     elif type == 'unicycle_first_order_0' or type == 'car_first_order_0' or type == 'unicycle_second_order_0':
         pos = state[:2]
         yaw = state[2]
         pos2 = pos + np.array([np.cos(yaw), np.sin(yaw)])*self.size[0]/2*0.8
         patches.append(draw_box_patch(self.ax, pos, self.size, yaw, **kwargs))
-        patches.append(draw_sphere_patch(self.ax, pos2, 0.05, 0, facecolor='black'))
+        kwargs['facecolor'] = 'black'
+        patches.append(draw_sphere_patch(self.ax, pos2, 0.03, 0, **kwargs))
     elif type == "car_first_order_with_1_trailers_0":
-        xy = state[0:2]
+        pos = state[0:2]
         theta0 = state[2]
         theta1 = state[3]
-        patches.append(draw_box_patch(self.ax, xy, self.size, theta0, **kwargs))
+        patches.append(draw_box_patch(self.ax, pos, self.size, theta0, **kwargs))
         link1 = np.array([np.cos(theta1), np.sin(theta1)]) * self.hitch_length[0]
-        patches.append(draw_box_patch(self.ax, xy-link1, self.trailer_size, theta1, **kwargs))
+        patches.append(draw_box_patch(self.ax, pos-link1, self.trailer_size, theta1, **kwargs))
+        pos2 = pos + np.array([np.cos(theta0), np.sin(theta0)])*self.size[0]/2*0.8
+        kwargs['facecolor'] = 'black'
+        patches.append(draw_sphere_patch(self.ax, pos2, 0.03, 0, **kwargs))
     return patches
+  
+  def draw_trajectory(self, states, type, color, **kwargs):
+    states = np.array(states)
+    if color is not None:
+      self.ax.plot(states[:,0], states[:,1], color=color, **kwargs)
+    else:
+
+      # self.ax.scatter(states[:,0], states[:,1],c=range(len(states)), marker='o',s=5)
+      from matplotlib.collections import LineCollection
+
+      points = states[:,0:2].reshape(-1, 1, 2)
+      # print(points.shape)
+      # x    = np.linspace(0,1, 100)
+      # y    = np.linspace(0,1, 100)
+      # cols = np.linspace(0,1,len(x))
+      # points = np.array([x, y]).T.reshape(-1, 1, 2)
+      # print(points.shape)
+      # exit()
+
+      segments = np.concatenate([points[:-1], points[1:]], axis=1)
+      cols = np.linspace(0,1,len(points))
+
+      lc = LineCollection(segments, cmap='viridis', zorder=1)
+      lc.set_array(cols)
+      lc.set_linewidth(5)
+      line = self.ax.add_collection(lc)
+      # fig.colorbar(line,ax=ax)
+
+
 
 def visualize(filename_env, filename_result = None, filename_video=None):
-  anim = Animation(filename_env, filename_result)
+  anim = Animation(filename_env, filename_result, filename_video)
   # anim.save(filename_video, 1)
   # anim.show()
   if filename_video is not None:
