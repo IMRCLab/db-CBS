@@ -11,7 +11,7 @@ robots:
     initial_position: [0, -1, 0]
     type: cf21  # see robot_types    
   cf16:
-    enabled: false
+    enabled: true
     uri: radio://0/80/2M/E7E7E7E716
     initial_position: [-1, 0, 0]
     type: cf21  # see robot_types
