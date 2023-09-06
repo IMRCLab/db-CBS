@@ -5,7 +5,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import yaml 
 
-def plot_one_figure():
+def plot_trajectory():
     yaml_path = Path(__file__).parent / "data/swap4_1.yaml"
     with open(yaml_path, 'r') as ymlfile:
         data = yaml.safe_load(ymlfile)['result']  # a list where elements are dictionaries
@@ -56,36 +56,8 @@ def plot_one_figure():
 
     plt.show()
 
-def test_load_data():
-    Z = 0.5
-    yaml_path = Path(__file__).parent / "data/swap4.yaml"
-    with open(yaml_path, 'r') as ymlfile:
-        data = yaml.safe_load(ymlfile)['result']  # a list where elements are dictionaries
-    n = len(data) # number of trajectories
-    if len(data[0]['states'][0]) == 4:
-        print("The length of data[0]['states'] is 4.------------")
-        states_list = []
-        velocity_list = []
-        acceleration_list = []
-        for trajectory in data:
-            states = [row[0:2] + [Z] for row in trajectory['states']]  
-            velocity = [row[2:4] + [0.0] for row in trajectory['states']]  
-            acceleration = [row[0:2] + [Z] for row in trajectory['actions']]
-            states_list.append(np.array(states, dtype=np.float64))
-            velocity_list.append(velocity)
-            acceleration_list.append(acceleration)
-        # print(states_list)
-    elif len(data[0]['states'][0]) == 2:
-        print("The length of data[0]['states'] is 2.")
-
-    # states_array = np.array(states_list, dtype=np.float64)
-    velocity_array = np.array(velocity_list, dtype=np.float64)
-    acceleration_array = np.array(acceleration_list, dtype=np.float64)
-    num_waypoints = states_list[0].shape[1]
-    print('1')
-
 def main():
-    plot_one_figure()
-    # test_load_data()
+    plot_trajectory()
+
 if __name__ == "__main__":
     main()
