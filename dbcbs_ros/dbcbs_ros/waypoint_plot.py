@@ -95,7 +95,7 @@ def plot_all():
     plt.show()
 
 def plot_one_figure():
-    yaml_path = Path(__file__).parent / "data/result_dbcbs_opt.yaml"
+    yaml_path = Path(__file__).parent / "data/swap4_1.yaml"
     with open(yaml_path, 'r') as ymlfile:
         data = yaml.safe_load(ymlfile)['result']  # a list where elements are dictionaries
     
@@ -148,7 +148,7 @@ def plot_one_figure():
 
 def test():
     Z = 0.5
-    yaml_path = Path(__file__).parent / "data/result_dbcbs_opt.yaml"
+    yaml_path = Path(__file__).parent / "data/swap4.yaml"
     with open(yaml_path, 'r') as ymlfile:
         data = yaml.safe_load(ymlfile)['result']  # a list where elements are dictionaries
     n = len(data) # number of trajectories
@@ -177,7 +177,7 @@ def test():
 def main():
     # plot_all()
     # plot_1yaml_2traj()
-    # plot_one_figure()
-    test()
+    plot_one_figure()
+    # test()
 if __name__ == "__main__":
     main()
