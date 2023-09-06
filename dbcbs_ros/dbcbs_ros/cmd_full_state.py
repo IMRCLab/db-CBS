@@ -61,7 +61,7 @@ def test_vel_acc():
     timeHelper.sleep(Z+2.0)
 
     # ------parse data
-    trajpath = Path(__file__).parent / "data/result_dbcbs_opt.yaml"
+    trajpath = Path(__file__).parent / "data/swap4_1.yaml"
     num_traj,num_waypoints,states_list,velocity_list,acceleration_list = parse_data(trajpath,Z)
 
     # check the num of UAV <= states_list
@@ -80,12 +80,12 @@ def test_vel_acc():
             cf.cmdFullState(pos, vel, acc, 0, np.zeros(3))  
         timeHelper.sleepForRate(rate)
 
-    # timeHelper.sleep(2.0)
+    # timeHelper.sleep(5.0)
     for cf in allcfs.crazyflies:
         cf.notifySetpointsStop()
 
-    allcfs.land(targetHeight=0.03, duration=Z+1.0)
-    timeHelper.sleep(Z+2.0)
+    allcfs.land(targetHeight=0.02, duration=3.0)
+    timeHelper.sleep(3.0)
 
 def main():
     test_vel_acc()
