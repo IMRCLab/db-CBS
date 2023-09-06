@@ -33,9 +33,6 @@ def parse_data(trajpath,Z):
         states = [row[0:2] + [Z] for row in trajectory['states']]  
         velocity = [row[2:4] + [0] for row in trajectory['states']]  
         acceleration = [row[0:2] + [0] for row in trajectory['actions']]
-        # print("Length of 'states':", len(states))
-        # print("Length of 'velocity':", len(velocity))
-        # print("Length of 'acceleration':", len(acceleration))      
         while len(states) < num_waypoints:
             states.append(states[-1])  # Append the last line of states
             
@@ -44,10 +41,6 @@ def parse_data(trajpath,Z):
             
         while len(acceleration) < num_waypoints:
             acceleration.append([0, 0, 0])  # Append [0, 0, Z] to acceleration
-        # print('after')
-        # print("Length of 'states':", len(states))
-        # print("Length of 'velocity':", len(velocity))
-        # print("Length of 'acceleration':", len(acceleration))    
         states_list.append(np.array(states, dtype=np.float64))
         velocity_list.append(np.array(velocity, dtype=np.float64))
         acceleration_list.append(np.array(acceleration, dtype=np.float64))
@@ -87,7 +80,7 @@ def test_vel_acc():
             cf.cmdFullState(pos, vel, acc, 0, np.zeros(3))  
         timeHelper.sleepForRate(rate)
 
-    timeHelper.sleep(2.0)
+    # timeHelper.sleep(2.0)
     for cf in allcfs.crazyflies:
         cf.notifySetpointsStop()
 
