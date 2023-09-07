@@ -56,7 +56,7 @@ def main():
     timeHelper.sleep(Z+2.0)
 
     # parse data
-    yaml_path = Path(__file__).parent / "data/swap4_1.yaml"
+    yaml_path = Path(__file__).parent / "data/obstacle.yaml"
     num_traj,num_waypoints,states_list,velocity_list,acceleration_list = parse_data(yaml_path,Z)
 
     # check the num of UAV <= states_list

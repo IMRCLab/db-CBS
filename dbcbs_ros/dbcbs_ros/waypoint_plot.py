@@ -5,8 +5,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import yaml 
 
-def plot_trajectory():
-    yaml_path = Path(__file__).parent / "data/swap4_1.yaml"
+def plot_trajectory(yaml_path):
     with open(yaml_path, 'r') as ymlfile:
         data = yaml.safe_load(ymlfile)['result']  # a list where elements are dictionaries
     
@@ -57,7 +56,8 @@ def plot_trajectory():
     plt.show()
 
 def main():
-    plot_trajectory()
+    yaml_path = Path(__file__).parent / "data/obstacle.yaml"
+    plot_trajectory(yaml_path)
 
 if __name__ == "__main__":
     main()
