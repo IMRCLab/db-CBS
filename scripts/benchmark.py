@@ -136,12 +136,12 @@ def main():
 		"gen_p10_n2_0_unicycle_sphere",
 		"gen_p10_n4_0_unicycle_sphere",
 		"gen_p10_n8_0_unicycle_sphere",
-		"gen_p10_n16_0_unicycle_sphere",
+		# "gen_p10_n16_0_unicycle_sphere",
 
 		"gen_p10_n2_0_hetero",
 		"gen_p10_n4_0_hetero",
 		"gen_p10_n8_0_hetero",
-		"gen_p10_n16_0_hetero",
+		# "gen_p10_n16_0_hetero",
 
 		# # windows cases
 		# "window2_unicycle",

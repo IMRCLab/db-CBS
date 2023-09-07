@@ -48,7 +48,7 @@ def gen_env(min, max, obs_density, N, filename):
     filled_area = 0
     obs = []
     while filled_area < obs_density*area:
-        size = np.random.normal([1.0, 1.0], 0.5)
+        size = np.random.normal([0.75, 0.75], 0.5)
         if np.any(size < 0.1):
              continue
         filled_area += np.prod(size)
@@ -75,8 +75,8 @@ def gen_env(min, max, obs_density, N, filename):
 
     r["robots"] = []
     while len(r["robots"]) < N:
-        # type = str(np.random.choice(["unicycle_first_order_0", "car_first_order_with_1_trailers_0", "double_integrator_0"]))
-        type = str(np.random.choice(["unicycle_first_order_0_sphere"]))
+        type = str(np.random.choice(["unicycle_first_order_0", "car_first_order_with_1_trailers_0", "double_integrator_0"]))
+        # type = str(np.random.choice(["unicycle_first_order_0_sphere"]))
         if type == "unicycle_first_order_0" or "unicycle_first_order_0_sphere":
             start = np.random.uniform([min[0]+0.5, min[1]+0.5, -np.pi], [max[0]-0.5, max[1]-0.5, np.pi])
             goal = np.random.uniform([min[0]+0.5, min[1]+0.5, -np.pi], [max[0]-0.5, max[1]-0.5, np.pi])
@@ -101,14 +101,14 @@ def gen_env(min, max, obs_density, N, filename):
 
 def main():
     min = np.array([0,0])
-    max = np.array([10,10])
+    max = np.array([5,5])
     obs_density = 10 # percent
     K = 1 # num instances
 
-    for N in [2, 4, 8, 16]:
+    for N in [2, 4, 8]:
         for k in range(K):
-            filename = "../example/gen_p{}_n{}_{}_unicycle_sphere.yaml".format(obs_density, N, k)
-            # filename = "../example/gen_p{}_n{}_{}_hetero.yaml".format(obs_density, N, k)
+            # filename = "../example/gen_p{}_n{}_{}_unicycle_sphere.yaml".format(obs_density, N, k)
+            filename = "../example/gen_p{}_n{}_{}_hetero.yaml".format(obs_density, N, k)
             gen_env(min, max, obs_density / 100.0, N, filename)
 
 if __name__ == '__main__':
