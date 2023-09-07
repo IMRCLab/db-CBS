@@ -143,9 +143,22 @@ def main():
 		"gen_hetero_p10_n8_0",
 
 		# windows cases
-		"window2_unicycle",
-		"window3_unicycle",
+		# "window2_unicycle",
+		# "window3_unicycle",
 		"window4_unicycle",
+		"window4_unicycle2",
+		"window4_double_integrator",
+		"window4_trailer",
+		"window4_unicycle_sphere",
+
+		#demo
+		# "swap2_demo",
+		# "swap4_demo",
+		# "window4_demo",
+
+		
+
+
 	]
 	algs = [
 		"sst",
