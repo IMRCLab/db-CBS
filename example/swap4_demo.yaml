@@ -1,0 +1,18 @@
+environment:
+  min: [-1, -1.5]
+  max: [1.5, 1]
+  obstacles: []
+robots:
+  - type: double_integrator_0
+    start: [1.0,0,0,0] 
+    goal: [-1.0,0,0,0] 
+  - type: double_integrator_0
+    start: [0,-1.0,0,0] 
+    goal: [0,1.0,0,0] 
+  - type: double_integrator_0
+    start: [-1.0,0,0,0] 
+    goal: [1.0,0,0,0] 
+  - type: double_integrator_0
+    start: [0,1.0,0,0] 
+    goal: [0,-1.0,0,0] 
+ 
