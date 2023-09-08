@@ -154,7 +154,7 @@ def main():
 		#demo
 		# "swap2_demo",
 		# "swap4_demo",
-		# "window4_demo",
+		"window4_demo",
 
 		
 
