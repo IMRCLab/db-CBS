@@ -201,8 +201,8 @@ void export_joint_solutions(const std::vector<LowLevelPlan<AStarNode*,ob::State*
     size_t max_a = 0;
     for (auto& sol : solution){
       cost += sol.cost;
-      max_t = std::max(max_t, sol.trajectory.size() - 1);
-      max_a = std::max(max_a, sol.actions.size() - 1);
+      max_t = std::max(max_t, sol.trajectory.size());
+      max_a = std::max(max_a, sol.actions.size());
     }
 
     out << "delta: " << 0.5 << std::endl;
@@ -213,7 +213,7 @@ void export_joint_solutions(const std::vector<LowLevelPlan<AStarNode*,ob::State*
     std::vector<double> joint_state;
     std::vector<double> joint_action;
     std::vector<double> last_state;
-    for (size_t t = 0; t <= max_t; ++t){
+    for (size_t t = 0; t < max_t; ++t){
         out << "      - [";
         for (size_t i = 0; i < robots.size(); ++i){
             std::vector<double> reals;
@@ -240,7 +240,7 @@ void export_joint_solutions(const std::vector<LowLevelPlan<AStarNode*,ob::State*
 
     // for the action
     out << "    actions:" << std::endl;
-    for (size_t t = 0; t <= max_a; ++t){
+    for (size_t t = 0; t < max_a; ++t){
         out << "      - ";
         out << "[";
         for (size_t i = 0; i < robots.size(); ++i){
@@ -248,15 +248,23 @@ void export_joint_solutions(const std::vector<LowLevelPlan<AStarNode*,ob::State*
             auto si = robots[i]->getSpaceInformation(); 
             const size_t dim = si->getControlSpace()->getDimension();
             if (t >= solution[i].actions.size()){
-                node_action = solution[i].actions.back();    
+                if (solution[i].actions.size() > 0) {
+                    node_action = solution[i].actions.back();
+                } else {
+                    node_action = nullptr;
+                }
             }
             else {
                 node_action = solution[i].actions[t];
             }
             for (size_t d = 0; d < dim; ++d)
             {
-                double *address = si->getControlSpace()->getValueAddressAtIndex(node_action, d);
-                reals.push_back(*address);
+                if (node_action) {
+                    double *address = si->getControlSpace()->getValueAddressAtIndex(node_action, d);
+                    reals.push_back(*address);
+                } else {
+                    reals.push_back(0);
+                }
             }
             joint_action.insert(joint_action.end(), reals.begin(), reals.end());
         }
