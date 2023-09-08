@@ -71,17 +71,9 @@ int main(int argc, char *argv[]) {
 
   std::cout << "robot types are " << std::endl;
 
-
-
-
-
-
-    // {"double_integrator", "double_integrator"};
-
-
   // create a joint robot 
+  std::shared_ptr<Joint_robot> robot = std::make_shared<Joint_robot>(robotTypes,problem.p_lb,problem.p_ub);
 
-  std::shared_ptr<Joint_robot> robot = std::make_shared<Joint_robot>(robotTypes);
   load_env(*robot, problem);
 
   bool verbose = true;
