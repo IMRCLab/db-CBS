@@ -188,7 +188,7 @@ def main():
 	
 	run_benchmark_stats(instances, algs, trials, timelimit)
 
-	write_table(instances, algs, Path("../results/table.pdf"), trials, timelimit)
+	write_table(instances, algs, Path("../results"), "table.pdf", trials, timelimit)
 
 	subprocess.run(
 		['pdftk',

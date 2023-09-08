@@ -33,7 +33,11 @@ def main():
     parser.add_argument('instances', help="instances")
     parser.add_argument('algs', help="algorithms")
     args = parser.parse_args()
-    run_benchmark_stats(args.instances, args.algs)
+
+    trials = 1
+    timelimit = 5*60
+
+    run_benchmark_stats(args.instances, args.algs, trials, timelimit)
 
 if __name__ == '__main__':
 	main()
