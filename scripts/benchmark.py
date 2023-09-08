@@ -13,6 +13,7 @@ import psutil
 # import checker
 from benchmark_stats import run_benchmark_stats
 from benchmark_table import write_table
+import paper_tables
 
 
 @dataclass
@@ -143,10 +144,23 @@ def main():
 		"gen_p10_n8_0_hetero",
 		# "gen_p10_n16_0_hetero",
 
-		# # windows cases
+		# windows cases
 		# "window2_unicycle",
 		# "window3_unicycle",
-		# "window4_unicycle",
+		"window4_unicycle",
+		"window4_unicycle2",
+		"window4_double_integrator",
+		"window4_trailer",
+		"window4_unicycle_sphere",
+
+		#demo
+		# "swap2_demo",
+		# "swap4_demo",
+		# "window4_demo",
+
+		
+
+
 	]
 	algs = [
 		"sst",
@@ -175,7 +189,7 @@ def main():
 	
 	run_benchmark_stats(instances, algs, trials, timelimit)
 
-	write_table(instances, algs, Path("../results"), trials, timelimit)
+	write_table(instances, algs, Path("../results/table.pdf"), trials, timelimit)
 
 	subprocess.run(
 		['pdftk',
@@ -188,8 +202,8 @@ def main():
 	# delete temp files
 	(Path("../results") / 'table.pdf').unlink()
 	(Path("../results") / 'stats.pdf').unlink()
-	(Path("../results") / 'table.aux').unlink()
-	(Path("../results") / 'table.log').unlink()
+
+	paper_tables.write_table1(trials, timelimit)
 
 if __name__ == '__main__':
 	main()

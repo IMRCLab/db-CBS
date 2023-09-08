@@ -10,6 +10,7 @@ import matplotlib.animation as manimation
 import os
 import sys
 from iteration_utilities import deepflatten
+import subprocess
 
 def draw_sphere_patch(ax, center, radius, angle = 0, **kwargs):
   xy = np.asarray(center) 
@@ -92,9 +93,15 @@ class Animation:
             add_patches.extend(self.draw_robot(state, robot_type, facecolor=color, alpha=0.2+0.6*t/T))
             if t >= len(robot["states"]):
               break
-        self.fig.savefig(Path(filename_output).with_suffix(".pdf"))
+        fname = str(Path(filename_output).with_suffix(".pdf"))
+        self.ax.get_xaxis().set_visible(False)
+        self.ax.get_yaxis().set_visible(False)
+        self.fig.savefig(fname)
+        subprocess.run(["pdfcrop", fname, fname])
         for p in add_patches:
           p.remove()
+        self.ax.get_xaxis().set_visible(True)
+        self.ax.get_yaxis().set_visible(True)
 
       self.robot_patches = []
       i = 0
