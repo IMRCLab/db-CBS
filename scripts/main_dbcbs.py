@@ -45,7 +45,7 @@ def run_dbcbs(filename_env, folder, timelimit, cfg):
                 t_dbcbs_stop = time.time()
                 duration_dbcbs += t_dbcbs_stop - t_dbcbs_start
                 if result.returncode != 0:
-                    print("db-cbs failed")
+                    print("db-cbs failed ", result.returncode)
                 else:
                     # shutil.copyfile(filename_result_dbcbs_opt, "{}/result_dbcbs_opt.yaml".format(folder))
                     cost = 0
