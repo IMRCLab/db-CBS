@@ -135,35 +135,31 @@ def main():
 		# # special test cases
 		# "infeasible_0",
 
-		# random cases
-		"gen_p10_n2_0_unicycle_sphere",
-		"gen_p10_n4_0_unicycle_sphere",
-		"gen_p10_n8_0_unicycle_sphere",
-		# "gen_p10_n16_0_unicycle_sphere",
-
-		"gen_p10_n2_0_hetero",
-		"gen_p10_n4_0_hetero",
-		"gen_p10_n8_0_hetero",
-		# "gen_p10_n16_0_hetero",
-
 		# windows cases
 		# "window2_unicycle",
 		# "window3_unicycle",
-		"window4_unicycle",
-		"window4_unicycle2",
-		"window4_double_integrator",
-		"window4_trailer",
-		"window4_unicycle_sphere",
+		# "window4_unicycle",
+		# "window4_unicycle2",
+		# "window4_double_integrator",
+		# "window4_trailer",
+		# "window4_unicycle_sphere",
 
 		#demo
 		# "swap2_demo",
 		# "swap4_demo",
-		"window4_demo",
+		# "window4_demo",
 
 		
 
 
 	]
+
+	#add random cases
+	for kind in ["unicycle_sphere", "hetero"]:
+		for n in [2,4,8]:
+			for k in range(10):
+				instances.append("gen_p10_n{}_{}_{}".format(n,k, kind))
+
 	algs = [
 		"sst",
 		"s2m2",

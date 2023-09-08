@@ -51,3 +51,7 @@ db-cbs:
     delta_0: 1.0
   swap4_unicycle_sphere:
     delta_0: 1.0
+  gen_p10_n4_0_unicycle_sphere:
+    delta_0: 1.0
+  gen_p10_n8_0_hetero:
+    delta_0: 1.0
