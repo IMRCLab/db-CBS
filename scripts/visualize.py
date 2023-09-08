@@ -90,7 +90,7 @@ class Animation:
             else:
               state = robot["states"][t]
             print(t, state, len(robot["states"]))
-            add_patches.extend(self.draw_robot(state, robot_type, facecolor=color, alpha=0.2+0.6*t/T))
+            add_patches.extend(self.draw_robot(state, robot_type, facecolor=color, alpha=0.2+0.6*min(t,len(robot["states"]))/T))
             if t >= len(robot["states"]):
               break
         fname = str(Path(filename_output).with_suffix(".pdf"))

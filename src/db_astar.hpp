@@ -454,6 +454,7 @@ public:
     const std::vector<double>& robot_start,
     const std::vector<double>& robot_goal,
     const std::vector<fcl::CollisionObjectf *>& obstacles, 
+    const fcl::AABBf& workspace_aabb,
     std::shared_ptr<Robot> robot,
     const std::vector<Constraint>& constraints,
     bool reverse_search,
@@ -677,6 +678,12 @@ public:
         std::cerr << "Warning: delta violation " << std::to_string(largest_dist) << std::endl;
       }
 
+      // sanity check on the state validity
+      for (size_t i = 0; i < ll_result.trajectory.size(); ++i) {
+        if (!si->isValid(ll_result.trajectory[i])) {
+          std::cerr << "Warning: state invalid " << i << std::endl;
+        }
+      }
       // #ifndef NDEBUG
       // Sanity check here, that verifies that we obey all constraints
 #ifdef DBG_PRINTS
@@ -799,10 +806,20 @@ public:
         }
       }
       #else
-      motion->collision_manager->shift(offset); 
+
+      // make sure that the whole motion stays within the workspace
+      motion->collision_manager->shift(offset);
+      bool motionValid = workspace_aabb.contain(motion->collision_manager->getTree().getRoot()->bv);
+      if (!motionValid) {
+        motion->collision_manager->shift(-offset);
+        // std::cout << "skip invalid motion" << std::endl;
+        continue;
+      }
+
+      // check collision shape with static obstacles
       fcl::DefaultCollisionData<float> collision_data;
       motion->collision_manager->collide(bpcm_env.get(), &collision_data, fcl::DefaultCollisionFunction<float>);
-      bool motionValid = !collision_data.result.isCollision();
+      motionValid = !collision_data.result.isCollision();
       motion->collision_manager->shift(-offset);
     
       if (!motionValid) {

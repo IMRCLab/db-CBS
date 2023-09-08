@@ -36,11 +36,13 @@ def run_visualize(script, filename_env, filename_result):
 	
 def run_checker(filename_env, filename_result, filename_log):
 	with open(filename_log, 'w') as f:
-		out = subprocess.run(["./main_check_multirobot",
+		cmd = ["./main_check_multirobot",
 					"--result_file", filename_result,
 					"--env_file", filename_env,
 					"--models_base_path" , "../dynoplan/dynobench/models/",
-					"--goal_tol" , "999999"],
+					"--goal_tol" , "999999"]
+		print(subprocess.list2cmdline(cmd))
+		out = subprocess.run(cmd,
 					stdout=f, stderr=f)
 	return out.returncode == 0
 
@@ -156,7 +158,7 @@ def main():
 		#demo
 		# "swap2_demo",
 		# "swap4_demo",
-		# "window4_demo",
+		"window4_demo",
 
 		
 
@@ -189,7 +191,7 @@ def main():
 	
 	run_benchmark_stats(instances, algs, trials, timelimit)
 
-	write_table(instances, algs, Path("../results/table.pdf"), trials, timelimit)
+	write_table(instances, algs, Path("../results"), "table.pdf", trials, timelimit)
 
 	subprocess.run(
 		['pdftk',
