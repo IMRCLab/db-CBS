@@ -3,8 +3,9 @@ import yaml
 import numpy as np
 import subprocess
 
-def write_table(rows, algs, results_path, trials, T):
-	with open(Path(results_path).with_suffix(".tex"), "w") as f:
+def write_table(rows, algs, results_path, fname, trials, T):
+	output_path = Path(results_path) / Path(fname)
+	with open(output_path.with_suffix(".tex"), "w") as f:
 
 		f.write(r"\documentclass{standalone}")
 		f.write("\n")
@@ -36,23 +37,35 @@ def write_table(rows, algs, results_path, trials, T):
 		}
 
 		out = r"\begin{tabular}{c || c"
-		for _ in algs:
-			out += r" || r|r|r|r"
+		for alg in algs:
+			if alg == "sst":
+				out += r" || r|r|r|r"
+			else:
+				out += r" || r|r|r"
 		out += "}"
 		f.write(out)
 		out = r"\# & Instance"
 		for k, alg in enumerate(algs):
 			if k == len(algs) - 1:
-				out += r" & \multicolumn{4}{c}{"
+				if alg == "sst":
+					out += r" & \multicolumn{4}{c}{"
+				else:
+					out += r" & \multicolumn{3}{c}{"
 			else:
-				out += r" & \multicolumn{4}{c||}{"
+				if alg == "sst":
+					out += r" & \multicolumn{4}{c||}{"
+				else:
+					out += r" & \multicolumn{3}{c||}{"
 			out += alg_names[alg]
 			out += r"}"
 		out += r"\\"
 		f.write(out)
 		out = r"& "
-		for _ in algs:
-			out += r" & $p$ & $t^{\mathrm{st}} [s]$ & $J^{\mathrm{st}} [s]$ & $J^{f} [s]$"
+		for alg in algs:
+			if alg == "sst":
+				out += r" & $p$ & $t^{\mathrm{st}} [s]$ & $J^{\mathrm{st}} [s]$ & $J^{f} [s]$"
+			else:
+				out += r" & $p$ & $t^{\mathrm{st}} [s]$ & $J^{\mathrm{st},f} [s]$"
 		out += r"\\"
 		f.write(out)
 		f.write(r"\hline")
@@ -134,7 +147,8 @@ def write_table(rows, algs, results_path, trials, T):
 				out = print_and_highlight_best_max(out, 'success')
 				out = print_and_highlight_best(out, 't^st_median')
 				out = print_and_highlight_best(out, 'J^st_median')
-				out = print_and_highlight_best(out, 'J^f_median')
+				if alg == "sst":
+					out = print_and_highlight_best(out, 'J^f_median')
 
 			out += r"\\"
 			f.write(out)
@@ -143,10 +157,10 @@ def write_table(rows, algs, results_path, trials, T):
 		f.write(r"\end{document}")
 
 	# run pdflatex
-	subprocess.run(['pdflatex', Path(results_path).with_suffix(".tex")], check=True, cwd=Path(results_path).parent)
+	subprocess.run(['pdflatex', output_path.with_suffix(".tex")], check=True, cwd=results_path)
 	# delete temp files
-	Path(results_path).with_suffix(".aux").unlink()
-	Path(results_path).with_suffix(".log").unlink()
+	output_path.with_suffix(".aux").unlink()
+	output_path.with_suffix(".log").unlink()
 
 def main():
 	results_path = Path("../results")

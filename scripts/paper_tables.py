@@ -14,7 +14,7 @@ def write_table1(trials, timelimit):
 		"db-cbs",
 	]
 
-	write_table(instances, algs, Path("../results/paper_table1.pdf"), trials, timelimit)
+	write_table(instances, algs, Path("../results"), "paper_table1.pdf", trials, timelimit)
 
 if __name__ == '__main__':
 	trials = 1
