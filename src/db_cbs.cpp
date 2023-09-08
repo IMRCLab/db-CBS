@@ -380,6 +380,12 @@ int main(int argc, char* argv[]) {
         position_bounds.setLow(i, env_min[i].as<double>());
         position_bounds.setHigh(i, env_max[i].as<double>());
     }
+
+    fcl::AABBf workspace_aabb(
+        fcl::Vector3f(env_min[0].as<double>(),
+        env_min[1].as<double>(),-1),
+        fcl::Vector3f(env_max[0].as<double>(), env_max[1].as<double>(), 1));
+
     // std::vector<Agent> agents;
     std::vector<std::vector<double>> starts;
     std::vector<std::vector<double>> goals;
@@ -461,7 +467,7 @@ int main(int argc, char* argv[]) {
             LowLevelPlan<AStarNode*,ob::State*,oc::Control*> ll_result;
             std::vector<double> v_nanf(starts[i].size(), nanf(""));
             llplanner.search(robot_motions.at(robot_types[i]), v_nanf, goals[i], 
-                obstacles, robots[i], {}, /*reverse_search*/true, ll_result, nullptr, &heuristics[i]);
+                obstacles, workspace_aabb, robots[i], {}, /*reverse_search*/true, ll_result, nullptr, &heuristics[i]);
             std::cout << "computed heuristic with " << heuristics[i]->size() << " entries." << std::endl;
         }
     }
@@ -497,6 +503,7 @@ int main(int argc, char* argv[]) {
                 delta *= 0.99;
             }
             max_motions *= cfg["num_primitives_rate"].as<float>();
+            max_motions = std::min<size_t>(max_motions, 1e6);
         }
 
         std::cout << "Search with delta=" << delta << " and motions=" << max_motions << std::endl;
@@ -523,7 +530,7 @@ int main(int argc, char* argv[]) {
         for (const auto &robot_node : env["robots"]) {
             DBAstar<Constraint> llplanner(delta, alpha);
             bool success = llplanner.search(robot_motions.at(robot_types[i]), starts[i], goals[i], 
-                obstacles, robots[i], start.constraints[i], /*reverse_search*/false, start.solution[i], heuristics[i]);
+                obstacles, workspace_aabb, robots[i], start.constraints[i], /*reverse_search*/false, start.solution[i], heuristics[i]);
             if (!success) {
                 std::cout << "Couldn't find initial solution." << std::endl;
                 start_node_valid = false;
@@ -587,7 +594,7 @@ int main(int argc, char* argv[]) {
                 // run the low level planner
                 DBAstar<Constraint> llplanner(delta, alpha);
                 bool success = llplanner.search(robot_motions.at(robot_types[i]), starts[i], goals[i], 
-            		obstacles, robots[i], newNode.constraints[i], /*reverse_search*/false, newNode.solution[i], heuristics[i]); 
+            		obstacles, workspace_aabb, robots[i], newNode.constraints[i], /*reverse_search*/false, newNode.solution[i], heuristics[i]); 
 
                 if (success) {
                     newNode.cost += newNode.solution[i].cost;
