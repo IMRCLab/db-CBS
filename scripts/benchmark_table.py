@@ -4,7 +4,7 @@ import numpy as np
 import subprocess
 
 def write_table(rows, algs, results_path, trials, T):
-	with open(results_path / "table.tex", "w") as f:
+	with open(Path(results_path).with_suffix(".tex"), "w") as f:
 
 		f.write(r"\documentclass{standalone}")
 		f.write("\n")
@@ -143,7 +143,10 @@ def write_table(rows, algs, results_path, trials, T):
 		f.write(r"\end{document}")
 
 	# run pdflatex
-	subprocess.run(['pdflatex', 'table.tex'], check=True, cwd=results_path)
+	subprocess.run(['pdflatex', Path(results_path).with_suffix(".tex")], check=True, cwd=Path(results_path).parent)
+	# delete temp files
+	Path(results_path).with_suffix(".aux").unlink()
+	Path(results_path).with_suffix(".log").unlink()
 
 def main():
 	results_path = Path("../results")
