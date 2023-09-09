@@ -202,6 +202,7 @@ def main():
 	(Path("../results") / 'stats.pdf').unlink()
 
 	paper_tables.write_table1(trials, timelimit)
+	paper_tables.write_table2(trials, timelimit)
 
 if __name__ == '__main__':
 	main()
