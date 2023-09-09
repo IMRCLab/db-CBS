@@ -2,13 +2,20 @@ import yaml
 import numpy as np
 import tempfile
 import subprocess
+import copy
 
 def check_problem(cfg):
     with tempfile.TemporaryDirectory() as tmpdirname:
         print('created temporary directory', tmpdirname)
 
+        # inflate the obstacles so that robots aren't too close
+        cfg_copy = copy.deepcopy(cfg)
+        for o in cfg_copy["environment"]["obstacles"]:
+            o["size"][0] += 0.1
+            o["size"][1] += 0.1
+
         with open(tmpdirname + "/env.yaml", "w") as f:
-            yaml.dump(cfg, f)
+            yaml.dump(cfg_copy, f)
 
         result = {
             "result":
@@ -93,7 +100,7 @@ def gen_env(min, max, obs_density, N, filename):
                 start = np.random.uniform([min[0]+0.5, min[1]+0.5, 0, 0], [max[0]-0.5, max[1]-0.5, 0, 0])
                 goal = np.random.uniform([min[0]+0.5, min[1]+0.5, 0, 0], [max[0]-0.5, max[1]-0.5, 0, 0])
 
-            if np.linalg.norm(start - goal) < 1:
+            if np.linalg.norm(start - goal) < 2:
                 continue
 
             r["robots"].append({
@@ -111,7 +118,7 @@ def gen_env(min, max, obs_density, N, filename):
 
 def main():
     min = np.array([0,0])
-    max = np.array([5,5])
+    max = np.array([10,10])
     obs_density = 10 # percent
     K = 10 # num instances
 
