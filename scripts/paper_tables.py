@@ -6,6 +6,8 @@ def write_table1(trials, timelimit):
 	instances = [
 		"swap2_unicycle_sphere",
 		"alcove_unicycle_sphere",
+		"at_goal_unicycle_sphere",
+		"window4_unicycle_sphere",
 	]
 	algs = [
 		"sst",
