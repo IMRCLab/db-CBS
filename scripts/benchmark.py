@@ -155,7 +155,8 @@ def main():
 	]
 
 	#add random cases
-	for kind in ["unicycle_sphere"]:#, "hetero"]:
+	# for kind in ["unicycle_sphere"]:#, "hetero"]:
+	for kind in ["hetero"]:
 		for n in [2,4,8]:
 			for k in range(10):
 				instances.append("gen_p10_n{}_{}_{}".format(n,k, kind))
