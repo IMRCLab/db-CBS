@@ -33,9 +33,25 @@ def write_table2(trials, timelimit):
 
 	write_table(instances, algs, Path("../results"), "paper_table2.pdf", 10, timelimit, True)
 
+def write_table3(trials, timelimit):
+	instances = [
+		"gen_p10_n2_*_hetero",
+		"gen_p10_n4_*_hetero",
+		"gen_p10_n8_*_hetero",
+	]
+	algs = [
+		"sst",
+		"s2m2",
+		"k-cbs",
+		"db-cbs",
+	]
+
+	write_table(instances, algs, Path("../results"), "paper_table3.pdf", 10, timelimit, True)
+
 if __name__ == '__main__':
 	trials = 1
 	timelimit = 5*60
 	write_table1(trials, timelimit)
 	write_table2(trials, timelimit)
+	write_table3(trials, timelimit)
 

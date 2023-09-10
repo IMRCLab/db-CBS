@@ -163,9 +163,9 @@ def main():
 	# instances = ["gen_p10_n8_0_unicycle_sphere"]
 
 	algs = [
-		# "sst",
+		"sst",
 		"s2m2",
-		# "k-cbs",
+		"k-cbs",
 		"db-cbs",
 	]
 	trials = 1
@@ -205,6 +205,7 @@ def main():
 
 	paper_tables.write_table1(trials, timelimit)
 	paper_tables.write_table2(trials, timelimit)
+	paper_tables.write_table3(trials, timelimit)
 
 if __name__ == '__main__':
 	main()

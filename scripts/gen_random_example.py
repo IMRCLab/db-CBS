@@ -82,9 +82,9 @@ def gen_env(min, max, obs_density, N, filename):
 
     r["robots"] = []
     while len(r["robots"]) < N:
-        # type = str(np.random.choice(["unicycle_first_order_0", "car_first_order_with_1_trailers_0", "double_integrator_0"]))
+        type = str(np.random.choice(["unicycle_first_order_0", "car_first_order_with_1_trailers_0", "double_integrator_0"]))
         # type = str(np.random.choice(["unicycle_first_order_0", "double_integrator_0"]))
-        type = str(np.random.choice(["unicycle_first_order_0_sphere"]))
+        # type = str(np.random.choice(["unicycle_first_order_0_sphere"]))
 
         # first pick a type, then try to fit it
         while True:
@@ -118,14 +118,14 @@ def gen_env(min, max, obs_density, N, filename):
 
 def main():
     min = np.array([0,0])
-    max = np.array([10,10])
+    max = np.array([5,5])
     obs_density = 10 # percent
     K = 10 # num instances
 
     for N in [2, 4, 8]:
         for k in range(K):
-            filename = "../example/gen_p{}_n{}_{}_unicycle_sphere.yaml".format(obs_density, N, k)
-            # filename = "../example/gen_p{}_n{}_{}_hetero.yaml".format(obs_density, N, k)
+            # filename = "../example/gen_p{}_n{}_{}_unicycle_sphere.yaml".format(obs_density, N, k)
+            filename = "../example/gen_p{}_n{}_{}_hetero.yaml".format(obs_density, N, k)
             gen_env(min, max, obs_density / 100.0, N, filename)
 
 if __name__ == '__main__':
