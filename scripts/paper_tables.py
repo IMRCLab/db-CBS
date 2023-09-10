@@ -137,6 +137,7 @@ def write_table4(trials, timelimit):
 		f.write(r"\end{document}")
 
 	benchmark_table.gen_pdf(output_path)
+
 if __name__ == '__main__':
 	trials = 1
 	timelimit = 5*60
