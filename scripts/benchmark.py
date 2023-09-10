@@ -105,58 +105,58 @@ def execute_task(task: ExecutionTask):
 def main():
 	parallel = True
 	instances = [
-		# # 1 robot cases
-		# "swap1_unicycle",
-		# "swap1_unicycle_sphere",
-		# "swap1_trailer",
-		# "swap1_unicycle2",
-		# "swap1_double_integrator",
-		# # 2 robot cases
-		# "swap2_unicycle",
-		# "swap2_unicycle_sphere",
-		# "swap2_double_integrator",
-		# "swap2_trailer",
-		# "swap2_unicycle2",
-		# "swap2_hetero",
-		# "makespan_vs_soc_1",
-		# "makespan_vs_soc_0",
-		# "alcove_unicycle",
-		# "alcove_unicycle_sphere",
-		# "at_goal_unicycle",
-		# "at_goal_unicycle_sphere",
-		# # 3 robot cases
-		# "swap3_unicycle",
-		# "swap3_unicycle_sphere",
-		# # 4 robot cases
-		# "swap4_unicycle",
-		# "swap4_unicycle_sphere",
-		# "swap4_double_integrator",
+		# 1 robot cases
+		"swap1_unicycle",
+		"swap1_unicycle_sphere",
+		"swap1_trailer",
+		"swap1_unicycle2",
+		"swap1_double_integrator",
+		# 2 robot cases
+		"swap2_unicycle",
+		"swap2_unicycle_sphere",
+		"swap2_double_integrator",
+		"swap2_trailer",
+		"swap2_unicycle2",
+		"swap2_hetero",
+		"makespan_vs_soc_1",
+		"makespan_vs_soc_0",
+		"alcove_unicycle",
+		"alcove_unicycle_sphere",
+		"at_goal_unicycle",
+		"at_goal_unicycle_sphere",
+		# 3 robot cases
+		"swap3_unicycle",
+		"swap3_unicycle_sphere",
+		"swap3_double_integrator",
+		"swap3_trailer",
+		"swap3_unicycle2",
+		# 4 robot cases
+		"swap4_unicycle",
+		"swap4_unicycle_sphere",
+		"swap4_double_integrator",
+		"swap4_trailer",
+		"swap4_unicycle2",
 
-		# # special test cases
-		# "infeasible_0",
+		# special test cases
+		"infeasible_0",
 
 		# windows cases
 		# "window2_unicycle",
 		# "window3_unicycle",
-		# "window4_unicycle",
-		# "window4_unicycle2",
-		# "window4_double_integrator",
-		# "window4_trailer",
-		# "window4_unicycle_sphere",
+		"window4_unicycle",
+		"window4_unicycle2",
+		"window4_double_integrator",
+		"window4_trailer",
+		"window4_unicycle_sphere",
 
 		#demo
 		# "swap2_demo",
 		# "swap4_demo",
-		# "window4_demo",
-
-		
-
-
+		"window4_demo",
 	]
 
 	#add random cases
-	# for kind in ["unicycle_sphere"]:#, "hetero"]:
-	for kind in ["hetero"]:
+	for kind in ["unicycle_sphere", "hetero"]:
 		for n in [2,4,8]:
 			for k in range(10):
 				instances.append("gen_p10_n{}_{}_{}".format(n,k, kind))
@@ -207,6 +207,7 @@ def main():
 	paper_tables.write_table1(trials, timelimit)
 	paper_tables.write_table2(trials, timelimit)
 	paper_tables.write_table3(trials, timelimit)
+	paper_tables.write_table4(trials, timelimit)
 
 if __name__ == '__main__':
 	main()

@@ -100,6 +100,9 @@ public:
   std::shared_ptr<ShiftableDynamicAABBTreeCollisionManager<float>> collision_manager;
   std::vector<fcl::CollisionObjectf *> collision_objects;
 
+  // AABB for this motion to support efficient out-of-bounds detection
+  fcl::AABBf aabb;
+
   float cost;
 
   size_t idx;
@@ -239,6 +242,7 @@ void load_motions(
 
     for (size_t i = 0; i < msg_obj.via.array.size; ++i) {  
       Motion m;
+      m.aabb = fcl::AABB(fcl::Vector3f(0,0,0));
       // find the states
       auto item = msg_obj.via.array.ptr[i]; 
       if (item.type != msgpack::type::MAP) {
@@ -255,6 +259,7 @@ void load_motions(
             val.via.array.ptr[k].convert(reals);
             si->getStateSpace()->copyFromReals(state, reals);
             m.states.push_back(state);
+            m.aabb += robot->getTransform(state).translation();
             if (!si_no_pos_bound->satisfiesBounds(m.states.back())) {
               si_no_pos_bound->enforceBounds(m.states.back());
               ++num_invalid_states;
@@ -587,7 +592,7 @@ public:
     // std::cout << expands << " " << current->fScore << std::endl;
     ++expands;
     if (expands % 1000 == 0) {
-      std::cout << "expanded: " << expands << " open: " << open.size() << " nodes: " << T_n->size() << " f-score " << current->fScore << std::endl;
+      std::cout << "LL expanded: " << expands << " open: " << open.size() << " nodes: " << T_n->size() << " f-score " << current->fScore << std::endl;
     }
     
     // assert(current->fScore >= last_f_score);
@@ -669,7 +674,10 @@ public:
       // sanity check on the bounds
       double largest_dist = si->distance(startState, ll_result.trajectory[0]);
       for (size_t i = 1; i < ll_result.trajectory.size(); ++i) {
-        double dist = si->distance(ll_result.trajectory[i-1], ll_result.trajectory[i]);
+        // compute the next propagated state
+        robot->propagate(ll_result.trajectory[i-1], ll_result.actions[i-1], robot->dt(), tmpState);
+        // the distance is the difference between propagated next state and next state
+        double dist = si->distance(tmpState, ll_result.trajectory[i]);
         // std::cout << i << " " << dist << std::endl;
         largest_dist = std::max(largest_dist, dist);
       }
@@ -808,16 +816,15 @@ public:
       #else
 
       // make sure that the whole motion stays within the workspace
-      motion->collision_manager->shift(offset);
-      bool motionValid = workspace_aabb.contain(motion->collision_manager->getTree().getRoot()->bv);
+      fcl::AABB motion_aabb = fcl::translate(motion->aabb, offset);
+      bool motionValid = workspace_aabb.contain(motion_aabb);
       if (!motionValid) {
-        motion->collision_manager->shift(-offset);
-        // std::cout << "skip invalid motion" << std::endl;
         continue;
       }
 
       // check collision shape with static obstacles
       fcl::DefaultCollisionData<float> collision_data;
+      motion->collision_manager->shift(offset);
       motion->collision_manager->collide(bpcm_env.get(), &collision_data, fcl::DefaultCollisionFunction<float>);
       motionValid = !collision_data.result.isCollision();
       motion->collision_manager->shift(-offset);
