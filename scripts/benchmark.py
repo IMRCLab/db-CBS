@@ -127,10 +127,15 @@ def main():
 		# 3 robot cases
 		"swap3_unicycle",
 		"swap3_unicycle_sphere",
+		"swap3_double_integrator",
+		"swap3_trailer",
+		"swap3_unicycle2",
 		# 4 robot cases
 		"swap4_unicycle",
 		"swap4_unicycle_sphere",
 		"swap4_double_integrator",
+		"swap4_trailer",
+		"swap4_unicycle2",
 
 		# special test cases
 		"infeasible_0",
@@ -205,6 +210,7 @@ def main():
 	(Path("../results") / 'stats.pdf').unlink()
 
 	paper_tables.write_table1(trials, timelimit)
+	paper_tables.write_table4(trials, timelimit)
 
 if __name__ == '__main__':
 	main()

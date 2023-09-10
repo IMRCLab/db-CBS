@@ -1,0 +1,14 @@
+environment:
+  min: [0, 0]
+  max: [5, 5]
+  obstacles: []
+robots:
+  - type: car_first_order_with_1_trailers_0
+    start: [1,2.5,0,0] 
+    goal: [4,2.5,0,0] 
+  - type: car_first_order_with_1_trailers_0
+    start: [4,2.5,3.14,3.14] 
+    goal: [1,2.5,3.14,3.14] 
+  - type: car_first_order_with_1_trailers_0
+    start: [2.5,1,1.57,1.57]
+    goal: [2.5,4,1.57,1.57]
