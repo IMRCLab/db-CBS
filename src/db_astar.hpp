@@ -587,7 +587,7 @@ public:
     // std::cout << expands << " " << current->fScore << std::endl;
     ++expands;
     if (expands % 1000 == 0) {
-      std::cout << "expanded: " << expands << " open: " << open.size() << " nodes: " << T_n->size() << " f-score " << current->fScore << std::endl;
+      std::cout << "LL expanded: " << expands << " open: " << open.size() << " nodes: " << T_n->size() << " f-score " << current->fScore << std::endl;
     }
     
     // assert(current->fScore >= last_f_score);

@@ -532,7 +532,7 @@ int main(int argc, char* argv[]) {
             bool success = llplanner.search(robot_motions.at(robot_types[i]), starts[i], goals[i], 
                 obstacles, workspace_aabb, robots[i], start.constraints[i], /*reverse_search*/false, start.solution[i], heuristics[i]);
             if (!success) {
-                std::cout << "Couldn't find initial solution." << std::endl;
+                std::cout << "Couldn't find initial solution for robot " << i << "." << std::endl;
                 start_node_valid = false;
                 break;
             }
@@ -551,6 +551,7 @@ int main(int argc, char* argv[]) {
         (*handle).handle = handle;
         int id = 1;
 
+        size_t expands = 0;
         while (!open.empty()) {
             HighLevelNode P = open.top();
             open.pop();
@@ -574,6 +575,11 @@ int main(int argc, char* argv[]) {
                 }
 
                 break;
+            }
+
+            ++expands;
+            if (expands % 100 == 0) {
+                std::cout << "HL expanded: " << expands << " open: " << open.size() << " cost " << P.cost << " conflict at " << inter_robot_conflict.time << std::endl;
             }
         
             std::map<size_t, std::vector<Constraint>> constraints;
@@ -614,14 +620,3 @@ int main(int argc, char* argv[]) {
 
     return 0;
 }
-
-
-
-
-
-
-
-
-
-
-
