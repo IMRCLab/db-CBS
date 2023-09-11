@@ -69,6 +69,12 @@ def execute_task(task: ExecutionTask):
 	# find cfg
 	mycfg = cfg[task.alg]
 	mycfg = mycfg['default']
+	# wildcard matching
+	import fnmatch
+	for k, v in cfg[task.alg].items():
+		if fnmatch.fnmatch(Path(task.instance).name, k):
+			mycfg = {**mycfg, **v} # merge two dictionaries
+
 	if Path(task.instance).name in cfg[task.alg]:
 		mycfg_instance = cfg[task.alg][Path(task.instance).name]
 		mycfg = {**mycfg, **mycfg_instance} # merge two dictionaries
@@ -161,12 +167,12 @@ def main():
 			for k in range(10):
 				instances.append("gen_p10_n{}_{}_{}".format(n,k, kind))
 
-	# instances = ["gen_p10_n8_0_unicycle_sphere"]
+	# instances = ["window4_unicycle_sphere"]
 
 	algs = [
-		"sst",
-		"s2m2",
-		"k-cbs",
+		# "sst",
+		# "s2m2",
+		# "k-cbs",
 		"db-cbs",
 	]
 	trials = 1
