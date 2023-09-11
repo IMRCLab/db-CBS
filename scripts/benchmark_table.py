@@ -6,7 +6,11 @@ import subprocess
 def compute_results(instances, algs, results_path, trials, T, regret=False):
 	all_result = dict()
 
-	for instance in instances:
+	if isinstance(trials, int):
+		trials = [trials]*len(instances)
+	print(trials)
+
+	for instance, itrials in zip(instances, trials):
 		result = dict()
 		for alg in algs:
 			if not regret:
@@ -21,6 +25,7 @@ def compute_results(instances, algs, results_path, trials, T, regret=False):
 			initial_times = []
 			initial_time_regrets = []
 			initial_costs = []
+			initial_regrets = []
 			final_costs = []
 			final_regrets = []
 
@@ -54,6 +59,8 @@ def compute_results(instances, algs, results_path, trials, T, regret=False):
 							initial_costs.append(d["cost"])
 							if initial_time_base is not None:
 								initial_time_regrets.append((d["t"] - initial_time_base)/d["t"] * 100)
+								initial_regrets.append((d["cost"] - final_cost_base)/d["cost"] * 100)
+
 						last_cost = d["cost"]
 					if last_cost is not None:
 						final_costs.append(last_cost)
@@ -61,10 +68,11 @@ def compute_results(instances, algs, results_path, trials, T, regret=False):
 						final_regrets.append((last_cost - final_cost_base)/last_cost * 100)
 
 			result[alg] = {
-				'success': len(initial_times)/trials,
+				'success': len(initial_times)/itrials,
 				't^st_median': np.median(initial_times) if len(initial_times) > 0 else None,
 				'tr^st_median': np.median(initial_time_regrets) if len(initial_time_regrets) > 0 else None,
 				'J^st_median': np.median(initial_costs) if len(initial_costs) > 0 else None,
+				'Jr^st_median': np.median(initial_regrets) if len(initial_regrets) > 0 else None,
 				'J^f_median': np.median(final_costs) if len(initial_costs) > 0 else None,
 				'Jr^f_median': np.median(final_regrets) if len(final_regrets) > 0 else None,
 			}
@@ -78,7 +86,7 @@ def gen_pdf(output_path):
 	output_path.with_suffix(".aux").unlink()
 	output_path.with_suffix(".log").unlink()
 
-def print_and_highlight_best(out, key, result, alg, algs):
+def print_and_highlight_best(out, key, result, alg, algs, digits=1):
 	out += " & "
 	is_best = False
 	if result[alg][key] is not None:
@@ -87,12 +95,12 @@ def print_and_highlight_best(out, key, result, alg, algs):
 	if is_best:
 		out += r"\bfseries "
 	if result[alg][key] is not None:
-		out += "{:.1f}".format(result[alg][key])
+		out += ("{:."+str(digits)+"f}").format(result[alg][key])
 	else:
 		out += r"\textemdash"
 	return out
 
-def print_and_highlight_best_max(out, key, result, alg, algs):
+def print_and_highlight_best_max(out, key, result, alg, algs, digits=1):
 	out += " & "
 	is_best = False
 	if result[alg][key] is not None:
@@ -101,7 +109,7 @@ def print_and_highlight_best_max(out, key, result, alg, algs):
 	if is_best:
 		out += r"\bfseries "
 	if result[alg][key] is not None:
-		out += "{:.1f}".format(result[alg][key])
+		out += ("{:."+str(digits)+"f}").format(result[alg][key])
 	else:
 		out += r"\textemdash"
 	return out
