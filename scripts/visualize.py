@@ -207,6 +207,12 @@ class Animation:
         pos = state[:2]
         yaw = state[2]
         pos2 = pos + np.array([np.cos(yaw), np.sin(yaw)])*self.size[0]/2*0.8
+        if type == 'unicycle_second_order_0':
+          kwargs['hatch'] =r"//"
+          kwargs['edgecolor'] = kwargs["facecolor"]
+        else:
+          kwargs['hatch'] = None
+          kwargs['edgecolor'] = None
         patches.append(draw_box_patch(self.ax, pos, self.size, yaw, **kwargs))
         kwargs['facecolor'] = 'black'
         patches.append(draw_sphere_patch(self.ax, pos2, 0.03, 0, **kwargs))

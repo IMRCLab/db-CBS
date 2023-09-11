@@ -49,5 +49,5 @@ db-cbs:
     delta_0: 1.0
   '*_hetero':
     delta_0: 0.75
-  swap4_trailer:
-    delta_0: 1.0
+  '*_trailer':
+    delta_0: 0.9
