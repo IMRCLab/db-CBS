@@ -19,6 +19,6 @@ robots:
     start: [4,4,3.14] 
     goal: [1,4,3.14] 
   - type: unicycle_first_order_0_sphere
-    start: [4,1,3.14] 
-    goal: [1,1,3.14] 
+    start: [3,2.5,3.14] 
+    goal: [1,2.5,3.14] 
   

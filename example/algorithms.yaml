@@ -45,17 +45,9 @@ db-cbs:
     filter_duplicates: True
     heuristic1: "reverse-search"
     heuristic1_delta: 1.0
-  at_goal_unicycle_sphere:
+  '*_unicycle_sphere':
     delta_0: 1.0
-  alcove_unicycle_sphere:
-    delta_0: 1.0
-  swap4_unicycle_sphere:
-    delta_0: 1.0
-  window4_unicycle_sphere:
-    delta_0: 0.7
-  gen_p10_n4_0_unicycle_sphere:
-    delta_0: 1.0
-  gen_p10_n8_0_hetero:
-    delta_0: 1.0
+  '*_hetero':
+    delta_0: 0.75
   swap4_trailer:
     delta_0: 1.0
