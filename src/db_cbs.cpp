@@ -97,8 +97,6 @@ void export_solutions(const std::vector<LowLevelPlan<AStarNode*,ob::State*, oc::
     float cost = 0;
     for (auto& n : solution)
       cost += n.cost;
-    out << "delta: " << 0.5 << std::endl;
-    out << "epsilon: " << 1 << std::endl;
     out << "cost: " << cost << std::endl; 
     out << "result:" << std::endl;
     for (size_t i = 0; i < solution.size(); ++i){ 
@@ -205,8 +203,6 @@ void export_joint_solutions(const std::vector<LowLevelPlan<AStarNode*,ob::State*
       max_a = std::max(max_a, sol.actions.size());
     }
 
-    out << "delta: " << 0.5 << std::endl;
-    out << "epsilon: " << 1 << std::endl;
     out << "cost: " << cost << std::endl; 
     out << "result:" << std::endl;
     out << "  - states:" << std::endl;
