@@ -170,9 +170,9 @@ def main():
 	# instances = ["window4_unicycle_sphere"]
 
 	algs = [
-		# "sst",
-		# "s2m2",
-		# "k-cbs",
+		"sst",
+		"s2m2",
+		"k-cbs",
 		"db-cbs",
 	]
 	trials = 1
