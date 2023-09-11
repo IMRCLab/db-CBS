@@ -118,6 +118,7 @@ def write_table(rows, algs, results_path, fname, trials, T, regret=False):
 		f.write("\n")
 		f.write(r"\begin{document}")
 		f.write("\n")
+		f.write(r"% GENERATED - DO NOT EDIT - " + output_path.name + "\n")
 
 		# system_names = {
 		# 	'unicycle_first_order_0': "unicycle $1^{\mathrm{st}}$ order, v0",
@@ -149,7 +150,7 @@ def write_table(rows, algs, results_path, fname, trials, T, regret=False):
 				out += r" || r|r|r|r"
 			else:
 				out += r" || r|r|r"
-		out += "}"
+		out += "}\n"
 		f.write(out)
 		out = r"\# & Instance"
 		for k, alg in enumerate(algs):
@@ -205,7 +206,9 @@ def write_table(rows, algs, results_path, fname, trials, T, regret=False):
 			out += r"\\"
 			f.write(out)
 
+		f.write("\n")
 		f.write(r"\end{tabular}")
+		f.write("\n")
 		f.write(r"\end{document}")
 
 	# run pdflatex

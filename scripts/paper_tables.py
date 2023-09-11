@@ -42,7 +42,6 @@ def write_table3(trials, timelimit):
 	]
 	algs = [
 		"sst",
-		"s2m2",
 		"k-cbs",
 		"db-cbs",
 	]
@@ -90,6 +89,7 @@ def write_table4(trials, timelimit):
 		f.write("\n")
 		f.write(r"\begin{document}")
 		f.write("\n")
+		f.write(r"% GENERATED - DO NOT EDIT - " + output_path.name + "\n")
 
 		alg_names = {
 			"sst": "SST*",
@@ -98,20 +98,23 @@ def write_table4(trials, timelimit):
 		}
 
 		dyn_names = {
-			"unicycle": "unicycle",
+			"unicycle": "unicycle $1^{\mathrm{st}}$ order",
 			"double_integrator": "double integrator",
-			"trailer": "trailer",
-			"unicycle2": "unicycle2",
+			"trailer": "car with trailer",
+			"unicycle2": "unicycle $2^{\mathrm{nd}}$ order",
 		}
 
 		out = r"\begin{tabular}{c "
 		for d in dynamics:
 			out += r" || r|r|r"
-		out += "}"
+		out += "}\n"
 		f.write(out)
 		out = r"N "
 		for k, d in enumerate(dynamics):
-			out += r" & \multicolumn{3}{c||}{"
+			if k == len(dynamics) - 1:
+				out += r" & \multicolumn{3}{c}{"
+			else:
+				out += r" & \multicolumn{3}{c||}{"
 			out += dyn_names[d]
 			out += r"}"
 		out += r"\\"
@@ -124,16 +127,21 @@ def write_table4(trials, timelimit):
 				out += alg_names[alg]
 		out += r"\\"
 		f.write(out)
+		f.write(r"\hline")
 
 		for n in robots:
-			out = str(n)
+			out = ""
+			out += r"\hline"
+			out += str(n)
 			for d in dynamics:
 				for alg in algs:
 					out = benchmark_table.print_and_highlight_best(out, 't^st_median', r["swap{}_{}".format(n, d)], alg, algs)
 			out += r"\\"
 			f.write(out)
 
+		f.write("\n")
 		f.write(r"\end{tabular}")
+		f.write("\n")
 		f.write(r"\end{document}")
 
 	benchmark_table.gen_pdf(output_path)
