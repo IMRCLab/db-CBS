@@ -162,7 +162,9 @@ def main():
 	]
 
 	#add random cases
-	for kind in ["unicycle_sphere", "hetero"]:
+	instances = []
+	# for kind in ["unicycle_sphere", "hetero"]:
+	for kind in ["hetero"]:
 		for n in [2,4,8]:
 			for k in range(10):
 				instances.append("gen_p10_n{}_{}_{}".format(n,k, kind))
@@ -170,9 +172,9 @@ def main():
 	# instances = ["window4_unicycle_sphere"]
 
 	algs = [
-		"sst",
-		"s2m2",
-		"k-cbs",
+		# "sst",
+		# "s2m2",
+		# "k-cbs",
 		"db-cbs",
 	]
 	trials = 1

@@ -82,7 +82,7 @@ def gen_env(min, max, obs_density, N, filename):
 
     r["robots"] = []
     while len(r["robots"]) < N:
-        type = str(np.random.choice(["unicycle_first_order_0", "car_first_order_with_1_trailers_0", "double_integrator_0"]))
+        type = str(np.random.choice(["unicycle_first_order_0", "unicycle_second_order_0", "car_first_order_with_1_trailers_0", "double_integrator_0"]))
         # type = str(np.random.choice(["unicycle_first_order_0", "double_integrator_0"]))
         # type = str(np.random.choice(["unicycle_first_order_0_sphere"]))
 
@@ -91,6 +91,9 @@ def gen_env(min, max, obs_density, N, filename):
             if type == "unicycle_first_order_0" or "unicycle_first_order_0_sphere":
                 start = np.random.uniform([min[0]+0.5, min[1]+0.5, -np.pi], [max[0]-0.5, max[1]-0.5, np.pi])
                 goal = np.random.uniform([min[0]+0.5, min[1]+0.5, -np.pi], [max[0]-0.5, max[1]-0.5, np.pi])
+            if type == "unicycle_second_order_0":
+                start = np.random.uniform([min[0]+0.5, min[1]+0.5, -np.pi, 0, 0], [max[0]-0.5, max[1]-0.5, np.pi, 0, 0])
+                goal = np.random.uniform([min[0]+0.5, min[1]+0.5, -np.pi, 0, 0], [max[0]-0.5, max[1]-0.5, np.pi, 0, 0])
             if type == "car_first_order_with_1_trailers_0":
                 start = np.random.uniform([min[0]+0.5, min[1]+0.5, -np.pi, -0.4], [max[0]-0.5, max[1]-0.5, np.pi, 0.4])
                 goal = np.random.uniform([min[0]+0.5, min[1]+0.5, -np.pi, -0.4], [max[0]-0.5, max[1]-0.5, np.pi, 0.4])
