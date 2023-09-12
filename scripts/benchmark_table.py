@@ -76,6 +76,11 @@ def compute_results(instances, algs, results_path, trials, T, regret=False):
 				'J^f_median': np.median(final_costs) if len(initial_costs) > 0 else None,
 				'Jr^f_median': np.median(final_regrets) if len(final_regrets) > 0 else None,
 			}
+
+			if alg == "s2m2" and len(initial_times) == 0 and "unicycle_sphere" not in instance:
+				for key in result[alg].keys():
+					result[alg][key] = '*'
+
 		all_result[instance] = result
 	return all_result
 
@@ -89,12 +94,14 @@ def gen_pdf(output_path):
 def print_and_highlight_best(out, key, result, alg, algs, digits=1):
 	out += " & "
 	is_best = False
-	if result[alg][key] is not None:
+	if result[alg][key] is not None and result[alg][key] is not "*":
 		# we only look at one digit
-		is_best = np.array([round(result[alg][key],1) <= round(result[other][key],1) for other in algs if result[other][key] is not None]).all()
+		is_best = np.array([round(result[alg][key],1) <= round(result[other][key],1) for other in algs if result[other][key] is not None and result[other][key] is not "*"]).all()
 	if is_best:
 		out += r"\bfseries "
-	if result[alg][key] is not None:
+	if result[alg][key] == "*":
+		out += r"$\star$"
+	elif result[alg][key] is not None:
 		out += ("{:."+str(digits)+"f}").format(result[alg][key])
 	else:
 		out += r"\textemdash"
@@ -103,12 +110,14 @@ def print_and_highlight_best(out, key, result, alg, algs, digits=1):
 def print_and_highlight_best_max(out, key, result, alg, algs, digits=1):
 	out += " & "
 	is_best = False
-	if result[alg][key] is not None:
+	if result[alg][key] is not None and result[alg][key] is not "*":
 		# we only look at one digit
-		is_best = np.array([round(result[alg][key],1) >= round(result[other][key],1) for other in algs if result[other][key] is not None]).all()
+		is_best = np.array([round(result[alg][key],1) >= round(result[other][key],1) for other in algs if result[other][key] is not None and result[other][key] is not "*"]).all()
 	if is_best:
 		out += r"\bfseries "
-	if result[alg][key] is not None:
+	if result[alg][key] == "*":
+		out += r"$\star$"
+	elif result[alg][key] is not None:
 		out += ("{:."+str(digits)+"f}").format(result[alg][key])
 	else:
 		out += r"\textemdash"
