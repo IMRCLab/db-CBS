@@ -214,6 +214,7 @@ def main():
 	paper_tables.write_table2(trials, timelimit)
 	paper_tables.write_table3(trials, timelimit)
 	paper_tables.write_table4(trials, timelimit)
+	paper_tables.write_table5(trials, timelimit)
 
 if __name__ == '__main__':
 	main()
