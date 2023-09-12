@@ -46,7 +46,7 @@ db-cbs:
     heuristic1: "reverse-search"
     heuristic1_delta: 1.0
   '*_unicycle_sphere':
-    delta_0: 1.0
+    delta_0: 0.9
   '*_hetero':
     delta_0: 0.75
   '*_trailer':
