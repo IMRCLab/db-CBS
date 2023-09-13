@@ -92,16 +92,16 @@ def write_table4(trials, timelimit):
 		f.write(r"% GENERATED - DO NOT EDIT - " + output_path.name + "\n")
 
 		alg_names = {
-			"sst": "SST*",
-			"k-cbs": "k-CBS",
-			"db-cbs": "db-CBS",
+			"sst": "$\star$",
+			"k-cbs": "$\dagger$",
+			"db-cbs": "$\ddagger$",
 		}
 
 		dyn_names = {
-			"unicycle": "unicycle $1^{\mathrm{st}}$ order",
-			"double_integrator": "double integrator",
+			"unicycle": "unicycle $1^{\mathrm{st}}$",
+			"double_integrator": "double int.",
 			"trailer": "car with trailer",
-			"unicycle2": "unicycle $2^{\mathrm{nd}}$ order",
+			"unicycle2": "unicycle $2^{\mathrm{nd}}$",
 		}
 
 		out = r"\begin{tabular}{c "
@@ -190,7 +190,7 @@ def write_table5(trials, timelimit):
 		"sst": "SST*",
 		"s2m2": "S2M2",
 		"k-cbs": "k-CBS",
-		"db-cbs": "dbCBS",
+		"db-cbs": "db-CBS",
 	}
 
 	result = benchmark_table.compute_results(instances, algs, Path("../results"), trials, timelimit, True)
