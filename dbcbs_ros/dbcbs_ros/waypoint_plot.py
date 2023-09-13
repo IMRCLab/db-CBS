@@ -13,8 +13,8 @@ def plot_trajectory(yaml_path):
     file_name = yaml_path.stem
     
     # Number of states to consider for each trajectory
-    # number = 20
-    number = -1
+    number = 20
+    # number = -1
     
     # Create a new figure for each YAML file
     plt.figure()
@@ -56,7 +56,7 @@ def plot_trajectory(yaml_path):
     plt.show()
 
 def main():
-    yaml_path = Path(__file__).parent / "data/obstacle.yaml"
+    yaml_path = Path(__file__).parent / "data/13_09.yaml"
     plot_trajectory(yaml_path)
 
 if __name__ == "__main__":
