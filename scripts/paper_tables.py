@@ -165,7 +165,7 @@ def write_table5(trials, timelimit):
 		"gen_p10_n4_*_hetero",
 		"gen_p10_n8_*_hetero",
 	]
-	trials = [1]*4 + [10]*7
+	trials = [trials]*4 + [10*trials]*7
 	algs = [
 		"sst",
 		"s2m2",
