@@ -19,6 +19,7 @@ s2m2:
     obs_seg: 10
     radius: 0.4
     velocity: 0.45 # need to reduce this, since S2M is unaware of control limits
+    bloating: 0.12
     k: [2.0, 2.0, 4.0]
 k-cbs:
   default:
