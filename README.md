@@ -5,7 +5,7 @@
 The primitives are on the TUB cloud. The easiest is to use a symlink:
 
 ```
-ln -s /home/whoenig/tubCloud/projects/db-cbs/motions motions
+ln -s /home/${USER}/tubCloud/projects/db-cbs/motions motions
 ```
 
 Alternatively, download a copy
