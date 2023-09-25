@@ -36,7 +36,7 @@ jobs:
 
         curl http://robotpkg.openrobots.org/packages/debian/robotpkg.key | sudo apt-key add -
         sudo apt update
-        sudo apt install robotpkg-py310-crocoddyl -y
+        sudo apt install robotpkg-py310-crocoddyl coinor-libipopt-dev -y
 
     - name: Install latest ompl
       run: |
