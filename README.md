@@ -4,15 +4,12 @@ It solves this problem by combining the Multi-Agent Path Finding (MAPF) optimal 
 
 Paper on [arXiv](https://arxiv.org/abs/2309.16445) and [Video](https://youtu.be/1mglNQOmOLE) are available.  
 
-<div align="center">
-<video auto-play="true" loop="loop" muted="muted" plays-inline="true"
-src="result_dbcbs_opt.mp4" controls title="db-CBS with a heterogeneous team of 8 robots with random start and goal states." width="500" ></video>
-</div>
+
+<img align="center" src="https://github.com/IMRCLab/db-CBS/assets/70643834/d371f288-00ec-443b-a5bc-8a79425fde0b" width="70%"/>
+
 
 
 <!-- Robot dynamics such as unicycle, $2^{nd}$ order unicycle, double integrator, and car with trailer are implemented in this repository.  -->
-
-
 
 ## Get primitives
 
