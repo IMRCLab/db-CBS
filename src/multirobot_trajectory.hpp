@@ -145,27 +145,6 @@ struct MultiRobotTrajectory {
   };
 };
 
-// std::vector<int> auto_time_from_joint_trajectory(
-//     const dynobench::Trajectory &traj, const std::vector<int> &nxs,
-//     const Eigen::VectorXd &goal) {
-//
-//   double tolerance =
-//
-//   int nx_total = std::accumulate(nxs.begin(), nxs.end(), 0);
-//
-//   CHECK_EQ(nx_total , goal.size(), "");
-//   CHECK_EQ(nx_total , traj.states.at(0).size(), "");
-//
-//
-//   std::vector<Eigen::VectorXd> goals;
-//
-//   int start_index = 0 ;
-//   for (size_t i = 0; i < nxs.size(); i++) {
-//     goals.push_back(goal.segment(nxs.at(i), start_index)) ;
-//     start_index += nxs.at(i);
-//   }
-// }
-
 MultiRobotTrajectory from_joint_to_indiv_trajectory(
     const dynobench::Trajectory &traj, const std::vector<int> &nxs,
     const std::vector<int> nus, const std::vector<int> &times) {
@@ -223,33 +202,6 @@ bool execute_optimizationMultiRobot(const std::string &env_file,
   MultiRobotTrajectory init_guess_multi_robot;
   init_guess_multi_robot.read_from_yaml(initial_guess_file.c_str());
 
-
-  // {
-  //   std::ofstream out("/tmp/check1.yaml");
-  //   init_guess_multi_robot.to_yaml_format(out);
-  //
-  //   MultiRobotTrajectory init_guess_multi_robot2;
-  //   init_guess_multi_robot2.read_from_yaml("/tmp/check1.yaml");
-  //
-  //   dynobench::Trajectory init_guess =
-  //       init_guess_multi_robot.transform_to_joint_trajectory();
-  //   init_guess.to_yaml_format("/tmp/check2.yaml");
-  //
-  //   for (auto &n : init_guess_multi_robot.get_nxs())
-  //     std::cout << "nxs are " << n << std::endl;
-  //
-  //   for (auto &n : init_guess_multi_robot.get_nus())
-  //     std::cout << "nus are " << n << std::endl;
-  //
-  //   for (auto &n : init_guess_multi_robot.get_times())
-  //     std::cout << "times are " << n << std::endl;
-  //
-  //   MultiRobotTrajectory multi_again = from_joint_to_indiv_trajectory(
-  //       init_guess, init_guess_multi_robot.get_nxs(),
-  //       init_guess_multi_robot.get_nus(), init_guess_multi_robot.get_times());
-  //   multi_again.to_yaml_format("/tmp/check3.yaml");
-  // }
-
   std::vector<int> goal_times(init_guess_multi_robot.trajectories.size());
 
   std::transform(init_guess_multi_robot.trajectories.begin(),
@@ -297,9 +249,6 @@ bool execute_optimizationMultiRobot(const std::string &env_file,
     std::cout << "optimization infeasible" << std::endl;
     return false;
   }
-  // std::ofstream out(output_file);
-  // std::cout << "cost is " << result.cost << std::endl;
-  // result.write_yaml_joint(out);
 
   std::cout << "optimization done! " << std::endl;
   std::vector<int> index_time_goals;
@@ -321,13 +270,6 @@ bool execute_optimizationMultiRobot(const std::string &env_file,
 
   return true;
 
-  // now I need to transform the joint trajectory to individual trajectories
-
-  // I need to now how many steps are necessary to reach the goal for each
-  // robot.
-
-  // try to get a trajectory for each robot -- but I don't know
-  // when to stop each robot.
 }
 
 

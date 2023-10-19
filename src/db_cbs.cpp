@@ -277,7 +277,7 @@ void export_joint_solutions(const std::vector<LowLevelPlan<AStarNode*,ob::State*
     
 }
 
-#define dynobench_base "/home/akmarak-laptop/IMRC/db-CBS/dynoplan/dynobench/"
+#define dynobench_base "../dynoplan/dynobench/"
 
 void execute_optimization(std::string env_file, std::string initial_guess_file, std::string output_file)
 {
@@ -345,7 +345,7 @@ int main(int argc, char* argv[]) {
 
     // load config file
     YAML::Node cfg = YAML::LoadFile(cfgFile);
-    // float delta = cfg["delta"].as<float>();
+    // cfg = cfg["db-cbs"]["default"];
     float alpha = cfg["alpha"].as<float>();
     bool filter_duplicates = cfg["filter_duplicates"].as<bool>();
 
