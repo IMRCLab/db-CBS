@@ -1,6 +1,6 @@
 #include "dynobench/motions.hpp"
 #include <vector>
-#include <idbastar/optimization/ocp.hpp>
+#include <dynoplan/optimization/ocp.hpp>
 
 
 #define dynobench_base "/home/akmarak-laptop/IMRC/db-CBS/dynoplan/dynobench/"
@@ -151,8 +151,8 @@ MultiRobotTrajectory from_joint_to_indiv_trajectory(
 
   MultiRobotTrajectory multi_robot_traj;
 
-  CHECK_EQ(nxs.size(), nus.size(), "");
-  CHECK_EQ(nxs.size(), times.size(), "");
+  DYNO_CHECK_EQ(nxs.size(), nus.size(), "");
+  DYNO_CHECK_EQ(nxs.size(), times.size(), "");
 
   size_t num_robots = nxs.size();
 
