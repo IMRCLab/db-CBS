@@ -3,7 +3,7 @@
 #include <dynoplan/optimization/ocp.hpp>
 
 
-#define dynobench_base "/home/akmarak-laptop/IMRC/db-CBS/dynoplan/dynobench/"
+#define dynobench_base "../dynoplan/dynobench/"
 
 struct MultiRobotTrajectory {
 
