@@ -28,8 +28,8 @@
 #include <boost/heap/d_ary_heap.hpp>
 
 
-#include "multirobot_trajectory.hpp"
-
+// #include "multirobot_trajectory.hpp"
+#include "dynoplan/optimization/multirobot_optimization.hpp"
 
 namespace ob = ompl::base;
 namespace oc = ompl::control;
@@ -530,13 +530,13 @@ int main(int argc, char* argv[]) {
                 export_joint_solutions(P.solution, robots, jointFile);
 
                 std::cout << "warning: using new multirobot optimization" << std::endl;
-                const bool new_multirobot_optimization = true;
-
+            
+                const bool sum_robot_cost = true;
                 bool feasible = execute_optimizationMultiRobot(inputFile,
-                                        outputFile, 
-                                        optimizationFile,
-                                        new_multirobot_optimization);
-
+                                                    outputFile, 
+                                                    optimizationFile,
+                                                    dynobench_base,
+                                                    sum_robot_cost);
                 if (feasible) {
                     return 0;
                 }
