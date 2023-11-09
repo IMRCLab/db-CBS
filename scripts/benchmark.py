@@ -167,7 +167,7 @@ def main():
 			for k in range(10):
 				instances.append("gen_p10_n{}_{}_{}".format(n,k, kind))
 
-	instances = ["window4_unicycle_sphere"]
+	# instances = ["window4_unicycle_sphere"]
 
 	algs = [
 		"sst",
