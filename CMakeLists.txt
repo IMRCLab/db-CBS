@@ -138,6 +138,7 @@ target_include_directories(db_cbs PRIVATE
 
 target_link_libraries(db_cbs PRIVATE 
   idbastar::optimization
+  idbastar::tdbastar
   motion_planning_common
   ${Boost_LIBRARIES}
   ${YAML_LIBRARIES}
