@@ -21,7 +21,7 @@ public:
   {
     col_mng_parts_ = std::make_shared<fcl::DynamicAABBTreeCollisionManagerf>();
     for (size_t part = 0; part < robot_->numParts(); ++part){
-      auto robot_part = new fcl::CollisionObjectf(robot_->getCollisionGeometry(part)); //, robot_->getTransform(state));
+      auto robot_part = new fcl::CollisionObjectf(robot_->getCollisionGeometry(part)); 
       robot_part->computeAABB();
       part_objs_.push_back(robot_part);
     }
