@@ -9,16 +9,6 @@
 #include <boost/program_options.hpp>
 #include <boost/program_options.hpp>
 #include <boost/heap/d_ary_heap.hpp>
-// OMPL headers
-#include <ompl/base/spaces/RealVectorStateSpace.h>
-#include <ompl/base/OptimizationObjective.h>
-#include <ompl/control/SpaceInformation.h>
-#include <ompl/control/spaces/RealVectorControlSpace.h>
-#include <ompl/control/planners/rrt/RRT.h>
-#include <ompl/control/planners/sst/SST.h>
-#include <ompl/datastructures/NearestNeighbors.h>
-#include <ompl/datastructures/NearestNeighborsGNATNoThreadSafety.h>
-#include <ompl/datastructures/NearestNeighborsSqrtApprox.h>
 // DYNOPLAN
 #include <dynoplan/optimization/ocp.hpp>
 #include "dynoplan/optimization/multirobot_optimization.hpp"
@@ -33,108 +23,9 @@
 #include "fcl/broadphase/broadphase_collision_manager.h"
 #include <fcl/fcl.h>
 #include "planresult.hpp"
+#include "dbcbs_utils.hpp"
 
-
-namespace ob = ompl::base;
-namespace oc = ompl::control;
 using namespace dynoplan;
-
-// Conflicts 
-struct Conflict {
-  double time;
-  size_t robot_idx_i;
-  Eigen::VectorXd robot_state_i;
-  size_t robot_idx_j;
-  Eigen::VectorXd robot_state_j;
-};
-
-// Constraints
-struct Constraint {
-  double time;
-  Eigen::VectorXd constrained_state;
-};
-struct HighLevelNode {
-    std::vector<LowLevelPlan<dynobench::Trajectory>> solution;
-    // std::vector<std::vector<Constraint>> constraints;
-    float cost; 
-    int id;
-
-    typename boost::heap::d_ary_heap<HighLevelNode, boost::heap::arity<2>,
-                                     boost::heap::mutable_<true> >::handle_type
-        handle;
-    bool operator<(const HighLevelNode& n) const {
-      return cost > n.cost;
-    }
-};
-bool getEarliestConflict(
-    const std::vector<LowLevelPlan<dynobench::Trajectory>>& solution,
-    const std::vector<std::shared_ptr<dynobench::Model_robot>>& all_robots,
-    std::shared_ptr<fcl::BroadPhaseCollisionManagerd> col_mng_robots,
-    std::vector<fcl::CollisionObjectd*>& robot_objs,
-    Conflict& early_conflict)
-{
-    size_t max_t = 0;
-    for (const auto& sol : solution){
-      max_t = std::max(max_t, sol.trajectory.states.size() - 1);
-    }
-    Eigen::VectorXd node_state;
-    std::vector<Eigen::VectorXd> node_states;
-    
-    for (size_t t = 0; t <= max_t; ++t){
-        node_states.clear();
-        size_t robot_idx = 0;
-        size_t obj_idx = 0;
-        std::vector<fcl::Transform3d> ts_data;
-        for (auto &robot : all_robots){
-          if (t >= solution[robot_idx].trajectory.states.size()){
-              node_state = solution[robot_idx].trajectory.states.back();    
-          }
-          else {
-              node_state = solution[robot_idx].trajectory.states[t];
-          }
-          node_states.push_back(node_state);
-          std::vector<fcl::Transform3d> tmp_ts(1);
-          if (robot->name == "car_with_trailers") {
-            tmp_ts.resize(2);
-          }
-          robot->transformation_collision_geometries(node_state, tmp_ts);
-          ts_data.insert(ts_data.end(), tmp_ts.begin(), tmp_ts.end());
-          ++robot_idx;
-        }
-        for (size_t i = 0; i < ts_data.size(); i++) {
-          fcl::Transform3d &transform = ts_data[i];
-          robot_objs[obj_idx]->setTranslation(transform.translation());
-          robot_objs[obj_idx]->setRotation(transform.rotation());
-          robot_objs[obj_idx]->computeAABB();
-          ++obj_idx;
-        }
-        col_mng_robots->update(robot_objs);
-        fcl::DefaultCollisionData<double> collision_data;
-        col_mng_robots->collide(&collision_data, fcl::DefaultCollisionFunction<double>);
-        if (collision_data.result.isCollision()) {
-            assert(collision_data.result.numContacts() > 0);
-            const auto& contact = collision_data.result.getContact(0);
-
-            early_conflict.time = t * all_robots[0]->ref_dt;
-            early_conflict.robot_idx_i = (size_t)contact.o1->getUserData();
-            early_conflict.robot_idx_j = (size_t)contact.o2->getUserData();
-            assert(early_conflict.robot_idx_i != early_conflict.robot_idx_j);
-            early_conflict.robot_state_i = node_states[early_conflict.robot_idx_i];
-            early_conflict.robot_state_j = node_states[early_conflict.robot_idx_j];
-            std::cout << "CONFLICT at time " << t << " " << early_conflict.robot_idx_i << " " << early_conflict.robot_idx_j << std::endl;
-
-// #ifdef DBG_PRINTS
-//             std::cout << "CONFLICT at time " << t << " " << early_conflict.robot_idx_i << " " << early_conflict.robot_idx_j << std::endl;
-//             auto si_i = all_robots[early_conflict.robot_idx_i]->getSpaceInformation();
-//             si_i->printState(early_conflict.robot_state_i);
-//             auto si_j = all_robots[early_conflict.robot_idx_j]->getSpaceInformation();
-//             si_j->printState(early_conflict.robot_state_j);
-// #endif
-            return true;
-        } 
-    }
-    return false;
-}
 
 #define DYNOBENCH_BASE "../dynoplan/dynobench/"
 
@@ -156,6 +47,8 @@ int main(int argc, char* argv[]) {
     options_tdbastar.max_motions = 50;
     options_tdbastar.motionsFile = "../dynoplan/data/motion_primitives/unicycle1_v0/"
       "unicycle1_v0__ispso__2023_04_03__14_56_57.bin.less.bin";
+    options_tdbastar.search_timelimit = 10000000;
+    options_tdbastar.cost_delta_factor = 0;
     try {
       po::variables_map vm;
       po::store(po::parse_command_line(argc, argv, desc), vm);
@@ -221,16 +114,18 @@ int main(int argc, char* argv[]) {
         robots.push_back(robot);
     }
     // Initialize the root node
+    bool solved_db = false;
     HighLevelNode start;
     start.solution.resize(env["robots"].size());
+    start.constraints.resize(env["robots"].size());
     start.cost = 0;
     start.id = 0;
     // read motions, run tbastar
     create_dir_if_necessary(outputFile);
     std::ofstream out(outputFile);
-    out << "result:" << std::endl;
     std::vector<Motion> motions;
-    int robot_id = 0;
+    size_t robot_id = 0;
+    // Get the root node solutions
     for (const auto &robot : robots){
         collision_geometries.insert(collision_geometries.end(),
                                 robot->collision_geometries.begin(),
@@ -239,7 +134,13 @@ int main(int argc, char* argv[]) {
             options_tdbastar.motionsFile, *robot, motions, options_tdbastar.max_motions,
             options_tdbastar.cut_actions, false, options_tdbastar.check_cols);
         options_tdbastar.motions_ptr = &motions;
-        tdbastar(problem, options_tdbastar, start.solution[robot_id].trajectory, out_tdb, robot_id, out);
+        tdbastar(problem, options_tdbastar, start.solution[robot_id].trajectory, start.constraints[robot_id],
+                  out_tdb, robot_id);
+        if(!out_tdb.solved){
+          std::cout << "Couldn't find initial solution for robot " << robot_id << "." << std::endl;
+          break;
+        }
+        start.cost += start.solution[robot_id].trajectory.cost;
         robot_id++;
     }
     // allocate data for conflict checking, check for conflicts
@@ -254,10 +155,43 @@ int main(int argc, char* argv[]) {
           robot_objs.push_back(robot_obj);
     }
     col_mng_robots->registerObjects(robot_objs);
-    Conflict inter_robot_conflict;
-    getEarliestConflict(start.solution, robots, col_mng_robots, robot_objs, inter_robot_conflict);
-
-   
-   
-    return 0;
+    
+    // OPEN set
+    typename boost::heap::d_ary_heap<HighLevelNode, boost::heap::arity<2>,
+                                        boost::heap::mutable_<true> > open;
+    auto handle = open.push(start);
+    (*handle).handle = handle;
+    int id = 1;
+    while (!open.empty()){
+      HighLevelNode P = open.top();
+      open.pop();
+      Conflict inter_robot_conflict;
+      if (!getEarliestConflict(P.solution, robots, col_mng_robots, robot_objs, inter_robot_conflict)){
+          solved_db = true;
+          std::cout << "Final solution!" << std::endl; 
+          export_solutions(P.solution, robots.size(), &out);
+          break;
+      }
+      std::map<size_t, std::vector<Constraint>> constraints;
+      createConstraintsFromConflicts(inter_robot_conflict, constraints);
+      for (const auto& c : constraints){
+        HighLevelNode newNode = P;
+        size_t tmp_robot_id = c.first;
+        newNode.id = id;
+        std::cout << "Node ID is " << id << std::endl;
+        newNode.constraints[tmp_robot_id].insert(newNode.constraints[tmp_robot_id].end(), c.second.begin(), c.second.end());
+        newNode.cost -= newNode.solution[tmp_robot_id].trajectory.cost;
+        std::cout << "New node cost: " << newNode.cost << std::endl;
+        Out_info_tdb tmp_out_tdb; // should I keep the old one ?
+        tdbastar(problem, options_tdbastar, newNode.solution[tmp_robot_id].trajectory, newNode.constraints[tmp_robot_id], tmp_out_tdb, tmp_robot_id);
+        if (tmp_out_tdb.solved){
+            newNode.cost += newNode.solution[tmp_robot_id].trajectory.cost;
+            std::cout << "Updated New node cost: " << newNode.cost << std::endl;
+            auto handle = open.push(newNode);
+            (*handle).handle = handle;
+            id++;
+        }
+      }   
+  } // end of while loop
+  return 0;
 }

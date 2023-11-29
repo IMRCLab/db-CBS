@@ -123,19 +123,6 @@ target_include_directories(db_cbs PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/dynoplan/include
 )
 
-
-#target_link_libraries(main_check_multirobot PRIVATE 
-#  dynobench::dynobench
-#  idbastar::optimization
-#  motion_planning_common
-#  ${Boost_LIBRARIES}
-#  ${YAML_LIBRARIES}
-#  ompl
-#  ${FCL_LIBRARIES}
-#)
-
-
-
 target_link_libraries(db_cbs PRIVATE 
   idbastar::optimization
   idbastar::tdbastar
@@ -150,21 +137,3 @@ target_include_directories(main_ompl PUBLIC
   ${FCL_INCLUDE_DIRS}
 )
 
-
-# Python bindings
-# add_subdirectory(deps/pybind11 EXCLUDE_FROM_ALL)
-
-# pybind11_add_module(motionplanningutils
-#   src/python_bindings.cpp
-# )
-# target_include_directories(motionplanningutils
-#   PRIVATE ${CMAKE_BINARY_DIR}/deps/fcl/include
-#   PRIVATE ${CMAKE_SOURCE_DIR}/deps/fcl/include
-# )
-# target_link_libraries(motionplanningutils PRIVATE
-#   motion_planning_common
-#   ${Boost_LIBRARIES}
-#   ${YAML_LIBRARIES}
-#   ompl
-#   ${FCL_LIBRARIES}
-# )
