@@ -36,10 +36,12 @@ int main(int argc, char* argv[]) {
     po::options_description desc("Allowed options");
     std::string inputFile;
     std::string outputFile;
+    std::string optimizationFile;
     desc.add_options()
       ("help", "produce help message")
       ("input,i", po::value<std::string>(&inputFile)->required(), "input file (yaml)")
-      ("output,o", po::value<std::string>(&outputFile)->required(), "output file (yaml)");
+      ("output,o", po::value<std::string>(&outputFile)->required(), "output file (yaml)")
+      ("optimization,opt", po::value<std::string>(&optimizationFile)->required(), "optimization file (yaml)");
 
     // tdbstar options
     Options_tdbastar options_tdbastar;
@@ -170,6 +172,16 @@ int main(int argc, char* argv[]) {
           solved_db = true;
           std::cout << "Final solution!" << std::endl; 
           export_solutions(P.solution, robots.size(), &out);
+          bool sum_robot_cost = true;
+          bool feasible = execute_optimizationMultiRobot(inputFile,
+                                        outputFile, 
+                                        optimizationFile,
+                                        DYNOBENCH_BASE,
+                                        sum_robot_cost);
+
+          if (feasible) {
+            return 0;
+          }
           break;
       }
       std::map<size_t, std::vector<Constraint>> constraints;
