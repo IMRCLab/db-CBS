@@ -19,7 +19,6 @@
 
 #include "dynoplan/tdbastar/tdbastar.hpp"
 
-
 // Conflicts 
 struct Conflict {
   double time;
@@ -42,13 +41,13 @@ struct HighLevelNode {
       return cost > n.cost;
     }
 };
+
 bool getEarliestConflict(
     const std::vector<LowLevelPlan<dynobench::Trajectory>>& solution,
     const std::vector<std::shared_ptr<dynobench::Model_robot>>& all_robots,
     std::shared_ptr<fcl::BroadPhaseCollisionManagerd> col_mng_robots,
     std::vector<fcl::CollisionObjectd*>& robot_objs,
-    Conflict& early_conflict)
-{
+    Conflict& early_conflict){
     size_t max_t = 0;
     for (const auto& sol : solution){
       max_t = std::max(max_t, sol.trajectory.states.size() - 1);
@@ -74,7 +73,8 @@ bool getEarliestConflict(
             tmp_ts.resize(2);
           }
           robot->transformation_collision_geometries(node_state, tmp_ts);
-          ts_data.insert(ts_data.end(), tmp_ts.begin(), tmp_ts.end());
+          // ts_data.insert(ts_data.end(), tmp_ts.begin(), tmp_ts.end());
+          ts_data.insert(ts_data.end(), tmp_ts.back()); // just trailer
           ++robot_idx;
         }
         for (size_t i = 0; i < ts_data.size(); i++) {

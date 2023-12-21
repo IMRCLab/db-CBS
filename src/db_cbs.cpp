@@ -37,20 +37,15 @@ int main(int argc, char* argv[]) {
     std::string inputFile;
     std::string outputFile;
     std::string optimizationFile;
+    std::string cfgFile;
+
     desc.add_options()
       ("help", "produce help message")
       ("input,i", po::value<std::string>(&inputFile)->required(), "input file (yaml)")
       ("output,o", po::value<std::string>(&outputFile)->required(), "output file (yaml)")
-      ("optimization,opt", po::value<std::string>(&optimizationFile)->required(), "optimization file (yaml)");
+      ("optimization,opt", po::value<std::string>(&optimizationFile)->required(), "optimization file (yaml)")
+      ("cfg,c", po::value<std::string>(&cfgFile)->required(), "configuration file (yaml)");
 
-    // tdbstar options
-    Options_tdbastar options_tdbastar;
-    options_tdbastar.outFile = outputFile;
-    options_tdbastar.max_motions = 50;
-    options_tdbastar.motionsFile = "../dynoplan/data/motion_primitives/unicycle1_v0/"
-      "unicycle1_v0__ispso__2023_04_03__14_56_57.bin.less.bin";
-    options_tdbastar.search_timelimit = 10000000;
-    options_tdbastar.cost_delta_factor = 0;
     try {
       po::variables_map vm;
       po::store(po::parse_command_line(argc, argv, desc), vm);
@@ -65,6 +60,17 @@ int main(int argc, char* argv[]) {
       std::cerr << desc << std::endl;
       return 1;
     }
+    YAML::Node cfg = YAML::LoadFile(cfgFile);
+    cfg = cfg["db-cbs"]["default"];
+    // tdbstar options
+    Options_tdbastar options_tdbastar;
+    options_tdbastar.outFile = outputFile;
+    // options_tdbastar.max_motions = 50;
+    options_tdbastar.search_timelimit = 10000000;
+    options_tdbastar.cost_delta_factor = 0;
+    options_tdbastar.delta = cfg["delta_0"].as<float>();
+    options_tdbastar.fix_seed = 1;
+    options_tdbastar.max_motions = 500;
     // tdbastar problem
     dynobench::Problem problem(inputFile);
     std::string models_base_path = DYNOBENCH_BASE + std::string("models/");
@@ -110,10 +116,24 @@ int main(int argc, char* argv[]) {
 
     std::vector<std::shared_ptr<dynobench::Model_robot>> robots;
     std::vector<dynobench::Trajectory> ll_trajs;
+    std::string motionsFile;
+    std::vector<std::string> all_motionsFile;
     for (const auto &robotType : problem.robotTypes){
         std::shared_ptr<dynobench::Model_robot> robot = dynobench::robot_factory(
                 (problem.models_base_path + robotType + ".yaml").c_str(), problem.p_lb, problem.p_ub);
         robots.push_back(robot);
+        if (robotType == "unicycle1_v0" || robotType == "unicycle1_sphere_v0"){
+            motionsFile = "../dynoplan/data/motion_primitives/unicycle1_v0/unicycle1_v0.bin.less.bin";
+        } else if (robotType == "unicycle2_v0"){
+            motionsFile = "../dynoplan/data/motion_primitives/unicycle2_v0/unicycle2_v0.bin.im.bin.im.bin.msgpack";
+        } else if (robotType == "car1_v0"){
+            motionsFile = "../dynoplan/data/motion_primitives/car_with_trailers/car_with_trailers.bin.sp.bin.msgpack";
+        } else if (robotType == "integrator2_2d_v0"){
+            motionsFile = "../dynoplan/data/motion_primitives/integrator2_2d_v0/integrator2_2d_v0.bin.im.bin.sp.bin";
+        } else{
+            throw std::runtime_error("Unknown motion filename for this robottype!");
+        }
+        all_motionsFile.push_back(motionsFile);
     }
     // Initialize the root node
     bool solved_db = false;
@@ -125,17 +145,24 @@ int main(int argc, char* argv[]) {
     // read motions, run tbastar
     create_dir_if_necessary(outputFile);
     std::ofstream out(outputFile);
-    std::vector<Motion> motions;
+    std::map<std::string, std::vector<Motion>> robot_motions;
     size_t robot_id = 0;
     // Get the root node solutions
     for (const auto &robot : robots){
+        // collision_geometries.insert(collision_geometries.end(),
+                                // robot->collision_geometries.begin(),
+                                // robot->collision_geometries.end());
         collision_geometries.insert(collision_geometries.end(),
-                                robot->collision_geometries.begin(),
-                                robot->collision_geometries.end());
-        load_motion_primitives_new(
-            options_tdbastar.motionsFile, *robot, motions, options_tdbastar.max_motions,
-            options_tdbastar.cut_actions, false, options_tdbastar.check_cols);
-        options_tdbastar.motions_ptr = &motions;
+                                robot->collision_geometries.back());
+
+        if (robot_motions.find(problem.robotTypes[robot_id]) == robot_motions.end()){
+            options_tdbastar.motionsFile = all_motionsFile[robot_id];
+            load_motion_primitives_new(options_tdbastar.motionsFile, *robot, robot_motions[problem.robotTypes[robot_id]], 
+                                      options_tdbastar.max_motions,
+                                      options_tdbastar.cut_actions, false, options_tdbastar.check_cols);
+            options_tdbastar.motions_ptr = &robot_motions[problem.robotTypes[robot_id]]; 
+        }
+        
         tdbastar(problem, options_tdbastar, start.solution[robot_id].trajectory, start.constraints[robot_id],
                   out_tdb, robot_id);
         if(!out_tdb.solved){
@@ -178,7 +205,6 @@ int main(int argc, char* argv[]) {
                                         optimizationFile,
                                         DYNOBENCH_BASE,
                                         sum_robot_cost);
-
           if (feasible) {
             return 0;
           }
@@ -195,6 +221,7 @@ int main(int argc, char* argv[]) {
         newNode.cost -= newNode.solution[tmp_robot_id].trajectory.cost;
         std::cout << "New node cost: " << newNode.cost << std::endl;
         Out_info_tdb tmp_out_tdb; // should I keep the old one ?
+        options_tdbastar.motions_ptr = &robot_motions[problem.robotTypes[tmp_robot_id]]; 
         tdbastar(problem, options_tdbastar, newNode.solution[tmp_robot_id].trajectory, newNode.constraints[tmp_robot_id], tmp_out_tdb, tmp_robot_id);
         if (tmp_out_tdb.solved){
             newNode.cost += newNode.solution[tmp_robot_id].trajectory.cost;
