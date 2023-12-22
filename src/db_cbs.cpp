@@ -38,13 +38,15 @@ int main(int argc, char* argv[]) {
     std::string outputFile;
     std::string optimizationFile;
     std::string cfgFile;
+    double timeLimit;
 
     desc.add_options()
       ("help", "produce help message")
       ("input,i", po::value<std::string>(&inputFile)->required(), "input file (yaml)")
       ("output,o", po::value<std::string>(&outputFile)->required(), "output file (yaml)")
       ("optimization,opt", po::value<std::string>(&optimizationFile)->required(), "optimization file (yaml)")
-      ("cfg,c", po::value<std::string>(&cfgFile)->required(), "configuration file (yaml)");
+      ("cfg,c", po::value<std::string>(&cfgFile)->required(), "configuration file (yaml)")
+      ("time_limit,t", po::value<double>(&timeLimit)->required(), "time limit for search");
 
     try {
       po::variables_map vm;
@@ -65,12 +67,11 @@ int main(int argc, char* argv[]) {
     // tdbstar options
     Options_tdbastar options_tdbastar;
     options_tdbastar.outFile = outputFile;
-    // options_tdbastar.max_motions = 50;
-    options_tdbastar.search_timelimit = 10000000;
+    options_tdbastar.search_timelimit = timeLimit;
     options_tdbastar.cost_delta_factor = 0;
     options_tdbastar.delta = cfg["delta_0"].as<float>();
     options_tdbastar.fix_seed = 1;
-    options_tdbastar.max_motions = 500;
+    options_tdbastar.max_motions = cfg["num_primitives_0"].as<size_t>();
     // tdbastar problem
     dynobench::Problem problem(inputFile);
     std::string models_base_path = DYNOBENCH_BASE + std::string("models/");
@@ -149,11 +150,8 @@ int main(int argc, char* argv[]) {
     size_t robot_id = 0;
     // Get the root node solutions
     for (const auto &robot : robots){
-        // collision_geometries.insert(collision_geometries.end(),
-                                // robot->collision_geometries.begin(),
-                                // robot->collision_geometries.end());
         collision_geometries.insert(collision_geometries.end(),
-                                robot->collision_geometries.back());
+                                robot->collision_geometries.back()); 
 
         if (robot_motions.find(problem.robotTypes[robot_id]) == robot_motions.end()){
             options_tdbastar.motionsFile = all_motionsFile[robot_id];

@@ -28,17 +28,16 @@ def run_dbcbs(filename_env, folder, timelimit, cfg):
             stats.write("stats:\n")
             
             filename_result_dbcbs = Path(folder) / "result_dbcbs.yaml"
-            filename_result_dbcbs_joint = Path(folder) / "dbcbs_joint.yaml"
             filename_result_dbcbs_opt = Path(folder) / "result_dbcbs_opt.yaml"
             t_dbcbs_start = time.time()
 
             cmd = ["./db_cbs", 
                 "-i", filename_env,
                 "-o", filename_result_dbcbs,
-                "--joint", filename_result_dbcbs_joint,
                 "--opt", filename_result_dbcbs_opt,
-                "-c", str(filename_cfg)]
-            print(subprocess.list2cmdline(cmd))
+                "-c", str(filename_cfg),
+                "-t", timelimit]
+            # print(subprocess.list2cmdline(cmd))
             try:
                 with open("{}/log.txt".format(folder), 'w') as logfile:
                     result = subprocess.run(cmd, timeout=timelimit, stdout=logfile, stderr=logfile)
