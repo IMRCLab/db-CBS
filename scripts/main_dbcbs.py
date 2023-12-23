@@ -35,9 +35,9 @@ def run_dbcbs(filename_env, folder, timelimit, cfg):
                 "-i", filename_env,
                 "-o", filename_result_dbcbs,
                 "--opt", filename_result_dbcbs_opt,
-                "-c", str(filename_cfg),
-                "-t", timelimit]
-            # print(subprocess.list2cmdline(cmd))
+                "--cfg", str(filename_cfg),
+                "-t", "10000"]
+            print(subprocess.list2cmdline(cmd))
             try:
                 with open("{}/log.txt".format(folder), 'w') as logfile:
                     result = subprocess.run(cmd, timeout=timelimit, stdout=logfile, stderr=logfile)
