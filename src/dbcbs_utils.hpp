@@ -73,8 +73,8 @@ bool getEarliestConflict(
             tmp_ts.resize(2);
           }
           robot->transformation_collision_geometries(node_state, tmp_ts);
-          // ts_data.insert(ts_data.end(), tmp_ts.begin(), tmp_ts.end());
-          ts_data.insert(ts_data.end(), tmp_ts.back()); // just trailer
+          ts_data.insert(ts_data.end(), tmp_ts.begin(), tmp_ts.end());
+          // ts_data.insert(ts_data.end(), tmp_ts.back()); // just trailer
           ++robot_idx;
         }
         for (size_t i = 0; i < ts_data.size(); i++) {

@@ -148,11 +148,20 @@ int main(int argc, char* argv[]) {
     std::ofstream out(outputFile);
     std::map<std::string, std::vector<Motion>> robot_motions;
     size_t robot_id = 0;
+    // allocate data for conflict checking, check for conflicts
+    std::vector<fcl::CollisionObjectd*> robot_objs;
+    std::shared_ptr<fcl::BroadPhaseCollisionManagerd> col_mng_robots;
+    col_mng_robots = std::make_shared<fcl::DynamicAABBTreeCollisionManagerd>();
+    size_t col_geom_id = 0;
+    col_mng_robots->setup();
     // Get the root node solutions
     for (const auto &robot : robots){
-        collision_geometries.insert(collision_geometries.end(),
-                                robot->collision_geometries.back()); 
-
+        collision_geometries.insert(collision_geometries.end(), 
+                              robot->collision_geometries.begin(), robot->collision_geometries.end());
+                                // robot->collision_geometries.back()); 
+        auto robot_obj = new fcl::CollisionObject(collision_geometries[col_geom_id]);
+        collision_geometries[col_geom_id]->setUserData((void*)robot_id);
+        robot_objs.push_back(robot_obj);
         if (robot_motions.find(problem.robotTypes[robot_id]) == robot_motions.end()){
             options_tdbastar.motionsFile = all_motionsFile[robot_id];
             load_motion_primitives_new(options_tdbastar.motionsFile, *robot, robot_motions[problem.robotTypes[robot_id]], 
@@ -160,7 +169,12 @@ int main(int argc, char* argv[]) {
                                       options_tdbastar.cut_actions, false, options_tdbastar.check_cols);
             options_tdbastar.motions_ptr = &robot_motions[problem.robotTypes[robot_id]]; 
         }
-        
+        if (robot->name == "car_with_trailers") {
+          col_geom_id++;
+          auto robot_obj = new fcl::CollisionObject(collision_geometries[col_geom_id]);
+          collision_geometries[col_geom_id]->setUserData((void*)robot_id); // for the trailer
+          robot_objs.push_back(robot_obj);
+        }
         tdbastar(problem, options_tdbastar, start.solution[robot_id].trajectory, start.constraints[robot_id],
                   out_tdb, robot_id);
         if(!out_tdb.solved){
@@ -169,20 +183,9 @@ int main(int argc, char* argv[]) {
         }
         start.cost += start.solution[robot_id].trajectory.cost;
         robot_id++;
-    }
-    // allocate data for conflict checking, check for conflicts
-    std::vector<fcl::CollisionObjectd*> robot_objs;
-    std::shared_ptr<fcl::BroadPhaseCollisionManagerd> col_mng_robots;
-    col_mng_robots = std::make_shared<fcl::DynamicAABBTreeCollisionManagerd>();
-    col_mng_robots->setup();
-    for (size_t i = 0; i < collision_geometries.size(); i++){
-          size_t userData = i;
-          auto robot_obj = new fcl::CollisionObject(collision_geometries[i]);
-          collision_geometries[i]->setUserData((void*)userData);
-          robot_objs.push_back(robot_obj);
+        col_geom_id++;
     }
     col_mng_robots->registerObjects(robot_objs);
-    
     // OPEN set
     typename boost::heap::d_ary_heap<HighLevelNode, boost::heap::arity<2>,
                                         boost::heap::mutable_<true> > open;
