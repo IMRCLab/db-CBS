@@ -120,7 +120,7 @@ robots:
   - 4.5809486114287346
   - 3.1930493931083648
   - -1.7759516917790812
-  type: unicycle_first_order_0_sphere
+  type: unicycle1_sphere_v0
 - goal:
   - 2.582208053782268
   - 6.127494237125056
@@ -129,7 +129,7 @@ robots:
   - 0.5528366216081602
   - 8.412207855830584
   - -2.536614176816945
-  type: unicycle_first_order_0_sphere
+  type: unicycle1_sphere_v0
 - goal:
   - 1.4824088412938161
   - 2.1774802437700234
@@ -138,7 +138,7 @@ robots:
   - 0.6934629067950641
   - 0.9163224294050837
   - 0.5150177987993669
-  type: unicycle_first_order_0_sphere
+  type: unicycle1_sphere_v0
 - goal:
   - 4.322569249329924
   - 5.030869273426852
@@ -147,7 +147,7 @@ robots:
   - 3.0733814145462315
   - 0.7544180124712385
   - -2.6083400963230896
-  type: unicycle_first_order_0_sphere
+  type: unicycle1_sphere_v0
 - goal:
   - 3.368775813918857
   - 6.913018125778132
@@ -156,7 +156,7 @@ robots:
   - 0.7013550629757508
   - 6.4115464922563135
   - 3.0159180581672524
-  type: unicycle_first_order_0_sphere
+  type: unicycle1_sphere_v0
 - goal:
   - 7.1452021903865255
   - 8.355980206071209
@@ -165,7 +165,7 @@ robots:
   - 7.595283477376574
   - 5.4062534113107175
   - -0.7482164855960467
-  type: unicycle_first_order_0_sphere
+  type: unicycle1_sphere_v0
 - goal:
   - 5.459058695891685
   - 4.9661995848931175
@@ -174,7 +174,7 @@ robots:
   - 1.1015955940254791
   - 5.5703087376540275
   - -0.1850140594779912
-  type: unicycle_first_order_0_sphere
+  type: unicycle1_sphere_v0
 - goal:
   - 6.451096972828129
   - 5.07686088514938
@@ -183,4 +183,4 @@ robots:
   - 7.616779670516973
   - 3.922125328666115
   - -1.726026769046244
-  type: unicycle_first_order_0_sphere
+  type: unicycle1_sphere_v0

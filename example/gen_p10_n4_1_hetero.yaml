@@ -45,7 +45,7 @@ robots:
   - 2.6725034797028275
   - 0.0
   - 0.0
-  type: double_integrator_0
+  type: integrator2_2d_v0
 - goal:
   - 3.020898291384628
   - 1.1106785350334247
@@ -56,7 +56,7 @@ robots:
   - 4.229415318339505
   - 0.0
   - 0.0
-  type: double_integrator_0
+  type: integrator2_2d_v0
 - goal:
   - 2.1385937298705584
   - 4.050955649018531
@@ -67,7 +67,7 @@ robots:
   - 1.7798579353275303
   - -1.4153433107751696
   - -1.745110524574173
-  type: car_first_order_with_1_trailers_0
+  type: car1_v0
 - goal:
   - 2.8778449558374684
   - 3.3637043410797385
@@ -78,4 +78,4 @@ robots:
   - 1.1392868077531424
   - -2.8455310244697603
   - -2.6754293929268984
-  type: car_first_order_with_1_trailers_0
+  type: car1_v0

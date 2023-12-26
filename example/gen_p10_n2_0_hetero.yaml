@@ -50,7 +50,7 @@ robots:
   - 1.7095233812588484
   - 2.2832270717144176
   - 1.9482447894005448
-  type: unicycle_first_order_0
+  type: unicycle1_v0
 - goal:
   - 4.276218755473915
   - 2.515329134381654
@@ -61,4 +61,4 @@ robots:
   - 3.9036350526340025
   - 0.0
   - 0.0
-  type: double_integrator_0
+  type: integrator2_2d_v0

@@ -45,7 +45,7 @@ robots:
   - 3.6809006340232524
   - 0.0
   - 0.0
-  type: double_integrator_0
+  type: integrator2_2d_v0
 - goal:
   - 3.1003548273505785
   - 1.6246989306394855
@@ -54,4 +54,4 @@ robots:
   - 2.3467923643003212
   - 3.5155373639442833
   - -2.912474470953458
-  type: unicycle_first_order_0
+  type: unicycle1_v0

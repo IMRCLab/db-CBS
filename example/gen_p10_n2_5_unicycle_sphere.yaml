@@ -78,7 +78,7 @@ robots:
   - 8.78799302983002
   - 3.199793907140627
   - -0.1619503273081313
-  type: unicycle_first_order_0_sphere
+  type: unicycle1_sphere_v0
 - goal:
   - 7.515624141650722
   - 3.3988554698855484
@@ -87,4 +87,4 @@ robots:
   - 3.691015399897267
   - 2.167209391407011
   - 1.8169143476354996
-  type: unicycle_first_order_0_sphere
+  type: unicycle1_sphere_v0

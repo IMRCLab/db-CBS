@@ -5,10 +5,10 @@ environment:
 
 # 2 robots with the same goal position
 robots:
-  - type: unicycle_first_order_0_sphere
+  - type: unicycle1_v0
     start: [1,2.5,0]
     goal: [2.5,2.5,0]
-  - type: unicycle_first_order_0_sphere
+  - type: unicycle1_v0
     start: [4,2.5,3.14]
     goal: [2.5,2.5,3.14]
  

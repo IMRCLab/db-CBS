@@ -52,7 +52,7 @@ robots:
   - 2.56749194044098
   - 2.3815965506956536
   - 2.3506748944500715
-  type: car_first_order_with_1_trailers_0
+  type: car1_v0
 - goal:
   - 0.6899039852838671
   - 1.0671353469792129
@@ -63,7 +63,7 @@ robots:
   - 2.4233519532898034
   - 0.0
   - 0.0
-  type: double_integrator_0
+  type: integrator2_2d_v0
 - goal:
   - 1.1149514358260735
   - 2.885825316753763
@@ -74,7 +74,7 @@ robots:
   - 2.011555067885766
   - 2.8764235306978616
   - 2.9238739888009917
-  type: car_first_order_with_1_trailers_0
+  type: car1_v0
 - goal:
   - 3.246923650064512
   - 4.07980743731963
@@ -85,7 +85,7 @@ robots:
   - 0.6245777772213774
   - 0.0
   - 0.0
-  type: double_integrator_0
+  type: integrator2_2d_v0
 - goal:
   - 0.7009180134949533
   - 0.655845165424255
@@ -96,7 +96,7 @@ robots:
   - 3.753026107948073
   - -2.2643679727267667
   - -2.55351998697655
-  type: car_first_order_with_1_trailers_0
+  type: car1_v0
 - goal:
   - 1.5022853844810506
   - 1.2140057648267266
@@ -107,7 +107,7 @@ robots:
   - 3.981347333480301
   - 0.0
   - 0.0
-  type: double_integrator_0
+  type: integrator2_2d_v0
 - goal:
   - 2.2023769756674936
   - 3.84379399386462
@@ -118,7 +118,7 @@ robots:
   - 1.6583644444834076
   - 0.0
   - 0.0
-  type: double_integrator_0
+  type: integrator2_2d_v0
 - goal:
   - 1.00865805510842
   - 3.819213493801476
@@ -127,4 +127,4 @@ robots:
   - 3.4625607686423474
   - 1.5823574868780113
   - 2.22415503918622
-  type: unicycle_first_order_0
+  type: unicycle1_v0

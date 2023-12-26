@@ -38,7 +38,7 @@ robots:
   - 1.520979245336202
   - 0.0
   - 0.0
-  type: double_integrator_0
+  type: integrator2_2d_v0
 - goal:
   - 4.302676591225463
   - 0.6347165427131203
@@ -49,4 +49,4 @@ robots:
   - 2.3571065799699364
   - -0.2822181935672514
   - -0.37714606040950527
-  type: car_first_order_with_1_trailers_0
+  type: car1_v0
