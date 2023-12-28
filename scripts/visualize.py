@@ -54,7 +54,8 @@ class Animation:
       else:
         print("ERROR: unknown obstacle type")
 
-    cmap = matplotlib.cm.get_cmap('jet')
+    # cmap = matplotlib.cm.get_cmap('jet')
+    cmap = matplotlib.colormaps.get_cmap('jet')
 
     self.colors = cmap(np.linspace(0, 1, len(env["robots"]), True))
 
