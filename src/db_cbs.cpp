@@ -64,6 +64,8 @@ int main(int argc, char* argv[]) {
     }
     YAML::Node cfg = YAML::LoadFile(cfgFile);
     //cfg = cfg["db-cbs"]["default"];
+    float alpha = cfg["alpha"].as<float>();
+    bool filter_duplicates = cfg["filter_duplicates"].as<bool>();
     // tdbstar options
     Options_tdbastar options_tdbastar;
     options_tdbastar.outFile = outputFile;
@@ -136,102 +138,138 @@ int main(int argc, char* argv[]) {
         }
         all_motionsFile.push_back(motionsFile);
     }
-    // Initialize the root node
-    bool solved_db = false;
-    HighLevelNode start;
-    start.solution.resize(env["robots"].size());
-    start.constraints.resize(env["robots"].size());
-    start.cost = 0;
-    start.id = 0;
-    // read motions, run tbastar
-    create_dir_if_necessary(outputFile);
-    std::ofstream out(outputFile);
     std::map<std::string, std::vector<Motion>> robot_motions;
-    size_t robot_id = 0;
     // allocate data for conflict checking, check for conflicts
     std::vector<fcl::CollisionObjectd*> robot_objs;
     std::shared_ptr<fcl::BroadPhaseCollisionManagerd> col_mng_robots;
     col_mng_robots = std::make_shared<fcl::DynamicAABBTreeCollisionManagerd>();
     size_t col_geom_id = 0;
     col_mng_robots->setup();
-    // Get the root node solutions
+    size_t i = 0;
     for (const auto &robot : robots){
         collision_geometries.insert(collision_geometries.end(), 
                               robot->collision_geometries.begin(), robot->collision_geometries.end());
-                                // robot->collision_geometries.back()); 
         auto robot_obj = new fcl::CollisionObject(collision_geometries[col_geom_id]);
-        collision_geometries[col_geom_id]->setUserData((void*)robot_id);
+        collision_geometries[col_geom_id]->setUserData((void*)i);
         robot_objs.push_back(robot_obj);
-        if (robot_motions.find(problem.robotTypes[robot_id]) == robot_motions.end()){
-            options_tdbastar.motionsFile = all_motionsFile[robot_id];
-            load_motion_primitives_new(options_tdbastar.motionsFile, *robot, robot_motions[problem.robotTypes[robot_id]], 
-                                      options_tdbastar.max_motions,
-                                      options_tdbastar.cut_actions, false, options_tdbastar.check_cols);
-            options_tdbastar.motions_ptr = &robot_motions[problem.robotTypes[robot_id]]; 
+        if (robot_motions.find(problem.robotTypes[i]) == robot_motions.end()){
+            options_tdbastar.motionsFile = all_motionsFile[i];
+            load_motion_primitives_new(options_tdbastar.motionsFile, *robot, robot_motions[problem.robotTypes[i]], 
+                                       options_tdbastar.max_motions,
+                                       options_tdbastar.cut_actions, false, options_tdbastar.check_cols);
         }
         if (robot->name == "car_with_trailers") {
           col_geom_id++;
           auto robot_obj = new fcl::CollisionObject(collision_geometries[col_geom_id]);
-          collision_geometries[col_geom_id]->setUserData((void*)robot_id); // for the trailer
+          collision_geometries[col_geom_id]->setUserData((void*)i); // for the trailer
           robot_objs.push_back(robot_obj);
         }
+        
+        col_geom_id++;
+        i++;
+    }
+    col_mng_robots->registerObjects(robot_objs);
+    bool solved_db = false;
+    // main loop
+    for (size_t iteration = 0; ; ++iteration) {
+      if (iteration > 0) {
+        if (solved_db) {
+            options_tdbastar.delta *= cfg["delta_0"].as<float>();
+        } else {
+            options_tdbastar.delta *= 0.99;
+        }
+        options_tdbastar.max_motions *= cfg["num_primitives_rate"].as<float>();
+        options_tdbastar.max_motions = std::min<size_t>(options_tdbastar.max_motions, 1e6);
+      }
+      // disable/enable motions 
+      bool solved_db = false;
+      HighLevelNode start;
+      start.solution.resize(env["robots"].size());
+      start.constraints.resize(env["robots"].size());
+      start.cost = 0;
+      start.id = 0;
+      bool start_node_valid = true;
+      size_t robot_id = 0;
+      for (const auto &robot : robots){
+        options_tdbastar.motions_ptr = &robot_motions[problem.robotTypes[robot_id]]; 
         tdbastar(problem, options_tdbastar, start.solution[robot_id].trajectory, start.constraints[robot_id],
                   out_tdb, robot_id);
         if(!out_tdb.solved){
           std::cout << "Couldn't find initial solution for robot " << robot_id << "." << std::endl;
+          start_node_valid = false;
           break;
         }
+
         start.cost += start.solution[robot_id].trajectory.cost;
         robot_id++;
-        col_geom_id++;
-    }
-    col_mng_robots->registerObjects(robot_objs);
-    // OPEN set
-    typename boost::heap::d_ary_heap<HighLevelNode, boost::heap::arity<2>,
-                                        boost::heap::mutable_<true> > open;
-    auto handle = open.push(start);
-    (*handle).handle = handle;
-    int id = 1;
-    while (!open.empty()){
-      HighLevelNode P = open.top();
-      open.pop();
-      Conflict inter_robot_conflict;
-      if (!getEarliestConflict(P.solution, robots, col_mng_robots, robot_objs, inter_robot_conflict)){
-          solved_db = true;
-          std::cout << "Final solution!" << std::endl; 
-          export_solutions(P.solution, robots.size(), &out);
-          bool sum_robot_cost = true;
-          bool feasible = execute_optimizationMultiRobot(inputFile,
-                                        outputFile, 
-                                        optimizationFile,
-                                        DYNOBENCH_BASE,
-                                        sum_robot_cost);
-          if (feasible) {
-            return 0;
-          }
-          break;
       }
-      std::map<size_t, std::vector<Constraint>> constraints;
-      createConstraintsFromConflicts(inter_robot_conflict, constraints);
-      for (const auto& c : constraints){
-        HighLevelNode newNode = P;
-        size_t tmp_robot_id = c.first;
-        newNode.id = id;
-        std::cout << "Node ID is " << id << std::endl;
-        newNode.constraints[tmp_robot_id].insert(newNode.constraints[tmp_robot_id].end(), c.second.begin(), c.second.end());
-        newNode.cost -= newNode.solution[tmp_robot_id].trajectory.cost;
-        std::cout << "New node cost: " << newNode.cost << std::endl;
-        Out_info_tdb tmp_out_tdb; // should I keep the old one ?
-        options_tdbastar.motions_ptr = &robot_motions[problem.robotTypes[tmp_robot_id]]; 
-        tdbastar(problem, options_tdbastar, newNode.solution[tmp_robot_id].trajectory, newNode.constraints[tmp_robot_id], tmp_out_tdb, tmp_robot_id);
-        if (tmp_out_tdb.solved){
-            newNode.cost += newNode.solution[tmp_robot_id].trajectory.cost;
-            std::cout << "Updated New node cost: " << newNode.cost << std::endl;
-            auto handle = open.push(newNode);
-            (*handle).handle = handle;
-            id++;
+      if (!start_node_valid) {
+            continue;
+      }
+      typename boost::heap::d_ary_heap<HighLevelNode, boost::heap::arity<2>,
+                                        boost::heap::mutable_<true> > open;
+      auto handle = open.push(start);
+      (*handle).handle = handle;
+      int id = 1;
+      size_t expands = 0;
+      while (!open.empty()){
+        HighLevelNode P = open.top();
+        open.pop();
+        Conflict inter_robot_conflict;
+        if (!getEarliestConflict(P.solution, robots, col_mng_robots, robot_objs, inter_robot_conflict)){
+            solved_db = true;
+            std::cout << "Final solution!" << std::endl; 
+            create_dir_if_necessary(outputFile);
+            std::ofstream out(outputFile);
+            export_solutions(P.solution, robots.size(), &out);
+            bool sum_robot_cost = true;
+            bool feasible = execute_optimizationMultiRobot(inputFile,
+                                          outputFile, 
+                                          optimizationFile,
+                                          DYNOBENCH_BASE,
+                                          sum_robot_cost);
+            if (feasible) {
+              return 0;
+            }
+            break;
         }
-      }   
-  } // end of while loop
+        ++expands;
+        if (expands % 100 == 0) {
+         std::cout << "HL expanded: " << expands << " open: " << open.size() << " cost " << P.cost << " conflict at " << inter_robot_conflict.time << std::endl;
+        }
+
+        std::map<size_t, std::vector<Constraint>> constraints;
+        createConstraintsFromConflicts(inter_robot_conflict, constraints);
+        for (const auto& c : constraints){
+          HighLevelNode newNode = P;
+          size_t tmp_robot_id = c.first;
+          newNode.id = id;
+#ifdef DBG_PRINTS
+          std::cout << "Node ID is " << id << std::endl;
+#endif
+          newNode.constraints[tmp_robot_id].insert(newNode.constraints[tmp_robot_id].end(), c.second.begin(), c.second.end());
+          newNode.cost -= newNode.solution[tmp_robot_id].trajectory.cost;
+#ifdef DBG_PRINTS
+          std::cout << "New node cost: " << newNode.cost << std::endl;
+#endif
+          Out_info_tdb tmp_out_tdb; // should I keep the old one ?
+          options_tdbastar.motions_ptr = &robot_motions[problem.robotTypes[tmp_robot_id]]; 
+          tdbastar(problem, options_tdbastar, newNode.solution[tmp_robot_id].trajectory, newNode.constraints[tmp_robot_id], tmp_out_tdb, tmp_robot_id);
+          if (tmp_out_tdb.solved){
+              newNode.cost += newNode.solution[tmp_robot_id].trajectory.cost;
+#ifdef DBG_PRINTS
+              std::cout << "Updated New node cost: " << newNode.cost << std::endl;
+#endif
+              auto handle = open.push(newNode);
+              (*handle).handle = handle;
+              id++;
+          }
+
+        } 
+
+      } 
+
+    } 
+   
   return 0;
 }

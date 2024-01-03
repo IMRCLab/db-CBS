@@ -23,6 +23,7 @@ def plot_search_tree(ax, trajs, sol):
     ax.plot(x_sol, y_sol, color="orange")
     ax.scatter([s[0] for s in starts], [s[1] for s in starts], s=2, color="k")
 
+
 def plot_motions(ax, trajs, sol, video=True):
     starts = []
     N = len(trajs)
@@ -44,6 +45,23 @@ def plot_motions(ax, trajs, sol, video=True):
     if(video):
         subprocess.call(["ffmpeg","-y","-r",str(fps),"-i", "../dynoplan/plot/fig_%d.png","-vcodec","mpeg4", "-qscale","5", "-r", str(fps), "video.mp4"])
 
+def plot_motions_no_solution(ax, trajs, video=True):
+    starts = []
+    N = len(trajs)
+    fps, duration = 24, 100
+    for i in range(N):
+        states = trajs[i]["states"]
+        X = [s[0] for s in states]
+        Y = [s[1] for s in states]
+        starts.append([states[0][0], states[0][1]])
+        ax.plot(X, Y, color=".5", alpha=0.2)
+        print("saving ", i)
+        plt.savefig(f"../dynoplan/plot/fig_{i}.png")
+
+    ax.scatter([s[0] for s in starts], [s[1] for s in starts], s=2, color="k")
+    plt.savefig(f"../dynoplan/plot/fig_{i+1}.png")
+    if(video):
+        subprocess.call(["ffmpeg","-y","-r",str(fps),"-i", "../dynoplan/plot/fig_%d.png","-vcodec","mpeg4", "-qscale","5", "-r", str(fps), "video.mp4"])
 
 # # read tmp_trajs
 filename_motions = "/home/akmarak-laptop/IMRC/db-CBS/dynoplan/expanded_trajs.yaml"
@@ -58,8 +76,9 @@ print(len(tmp_trajs))
 # print(len(data["data"]))
 # N = len(data["data"])
 # trajs = data["data"]
+
 # # solution
-result_file = "/home/akmarak-laptop/IMRC/db-CBS/results/swap2_unicycle_tdbcbs_opt.yaml"
+result_file = "/home/akmarak-laptop/IMRC/db-CBS/results/swap3_trailer_09/db-cbs/000/result_dbcbs.yaml"
 with open(result_file, "r") as f:
     data_sol = yaml.safe_load(f)
 result = data_sol["result"][1]
@@ -75,6 +94,7 @@ plt.tick_params(
 plt.axis("off")
 fig.tight_layout()
 
+# plot_motions_no_solution(ax, tmp_trajs)
 plot_motions(ax, tmp_trajs, result)
 # plot_search_tree(ax, trajs, result)
 # ax.set_aspect("equal", adjustable="box")
