@@ -1297,7 +1297,7 @@ std::shared_ptr<Robot> create_robot(
   const ob::RealVectorBounds &positionBounds)
 {
   std::shared_ptr<Robot> robot;
-  if (robotType == "unicycle_first_order_0")
+  if (robotType == "unicycle1_v0")
   {
     robot.reset(new RobotUnicycleFirstOrder(
         positionBounds,
@@ -1306,7 +1306,7 @@ std::shared_ptr<Robot> create_robot(
         /*w_min*/ -0.5 /*rad/s*/,
         /*w_max*/ 0.5 /*rad/s*/));
   }
-  else if (robotType == "unicycle_first_order_0_sphere")
+  else if (robotType == "unicycle1_sphere_v0")
   {
     robot.reset(new RobotUnicycleFirstOrderSphere(
         positionBounds,
@@ -1315,7 +1315,7 @@ std::shared_ptr<Robot> create_robot(
         /*w_min*/ -2.0 /*rad/s*/,
         /*w_max*/ 2.0 /*rad/s*/));
   }
-  else if (robotType == "unicycle_second_order_0")
+  else if (robotType == "unicycle2_v0")
   {
     robot.reset(new RobotUnicycleSecondOrder(
         positionBounds,
@@ -1336,7 +1336,7 @@ std::shared_ptr<Robot> create_robot(
         /*L*/ 0.25 /*m*/
         ));
   }
-  else if (robotType == "car_first_order_with_1_trailers_0")
+  else if (robotType == "car1_v0")
   {
     robot.reset(new RobotCarFirstOrderWithTrailers(
         positionBounds,
@@ -1348,7 +1348,7 @@ std::shared_ptr<Robot> create_robot(
         /*hitch_lengths*/ {0.5} /*m*/
         ));
   }
-  else if (robotType == "single_integrator_0")
+  else if (robotType == "integrator1_2d_v0")
   {
     robot.reset(new RobotSingleIntegrator2D(
         positionBounds,
@@ -1356,7 +1356,7 @@ std::shared_ptr<Robot> create_robot(
         /*v_max*/ 0.5 /* m/s*/
         ));
   }
-  else if (robotType == "double_integrator_0")
+  else if (robotType == "integrator2_2d_v0")
   {
     robot.reset(new RobotDoubleIntegrator2D(
         positionBounds,
