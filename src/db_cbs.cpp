@@ -126,13 +126,13 @@ int main(int argc, char* argv[]) {
                 (problem.models_base_path + robotType + ".yaml").c_str(), problem.p_lb, problem.p_ub);
         robots.push_back(robot);
         if (robotType == "unicycle1_v0" || robotType == "unicycle1_sphere_v0"){
-            motionsFile = "../dynoplan/data/motion_primitives/unicycle1_v0/unicycle1_v0.bin.less.bin";
+            motionsFile = "../motions/unicycle1_v0/unicycle1_v0.msgpack";
         } else if (robotType == "unicycle2_v0"){
-            motionsFile = "../dynoplan/data/motion_primitives/unicycle2_v0/unicycle2_v0.bin.im.bin.im.bin.msgpack";
+            motionsFile = "../motions/unicycle2_v0/unicycle2_v0.msgpack";
         } else if (robotType == "car1_v0"){
-            motionsFile = "../dynoplan/data/motion_primitives/car_with_trailers/car_with_trailers.bin.sp.bin.msgpack";
+            motionsFile = "../motions/car_with_trailers/car_with_trailers.msgpack";
         } else if (robotType == "integrator2_2d_v0"){
-            motionsFile = "../dynoplan/data/motion_primitives/integrator2_2d_v0/integrator2_2d_v0.bin.im.bin.sp.bin";
+            motionsFile = "../motions/integrator2_2d_v0/integrator2_2d_v0.msgpack";
         } else{
             throw std::runtime_error("Unknown motion filename for this robottype!");
         }
