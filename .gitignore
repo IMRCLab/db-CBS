@@ -1,5 +1,9 @@
 buildRelease/
 buildDebug/
 results/
-motions
+new_format_motions/
+debug/
+demo/
+cloud/motions/
+.vscode/
 __pycache__/
