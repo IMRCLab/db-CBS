@@ -63,7 +63,7 @@ int main(int argc, char* argv[]) {
       return 1;
     }
     YAML::Node cfg = YAML::LoadFile(cfgFile);
-    //cfg = cfg["db-cbs"]["default"];
+    // cfg = cfg["db-cbs"]["default"];
     float alpha = cfg["alpha"].as<float>();
     bool filter_duplicates = cfg["filter_duplicates"].as<bool>();
     // tdbstar options
@@ -126,13 +126,13 @@ int main(int argc, char* argv[]) {
                 (problem.models_base_path + robotType + ".yaml").c_str(), problem.p_lb, problem.p_ub);
         robots.push_back(robot);
         if (robotType == "unicycle1_v0" || robotType == "unicycle1_sphere_v0"){
-            motionsFile = "../motions/unicycle1_v0/unicycle1_v0.msgpack";
+            motionsFile = "../new_format_motions/unicycle1_v0/unicycle1_v0.msgpack";
         } else if (robotType == "unicycle2_v0"){
-            motionsFile = "../motions/unicycle2_v0/unicycle2_v0.msgpack";
+            motionsFile = "../new_format_motions/unicycle2_v0/unicycle2_v0.msgpack";
         } else if (robotType == "car1_v0"){
-            motionsFile = "../motions/car_with_trailers/car_with_trailers.msgpack";
+            motionsFile = "../new_format_motions/car_with_trailers/car_with_trailers.msgpack";
         } else if (robotType == "integrator2_2d_v0"){
-            motionsFile = "../motions/integrator2_2d_v0/integrator2_2d_v0.msgpack";
+            motionsFile = "../new_format_motions/integrator2_2d_v0/integrator2_2d_v0.msgpack";
         } else{
             throw std::runtime_error("Unknown motion filename for this robottype!");
         }
@@ -248,6 +248,7 @@ int main(int argc, char* argv[]) {
           std::cout << "Node ID is " << id << std::endl;
 #endif
           newNode.constraints[tmp_robot_id].insert(newNode.constraints[tmp_robot_id].end(), c.second.begin(), c.second.end());
+          std::cout << "New node constraints size: " << newNode.constraints.size() << std::endl;
           newNode.cost -= newNode.solution[tmp_robot_id].trajectory.cost;
 #ifdef DBG_PRINTS
           std::cout << "New node cost: " << newNode.cost << std::endl;

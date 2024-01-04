@@ -107,13 +107,13 @@ int main(int argc, char* argv[]) {
     std::string motionsFile;
     std::vector<Motion> motions;
     if (robot_type == "unicycle1_v0" || robot_type == "unicycle1_sphere_v0"){
-        motionsFile = "../dynoplan/data/motion_primitives/unicycle1_v0/unicycle1_v0.bin.less.bin";
+        motionsFile = "../new_format_motions/unicycle1_v0/unicycle1_v0.msgpack";
     } else if (robot_type == "unicycle2_v0"){
-        motionsFile = "../dynoplan/data/motion_primitives/unicycle2_v0/unicycle2_v0.bin.im.bin.im.bin.msgpack";
+        motionsFile = "../new_format_motions/unicycle2_v0/unicycle2_v0.msgpack";
     } else if (robot_type == "car1_v0"){
-        motionsFile = "../dynoplan/data/motion_primitives/car_with_trailers/car_with_trailers.bin.sp.bin.msgpack";
+        motionsFile = "../new_format_motions/car_with_trailers/car_with_trailers.msgpack";
     } else if (robot_type == "integrator2_2d_v0"){
-        motionsFile = "../dynoplan/data/motion_primitives/integrator2_2d_v0/integrator2_2d_v0.bin.im.bin.sp.bin";
+        motionsFile = "../new_format_motions/integrator2_2d_v0/integrator2_2d_v0.msgpack";
     } else{
         throw std::runtime_error("Unknown motion filename for this robottype!");
     }
