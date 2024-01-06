@@ -149,11 +149,11 @@ def main():
 		# windows cases
 		# "window2_unicycle",
 		# "window3_unicycle",
-		"window4_unicycle",
-		"window4_unicycle2",
-		"window4_double_integrator",
-		"window4_trailer",
-		"window4_unicycle_sphere",
+		# "window4_unicycle",
+		# "window4_unicycle2",
+		# "window4_double_integrator",
+		# "window4_trailer",
+		# "window4_unicycle_sphere",
 
 		#demo
 		# "swap2_demo",
@@ -162,10 +162,10 @@ def main():
 	]
 
 	#add random cases
-	for kind in ["unicycle_sphere", "hetero"]:
-		for n in [2,4,8]:
-			for k in range(10):
-				instances.append("gen_p10_n{}_{}_{}".format(n,k, kind))
+	# for kind in ["unicycle_sphere", "hetero"]:
+	# 	for n in [2,4,8]:
+	# 		for k in range(10):
+	# 			instances.append("gen_p10_n{}_{}_{}".format(n,k, kind))
 
 	# instances = ["window4_unicycle_sphere"]
 
