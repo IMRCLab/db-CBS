@@ -182,6 +182,14 @@ int main(int argc, char* argv[]) {
         options_tdbastar.max_motions = std::min<size_t>(options_tdbastar.max_motions, 1e6);
       }
       // disable/enable motions 
+      // for (auto& iter : robot_motions) {
+      //     for (size_t i = 0; i < problem.robotTypes.size(); ++i) {
+      //         if (iter.first == problem.robotTypes[i]) {
+      //             disable_motions(robots[i], options_tdbastar.delta, filter_duplicates, alpha, options_tdbastar.max_motions, iter.second);
+      //             break;
+      //         }
+      //     }
+      // }
       bool solved_db = false;
       HighLevelNode start;
       start.solution.resize(env["robots"].size());
@@ -244,11 +252,10 @@ int main(int argc, char* argv[]) {
           HighLevelNode newNode = P;
           size_t tmp_robot_id = c.first;
           newNode.id = id;
-#ifdef DBG_PRINTS
+// #ifdef DBG_PRINTS
           std::cout << "Node ID is " << id << std::endl;
-#endif
+// #endif
           newNode.constraints[tmp_robot_id].insert(newNode.constraints[tmp_robot_id].end(), c.second.begin(), c.second.end());
-          std::cout << "New node constraints size: " << newNode.constraints.size() << std::endl;
           newNode.cost -= newNode.solution[tmp_robot_id].trajectory.cost;
 #ifdef DBG_PRINTS
           std::cout << "New node cost: " << newNode.cost << std::endl;
