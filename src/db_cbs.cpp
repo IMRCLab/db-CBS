@@ -74,6 +74,7 @@ int main(int argc, char* argv[]) {
     options_tdbastar.delta = cfg["delta_0"].as<float>();
     options_tdbastar.fix_seed = 1;
     options_tdbastar.max_motions = cfg["num_primitives_0"].as<size_t>();
+    options_tdbastar.rewire = false;
     // tdbastar problem
     dynobench::Problem problem(inputFile);
     std::string models_base_path = DYNOBENCH_BASE + std::string("models/");
@@ -130,7 +131,7 @@ int main(int argc, char* argv[]) {
         } else if (robotType == "unicycle2_v0"){
             motionsFile = "../new_format_motions/unicycle2_v0/unicycle2_v0.msgpack";
         } else if (robotType == "car1_v0"){
-            motionsFile = "../new_format_motions/car_with_trailers/car_with_trailers.msgpack";
+            motionsFile = "../new_format_motions/car1_v0/car1_v0.msgpack";
         } else if (robotType == "integrator2_2d_v0"){
             motionsFile = "../new_format_motions/integrator2_2d_v0/integrator2_2d_v0.msgpack";
         } else{
