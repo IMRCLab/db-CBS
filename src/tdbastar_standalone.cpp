@@ -126,7 +126,7 @@ int main(int argc, char* argv[]) {
                               options_tdbastar.cut_actions, false, options_tdbastar.check_cols);
     options_tdbastar.motions_ptr = &motions; 
 
-    tdbastar(problem, options_tdbastar, trajectory, constraints, out_tdb, robot_id);
+    tdbastar(problem, options_tdbastar, trajectory, constraints, out_tdb, robot_id,/*reverse_search*/false);
 
 
 return 0;

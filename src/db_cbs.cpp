@@ -63,7 +63,7 @@ int main(int argc, char* argv[]) {
       return 1;
     }
     YAML::Node cfg = YAML::LoadFile(cfgFile);
-    // cfg = cfg["db-cbs"]["default"];
+    cfg = cfg["db-cbs"]["default"];
     float alpha = cfg["alpha"].as<float>();
     bool filter_duplicates = cfg["filter_duplicates"].as<bool>();
     // tdbstar options
@@ -170,6 +170,19 @@ int main(int argc, char* argv[]) {
         i++;
     }
     col_mng_robots->registerObjects(robot_objs);
+    // Heuristic computation
+    size_t robot_id = 0;
+    std::vector<ompl::NearestNeighbors<AStarNode*>*> heuristics(robots.size(), nullptr);
+    if (cfg["heuristic1"].as<std::string>() == "reverse-search"){
+      for (const auto &robot : robots){
+        // problem.starts[robot_id].setConstant(std::sqrt(std::numeric_limits<double>::max()));
+        LowLevelPlan<dynobench::Trajectory> tmp_solution;
+        options_tdbastar.motions_ptr = &robot_motions[problem.robotTypes[robot_id]]; 
+        tdbastar(problem, options_tdbastar, tmp_solution.trajectory,/*constraints*/{},
+                  out_tdb, robot_id,/*reverse_search*/true, nullptr, &heuristics[robot_id]);
+        std::cout << "computed heuristic with " << heuristics[robot_id]->size() << " entries." << std::endl;
+      }
+    }
     bool solved_db = false;
     // main loop
     for (size_t iteration = 0; ; ++iteration) {
@@ -198,11 +211,11 @@ int main(int argc, char* argv[]) {
       start.cost = 0;
       start.id = 0;
       bool start_node_valid = true;
-      size_t robot_id = 0;
+      robot_id = 0;
       for (const auto &robot : robots){
         options_tdbastar.motions_ptr = &robot_motions[problem.robotTypes[robot_id]]; 
         tdbastar(problem, options_tdbastar, start.solution[robot_id].trajectory, start.constraints[robot_id],
-                  out_tdb, robot_id);
+                  out_tdb, robot_id,/*reverse_search*/false, heuristics[robot_id]);
         if(!out_tdb.solved){
           std::cout << "Couldn't find initial solution for robot " << robot_id << "." << std::endl;
           start_node_valid = false;
@@ -263,7 +276,8 @@ int main(int argc, char* argv[]) {
 #endif
           Out_info_tdb tmp_out_tdb; // should I keep the old one ?
           options_tdbastar.motions_ptr = &robot_motions[problem.robotTypes[tmp_robot_id]]; 
-          tdbastar(problem, options_tdbastar, newNode.solution[tmp_robot_id].trajectory, newNode.constraints[tmp_robot_id], tmp_out_tdb, tmp_robot_id);
+          tdbastar(problem, options_tdbastar, newNode.solution[tmp_robot_id].trajectory, 
+                  newNode.constraints[tmp_robot_id], tmp_out_tdb, tmp_robot_id,/*reverse_search*/false, heuristics[tmp_robot_id]);
           if (tmp_out_tdb.solved){
               newNode.cost += newNode.solution[tmp_robot_id].trajectory.cost;
 #ifdef DBG_PRINTS

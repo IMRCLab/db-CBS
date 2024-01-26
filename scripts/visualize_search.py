@@ -78,13 +78,13 @@ print(len(tmp_trajs))
 # trajs = data["data"]
 
 # # solution
-result_file = "/home/akmarak-laptop/IMRC/db-CBS/results/swap3_trailer_09/db-cbs/000/result_dbcbs.yaml"
-with open(result_file, "r") as f:
-    data_sol = yaml.safe_load(f)
-result = data_sol["result"][1]
+# result_file = "/home/akmarak-laptop/IMRC/db-CBS/results/swap3_trailer_09/db-cbs/000/result_dbcbs.yaml"
+# with open(result_file, "r") as f:
+#     data_sol = yaml.safe_load(f)
+# result = data_sol["result"][1]
 
-x_sol = [X[0] for X in result["states"]]
-y_sol = [X[1] for X in result["states"]]
+# x_sol = [X[0] for X in result["states"]]
+# y_sol = [X[1] for X in result["states"]]
 
 fig = plt.figure()
 ax = fig.add_subplot(111, aspect="equal")
@@ -94,8 +94,8 @@ plt.tick_params(
 plt.axis("off")
 fig.tight_layout()
 
-# plot_motions_no_solution(ax, tmp_trajs)
-plot_motions(ax, tmp_trajs, result)
+plot_motions_no_solution(ax, tmp_trajs)
+# plot_motions(ax, tmp_trajs, result)
 # plot_search_tree(ax, trajs, result)
 # ax.set_aspect("equal", adjustable="box")
 # plt.show()
