@@ -92,8 +92,8 @@ print(len(tmp_trajs))
 
 fig = plt.figure()
 ax = fig.add_subplot(111, aspect="equal")
-ax.set_xlim([0, 10])
-ax.set_ylim([0, 10])
+ax.set_xlim([0, 6])
+ax.set_ylim([0, 6])
 
 plt.tick_params(
     top=False, bottom=False, left=False, right=False, labelleft=False, labelbottom=False

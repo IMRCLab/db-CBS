@@ -71,7 +71,7 @@ int main(int argc, char* argv[]) {
     options_tdbastar.outFile = outputFile;
     options_tdbastar.search_timelimit = timeLimit;
     options_tdbastar.cost_delta_factor = 0;
-    options_tdbastar.delta = cfg["delta_0"].as<float>();
+    // options_tdbastar.delta = cfg["delta_0"].as<float>();
     options_tdbastar.fix_seed = 1;
     options_tdbastar.max_motions = cfg["num_primitives_0"].as<size_t>();
     options_tdbastar.rewire = false;
@@ -174,6 +174,7 @@ int main(int argc, char* argv[]) {
     size_t robot_id = 0;
     std::vector<ompl::NearestNeighbors<AStarNode*>*> heuristics(robots.size(), nullptr);
     if (cfg["heuristic1"].as<std::string>() == "reverse-search"){
+      options_tdbastar.delta = cfg["heuristic1_delta"].as<float>();
       for (const auto &robot : robots){
         // problem.starts[robot_id].setConstant(std::sqrt(std::numeric_limits<double>::max()));
         LowLevelPlan<dynobench::Trajectory> tmp_solution;
@@ -185,6 +186,7 @@ int main(int argc, char* argv[]) {
     }
     bool solved_db = false;
     // main loop
+    options_tdbastar.delta = cfg["delta_0"].as<float>();
     for (size_t iteration = 0; ; ++iteration) {
       if (iteration > 0) {
         if (solved_db) {
