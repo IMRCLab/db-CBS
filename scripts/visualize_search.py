@@ -5,6 +5,7 @@ import msgpack
 import yaml
 import subprocess 
 import shutil
+import pathlib
 
 def plot_search_tree(ax, trajs, sol):
     starts = []
@@ -28,7 +29,7 @@ def plot_motions(ax, trajs, sol, video=True):
     starts = []
     N = len(trajs)
     fps, duration = 24, 100
-    for i in range(N):
+    for i in range(0,10,N):
         states = trajs[i]["states"]
         X = [s[0] for s in states]
         Y = [s[1] for s in states]
@@ -49,14 +50,17 @@ def plot_motions_no_solution(ax, trajs, video=True):
     starts = []
     N = len(trajs)
     fps, duration = 24, 100
-    for i in range(N):
+    folder = f"../dynoplan/plot/"
+    pathlib.Path(folder).mkdir(parents=True,exist_ok=True)
+    for i in range(0,N,10):
         states = trajs[i]["states"]
         X = [s[0] for s in states]
         Y = [s[1] for s in states]
         starts.append([states[0][0], states[0][1]])
         ax.plot(X, Y, color=".5", alpha=0.2)
         print("saving ", i)
-        plt.savefig(f"../dynoplan/plot/fig_{i}.png")
+        file = f"{folder}/fig_{i}.png"
+        plt.savefig(file)
 
     ax.scatter([s[0] for s in starts], [s[1] for s in starts], s=2, color="k")
     plt.savefig(f"../dynoplan/plot/fig_{i+1}.png")
@@ -64,7 +68,7 @@ def plot_motions_no_solution(ax, trajs, video=True):
         subprocess.call(["ffmpeg","-y","-r",str(fps),"-i", "../dynoplan/plot/fig_%d.png","-vcodec","mpeg4", "-qscale","5", "-r", str(fps), "video.mp4"])
 
 # # read tmp_trajs
-filename_motions = "/home/akmarak-laptop/IMRC/db-CBS/dynoplan/expanded_trajs.yaml"
+filename_motions = "../dynoplan/expanded_trajs.yaml"
 with open(filename_motions) as motions_file:
     motions = yaml.safe_load(motions_file)
 tmp_trajs = motions["trajs"]
@@ -88,6 +92,9 @@ print(len(tmp_trajs))
 
 fig = plt.figure()
 ax = fig.add_subplot(111, aspect="equal")
+ax.set_xlim([0, 10])
+ax.set_ylim([0, 10])
+
 plt.tick_params(
     top=False, bottom=False, left=False, right=False, labelleft=False, labelbottom=False
 )
