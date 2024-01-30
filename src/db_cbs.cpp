@@ -63,7 +63,7 @@ int main(int argc, char* argv[]) {
       return 1;
     }
     YAML::Node cfg = YAML::LoadFile(cfgFile);
-    cfg = cfg["db-cbs"]["default"];
+    // cfg = cfg["db-cbs"]["default"];
     float alpha = cfg["alpha"].as<float>();
     bool filter_duplicates = cfg["filter_duplicates"].as<bool>();
     // tdbstar options
@@ -176,6 +176,7 @@ int main(int argc, char* argv[]) {
     if (cfg["heuristic1"].as<std::string>() == "reverse-search"){
       options_tdbastar.delta = cfg["heuristic1_delta"].as<float>();
       for (const auto &robot : robots){
+        // start to inf for the reverse search
         // problem.starts[robot_id].setConstant(std::sqrt(std::numeric_limits<double>::max()));
         LowLevelPlan<dynobench::Trajectory> tmp_solution;
         options_tdbastar.motions_ptr = &robot_motions[problem.robotTypes[robot_id]]; 
