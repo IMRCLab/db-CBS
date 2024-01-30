@@ -3,3 +3,7 @@ buildDebug/
 results/
 motions
 __pycache__/
+demo/
+new_format_motions/
+meshes/
+.vscode/
