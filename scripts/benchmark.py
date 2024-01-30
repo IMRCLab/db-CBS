@@ -36,7 +36,7 @@ def run_visualize(script, filename_env, filename_result):
 	
 def run_checker(filename_env, filename_result, filename_log):
 	with open(filename_log, 'w') as f:
-		cmd = ["./main_check_multirobot",
+		cmd = ["./dynoplan/dynobench/check_trajectory_multirobot",
 					"--result_file", filename_result,
 					"--env_file", filename_env,
 					"--models_base_path" , "../dynoplan/dynobench/models/",
@@ -158,7 +158,7 @@ def main():
 		#demo
 		# "swap2_demo",
 		# "swap4_demo",
-		"window4_demo",
+		# "window4_demo",
 	]
 
 	#add random cases

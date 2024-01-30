@@ -23,13 +23,13 @@
 #include "db_astar.hpp"
 #include "planresult.hpp"
 
-#include <idbastar/optimization/ocp.hpp>
+#include <dynoplan/optimization/ocp.hpp>
 #include <boost/program_options.hpp>
 #include <boost/heap/d_ary_heap.hpp>
 
 
-#include "multirobot_trajectory.hpp"
-
+// #include "multirobot_trajectory.hpp"
+#include "dynoplan/optimization/multirobot_optimization.hpp"
 
 namespace ob = ompl::base;
 namespace oc = ompl::control;
@@ -277,36 +277,7 @@ void export_joint_solutions(const std::vector<LowLevelPlan<AStarNode*,ob::State*
     
 }
 
-#define dynobench_base "/home/akmarak-laptop/IMRC/db-CBS/dynoplan/dynobench/"
-
-void execute_optimization(std::string env_file, std::string initial_guess_file, std::string output_file)
-{
-
-    using namespace dynoplan;
-    using namespace dynobench;
-
-    Options_trajopt options_trajopt;
-    Problem problem(env_file);
-    Trajectory init_guess(initial_guess_file);
-
-
-    options_trajopt.solver_id = 1; // static_cast<int>(SOLVER::traj_opt);
-    options_trajopt.control_bounds = 1;
-    options_trajopt.use_warmstart = 1;
-    options_trajopt.weight_goal = 100;
-    options_trajopt.max_iter = 50;
-    problem.models_base_path = dynobench_base + std::string("models/");
-
-    Result_opti result;
-    Trajectory sol;
-    trajectory_optimization(problem, init_guess, options_trajopt, sol, result);
-    std::ofstream out(output_file);
-    std::cout << "cost is " << result.cost << std::endl;
-    result.write_yaml_joint(out);
-    // result.write_yaml_joint(out);
-    // BOOST_TEST_CHECK(result.feasible);
-    // BOOST_TEST_CHECK(result.cost <= 10.);
-}
+#define dynobench_base "../dynoplan/dynobench/"
 
 int main(int argc, char* argv[]) {
     
@@ -345,7 +316,7 @@ int main(int argc, char* argv[]) {
 
     // load config file
     YAML::Node cfg = YAML::LoadFile(cfgFile);
-    // float delta = cfg["delta"].as<float>();
+    // cfg = cfg["db-cbs"]["default"];
     float alpha = cfg["alpha"].as<float>();
     bool filter_duplicates = cfg["filter_duplicates"].as<bool>();
 
@@ -559,13 +530,13 @@ int main(int argc, char* argv[]) {
                 export_joint_solutions(P.solution, robots, jointFile);
 
                 std::cout << "warning: using new multirobot optimization" << std::endl;
-                const bool new_multirobot_optimization = true;
-
+            
+                const bool sum_robot_cost = true;
                 bool feasible = execute_optimizationMultiRobot(inputFile,
-                                        outputFile, 
-                                        optimizationFile,
-                                        new_multirobot_optimization);
-
+                                                    outputFile, 
+                                                    optimizationFile,
+                                                    dynobench_base,
+                                                    sum_robot_cost);
                 if (feasible) {
                     return 0;
                 }
