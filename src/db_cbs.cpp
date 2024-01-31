@@ -183,6 +183,7 @@ int main(int argc, char* argv[]) {
         tdbastar(problem, options_tdbastar, tmp_solution.trajectory,/*constraints*/{},
                   out_tdb, robot_id,/*reverse_search*/true, nullptr, &heuristics[robot_id]);
         std::cout << "computed heuristic with " << heuristics[robot_id]->size() << " entries." << std::endl;
+        robot_id++;
       }
     }
     bool solved_db = false;
