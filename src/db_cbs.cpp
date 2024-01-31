@@ -5,6 +5,7 @@
 #include <chrono>
 #include <iterator>
 #include <yaml-cpp/yaml.h>
+#include <filesystem>
 // BOOST
 #include <boost/program_options.hpp>
 #include <boost/program_options.hpp>
@@ -26,6 +27,7 @@
 #include "dbcbs_utils.hpp"
 
 using namespace dynoplan;
+namespace fs = std::filesystem;
 
 #define DYNOBENCH_BASE "../dynoplan/dynobench/"
 
@@ -66,6 +68,7 @@ int main(int argc, char* argv[]) {
     // cfg = cfg["db-cbs"]["default"];
     float alpha = cfg["alpha"].as<float>();
     bool filter_duplicates = cfg["filter_duplicates"].as<bool>();
+    fs::path output_path(outputFile);
     // tdbstar options
     Options_tdbastar options_tdbastar;
     options_tdbastar.outFile = outputFile;
@@ -254,7 +257,8 @@ int main(int argc, char* argv[]) {
             export_solutions(P.solution, robots.size(), &out);
             // get motion_primitives_plot
             if (save_expanded_trajs){
-              std::ofstream out2("../dynoplan/expanded_trajs.yaml");
+              std::string output_folder = output_path.parent_path().string();
+              std::ofstream out2(output_folder + "/expanded_trajs.yaml");
               out2 << "trajs:" << std::endl;
               for (auto traj : expanded_trajs_tmp){
                 out2 << "  - " << std::endl;

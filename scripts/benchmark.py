@@ -112,24 +112,24 @@ def main():
 	parallel = True
 	instances = [
 		# 1 robot cases
-		"swap1_unicycle",
-		"swap1_unicycle_sphere",
-		"swap1_trailer",
-		"swap1_unicycle2",
-		"swap1_double_integrator",
+		# "swap1_unicycle",
+		# "swap1_unicycle_sphere",
+		# "swap1_trailer",
+		# "swap1_unicycle2",
+		# "swap1_double_integrator",
 		# 2 robot cases
-		"swap2_unicycle",
-		"swap2_unicycle_sphere",
-		"swap2_double_integrator",
-		"swap2_trailer",
-		"swap2_unicycle2",
-		"swap2_hetero",
-		"makespan_vs_soc_1",
-		"makespan_vs_soc_0",
-		"alcove_unicycle",
-		"alcove_unicycle_sphere",
-		"at_goal_unicycle",
-		"at_goal_unicycle_sphere",
+		# "swap2_unicycle",
+		# "swap2_unicycle_sphere",
+		# "swap2_double_integrator",
+		# "swap2_trailer",
+		# "swap2_unicycle2",
+		# "swap2_hetero",
+		# "makespan_vs_soc_1",
+		# "makespan_vs_soc_0",
+		# "alcove_unicycle",
+		# "alcove_unicycle_sphere",
+		# "at_goal_unicycle",
+		# "at_goal_unicycle_sphere",
 		# 3 robot cases
 		"swap3_unicycle",
 		"swap3_unicycle_sphere",
@@ -144,7 +144,7 @@ def main():
 		"swap4_unicycle2",
 
 		# special test cases
-		"infeasible_0",
+		# "infeasible_0",
 
 		# windows cases
 		# "window2_unicycle",
@@ -170,13 +170,13 @@ def main():
 	# instances = ["window4_unicycle_sphere"]
 
 	algs = [
-		"sst",
-		"s2m2",
-		"k-cbs",
+		# "sst",
+		# "s2m2",
+		# "k-cbs",
 		"db-cbs",
 	]
 	trials = 1
-	timelimit = 10*60
+	timelimit = 5*60
 
 	tasks = []
 	for instance in instances:
