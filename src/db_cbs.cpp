@@ -75,7 +75,7 @@ int main(int argc, char* argv[]) {
     options_tdbastar.fix_seed = 1;
     options_tdbastar.max_motions = cfg["num_primitives_0"].as<size_t>();
     options_tdbastar.rewire = true;
-    bool save_expanded_trajs = true;
+    bool save_expanded_trajs = false;
     // tdbastar problem
     dynobench::Problem problem(inputFile);
     std::string models_base_path = DYNOBENCH_BASE + std::string("models/");
