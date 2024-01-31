@@ -118,12 +118,12 @@ def main():
 		# "swap1_unicycle2",
 		# "swap1_double_integrator",
 		# 2 robot cases
-		# "swap2_unicycle",
-		# "swap2_unicycle_sphere",
-		# "swap2_double_integrator",
-		# "swap2_trailer",
-		# "swap2_unicycle2",
-		# "swap2_hetero",
+		"swap2_unicycle",
+		"swap2_unicycle_sphere",
+		"swap2_double_integrator",
+		"swap2_trailer",
+		"swap2_unicycle2",
+		"swap2_hetero",
 		# "makespan_vs_soc_1",
 		# "makespan_vs_soc_0",
 		# "alcove_unicycle",
@@ -176,7 +176,7 @@ def main():
 		"db-cbs",
 	]
 	trials = 1
-	timelimit = 5*60
+	timelimit = 10*60
 
 	tasks = []
 	for instance in instances:
