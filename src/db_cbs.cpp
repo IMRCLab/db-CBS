@@ -63,7 +63,7 @@ int main(int argc, char* argv[]) {
       return 1;
     }
     YAML::Node cfg = YAML::LoadFile(cfgFile);
-    cfg = cfg["db-cbs"]["default"];
+    // cfg = cfg["db-cbs"]["default"];
     float alpha = cfg["alpha"].as<float>();
     bool filter_duplicates = cfg["filter_duplicates"].as<bool>();
     // tdbstar options
@@ -75,6 +75,7 @@ int main(int argc, char* argv[]) {
     options_tdbastar.fix_seed = 1;
     options_tdbastar.max_motions = cfg["num_primitives_0"].as<size_t>();
     options_tdbastar.rewire = true;
+    bool save_expanded_trajs = true;
     // tdbastar problem
     dynobench::Problem problem(inputFile);
     std::string models_base_path = DYNOBENCH_BASE + std::string("models/");
@@ -173,15 +174,17 @@ int main(int argc, char* argv[]) {
     // Heuristic computation
     size_t robot_id = 0;
     std::vector<ompl::NearestNeighbors<AStarNode*>*> heuristics(robots.size(), nullptr);
+    std::vector<dynobench::Trajectory> expanded_trajs_tmp;
     if (cfg["heuristic1"].as<std::string>() == "reverse-search"){
       options_tdbastar.delta = cfg["heuristic1_delta"].as<float>();
       for (const auto &robot : robots){
         // start to inf for the reverse search
         // problem.starts[robot_id].setConstant(std::sqrt(std::numeric_limits<double>::max()));
         LowLevelPlan<dynobench::Trajectory> tmp_solution;
+        expanded_trajs_tmp.clear();
         options_tdbastar.motions_ptr = &robot_motions[problem.robotTypes[robot_id]]; 
         tdbastar(problem, options_tdbastar, tmp_solution.trajectory,/*constraints*/{},
-                  out_tdb, robot_id,/*reverse_search*/true, nullptr, &heuristics[robot_id]);
+                  out_tdb, robot_id,/*reverse_search*/true, expanded_trajs_tmp, nullptr, &heuristics[robot_id]);
         std::cout << "computed heuristic with " << heuristics[robot_id]->size() << " entries." << std::endl;
         robot_id++;
       }
@@ -217,9 +220,10 @@ int main(int argc, char* argv[]) {
       bool start_node_valid = true;
       robot_id = 0;
       for (const auto &robot : robots){
+        expanded_trajs_tmp.clear();
         options_tdbastar.motions_ptr = &robot_motions[problem.robotTypes[robot_id]]; 
         tdbastar(problem, options_tdbastar, start.solution[robot_id].trajectory, start.constraints[robot_id],
-                  out_tdb, robot_id,/*reverse_search*/false, heuristics[robot_id]);
+                  out_tdb, robot_id,/*reverse_search*/false, expanded_trajs_tmp, heuristics[robot_id]);
         if(!out_tdb.solved){
           std::cout << "Couldn't find initial solution for robot " << robot_id << "." << std::endl;
           start_node_valid = false;
@@ -248,6 +252,15 @@ int main(int argc, char* argv[]) {
             create_dir_if_necessary(outputFile);
             std::ofstream out(outputFile);
             export_solutions(P.solution, robots.size(), &out);
+            // get motion_primitives_plot
+            if (save_expanded_trajs){
+              std::ofstream out2("../dynoplan/expanded_trajs.yaml");
+              out2 << "trajs:" << std::endl;
+              for (auto traj : expanded_trajs_tmp){
+                out2 << "  - " << std::endl;
+                traj.to_yaml_format_short(out2, "    ");
+              }
+            }
             bool sum_robot_cost = true;
             bool feasible = execute_optimizationMultiRobot(inputFile,
                                           outputFile, 
@@ -270,18 +283,18 @@ int main(int argc, char* argv[]) {
           HighLevelNode newNode = P;
           size_t tmp_robot_id = c.first;
           newNode.id = id;
-// #ifdef DBG_PRINTS
           std::cout << "Node ID is " << id << std::endl;
-// #endif
           newNode.constraints[tmp_robot_id].insert(newNode.constraints[tmp_robot_id].end(), c.second.begin(), c.second.end());
           newNode.cost -= newNode.solution[tmp_robot_id].trajectory.cost;
 #ifdef DBG_PRINTS
           std::cout << "New node cost: " << newNode.cost << std::endl;
 #endif
           Out_info_tdb tmp_out_tdb; // should I keep the old one ?
+          expanded_trajs_tmp.clear();
           options_tdbastar.motions_ptr = &robot_motions[problem.robotTypes[tmp_robot_id]]; 
           tdbastar(problem, options_tdbastar, newNode.solution[tmp_robot_id].trajectory, 
-                  newNode.constraints[tmp_robot_id], tmp_out_tdb, tmp_robot_id,/*reverse_search*/false, heuristics[tmp_robot_id]);
+                  newNode.constraints[tmp_robot_id], tmp_out_tdb, tmp_robot_id,/*reverse_search*/false, 
+                  expanded_trajs_tmp, heuristics[tmp_robot_id]);
           if (tmp_out_tdb.solved){
               newNode.cost += newNode.solution[tmp_robot_id].trajectory.cost;
 #ifdef DBG_PRINTS
