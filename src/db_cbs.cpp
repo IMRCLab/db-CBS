@@ -206,14 +206,14 @@ int main(int argc, char* argv[]) {
         options_tdbastar.max_motions = std::min<size_t>(options_tdbastar.max_motions, 1e6);
       }
       // disable/enable motions 
-      // for (auto& iter : robot_motions) {
-      //     for (size_t i = 0; i < problem.robotTypes.size(); ++i) {
-      //         if (iter.first == problem.robotTypes[i]) {
-      //             disable_motions(robots[i], options_tdbastar.delta, filter_duplicates, alpha, options_tdbastar.max_motions, iter.second);
-      //             break;
-      //         }
-      //     }
-      // }
+      for (auto& iter : robot_motions) {
+          for (size_t i = 0; i < problem.robotTypes.size(); ++i) {
+              if (iter.first == problem.robotTypes[i]) {
+                  disable_motions(robots[i], options_tdbastar.delta, filter_duplicates, alpha, options_tdbastar.max_motions, iter.second);
+                  break;
+              }
+          }
+      }
       bool solved_db = false;
       HighLevelNode start;
       start.solution.resize(env["robots"].size());
