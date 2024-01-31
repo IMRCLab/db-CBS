@@ -63,7 +63,7 @@ int main(int argc, char* argv[]) {
       return 1;
     }
     YAML::Node cfg = YAML::LoadFile(cfgFile);
-    // cfg = cfg["db-cbs"]["default"];
+    cfg = cfg["db-cbs"]["default"];
     float alpha = cfg["alpha"].as<float>();
     bool filter_duplicates = cfg["filter_duplicates"].as<bool>();
     // tdbstar options
@@ -74,7 +74,7 @@ int main(int argc, char* argv[]) {
     // options_tdbastar.delta = cfg["delta_0"].as<float>();
     options_tdbastar.fix_seed = 1;
     options_tdbastar.max_motions = cfg["num_primitives_0"].as<size_t>();
-    options_tdbastar.rewire = false;
+    options_tdbastar.rewire = true;
     // tdbastar problem
     dynobench::Problem problem(inputFile);
     std::string models_base_path = DYNOBENCH_BASE + std::string("models/");
