@@ -46,6 +46,14 @@ def run_checker(filename_env, filename_result, filename_log):
 					stdout=f, stderr=f)
 	return out.returncode == 0
 
+def run_search_visualize(script, filename_env, filename_trajs, filename_result):
+	subprocess.run(["python3",
+				script,
+				filename_env,
+				"--trajs", filename_trajs,
+				"--result", filename_result,
+				"--video", filename_result.with_suffix(".mp4")])
+
 def execute_task(task: ExecutionTask):
 	scripts_path = Path("../scripts")
 	results_path = Path("../results")
@@ -97,6 +105,7 @@ def execute_task(task: ExecutionTask):
 		run_dbcbs(str(env), str(result_folder), task.timelimit, mycfg)
 		visualize_files = [p.name for p in result_folder.glob('result_*')]
 		check_files = [p.name for p in result_folder.glob('result_dbcbs_opt*')]
+		search_plot_files = [p.name for p in result_folder.glob('expanded_trajs*')]
 	
 	for file in check_files:
 		if not run_checker(env, result_folder / file, (result_folder / file).with_suffix(".check.txt")):
@@ -106,17 +115,22 @@ def execute_task(task: ExecutionTask):
 	vis_script = scripts_path / "visualize.py"
 	for file in visualize_files:
 		run_visualize(vis_script, env, result_folder / file)
+	
+	search_viz_script = scripts_path / "visualize_search.py"
+	if(len(search_plot_files) > 0):
+		for file in search_plot_files:
+			run_search_visualize(search_viz_script, result_folder / file)
 
 
 def main():
 	parallel = True
 	instances = [
 		# 1 robot cases
-		# "swap1_unicycle",
-		# "swap1_unicycle_sphere",
-		# "swap1_trailer",
-		# "swap1_unicycle2",
-		# "swap1_double_integrator",
+		"swap1_unicycle",
+		"swap1_unicycle_sphere",
+		"swap1_trailer",
+		"swap1_unicycle2",
+		"swap1_double_integrator",
 		# 2 robot cases
 		"swap2_unicycle",
 		"swap2_unicycle_sphere",
@@ -126,10 +140,10 @@ def main():
 		"swap2_hetero",
 		# "makespan_vs_soc_1",
 		# "makespan_vs_soc_0",
-		# "alcove_unicycle",
-		# "alcove_unicycle_sphere",
-		# "at_goal_unicycle",
-		# "at_goal_unicycle_sphere",
+		"alcove_unicycle",
+		"alcove_unicycle_sphere",
+		"at_goal_unicycle",
+		"at_goal_unicycle_sphere",
 		# 3 robot cases
 		"swap3_unicycle",
 		"swap3_unicycle_sphere",
@@ -176,7 +190,7 @@ def main():
 		"db-cbs",
 	]
 	trials = 1
-	timelimit = 10*60
+	timelimit = 5*60
 
 	tasks = []
 	for instance in instances:
