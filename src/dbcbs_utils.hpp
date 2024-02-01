@@ -7,7 +7,6 @@
 #include <yaml-cpp/yaml.h>
 // BOOST
 #include <boost/program_options.hpp>
-#include <boost/program_options.hpp>
 #include <boost/heap/d_ary_heap.hpp>
 
 #include "robots.h"
@@ -140,57 +139,3 @@ void export_solutions(const std::vector<LowLevelPlan<dynobench::Trajectory>>& so
         }
     }
 }
-
-void disable_motions(
-  std::shared_ptr<dynobench::Model_robot>& robot,
-  float delta,
-  bool filterDuplicates,
-  float alpha,
-  size_t num_max_motions,
-  std::vector<dynoplan::Motion>& motions) {
-    ompl::NearestNeighbors<dynoplan::Motion *> *T_m;
-    // enable all motions
-    for (size_t i = 0; i < motions.size(); ++i) {
-      motions[i].disabled = false;
-    } 
-    if(filterDuplicates){
-      size_t num_duplicates = 0;
-      dynoplan::Motion fakeMotion;
-      fakeMotion.idx = -1;
-      fakeMotion.traj.states.push_back(Eigen::VectorXd(robot->nx));
-      std::vector<dynoplan::Motion *> neighbors_m;
-      for (const auto& m : motions) {
-        if (m.disabled) {
-          continue;
-        }
-        // fakeMotion.traj.states.at(0) = m.states[0];
-        fakeMotion.states[0] = m.states[0];
-        T_m->nearestR(&fakeMotion, delta*alpha, neighbors_m);
-        for (dynoplan::Motion* nm : neighbors_m){
-          if (nm == &m || nm->disabled) { 
-            continue;
-          }
-          float goal_delta = robot->distance(m.traj.states.back(), nm->traj.states.back());
-          if (goal_delta < delta*(1-alpha)) {
-          nm->disabled = true;
-          ++num_duplicates;
-          }
-        }
-      }
-      std::cout << "There are " << num_duplicates << " duplicate motions!" << std::endl;
-
-    }
-    // limit to num_max_motions
-    size_t num_enabled_motions = 0;
-    for (size_t i = 0; i < motions.size(); ++i){
-      if (!motions[i].disabled) {
-        if (num_enabled_motions >= num_max_motions) {
-          motions[i].disabled = true;
-        } else {
-          ++num_enabled_motions;
-        }
-      }
-    }
-    std::cout << "There are " << num_enabled_motions << " motions enabled." << std::endl;
-
-  }

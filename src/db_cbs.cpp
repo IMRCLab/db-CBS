@@ -65,7 +65,7 @@ int main(int argc, char* argv[]) {
       return 1;
     }
     YAML::Node cfg = YAML::LoadFile(cfgFile);
-    // cfg = cfg["db-cbs"]["default"];
+    cfg = cfg["db-cbs"]["default"];
     float alpha = cfg["alpha"].as<float>();
     bool filter_duplicates = cfg["filter_duplicates"].as<bool>();
     fs::path output_path(outputFile);
@@ -206,10 +206,12 @@ int main(int argc, char* argv[]) {
         options_tdbastar.max_motions = std::min<size_t>(options_tdbastar.max_motions, 1e6);
       }
       // disable/enable motions 
-      for (auto& iter : robot_motions) {
+      std::map<std::string, std::vector<Motion>>::iterator it = robot_motions.begin();
+      while (it != robot_motions.end()) {
           for (size_t i = 0; i < problem.robotTypes.size(); ++i) {
-              if (iter.first == problem.robotTypes[i]) {
-                  disable_motions(robots[i], options_tdbastar.delta, filter_duplicates, alpha, options_tdbastar.max_motions, iter.second);
+              if (it->first == problem.robotTypes[i]) {
+                  disable_motions(robots[i], problem.robotTypes[i], options_tdbastar.delta, filter_duplicates, alpha, 
+                                  options_tdbastar.max_motions, it->second);
                   break;
               }
           }
