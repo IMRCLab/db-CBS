@@ -183,6 +183,10 @@ int main(int argc, char* argv[]) {
       for (const auto &robot : robots){
         // start to inf for the reverse search
         // problem.starts[robot_id].setConstant(std::sqrt(std::numeric_limits<double>::max()));
+        // swap back start-goal 
+        Eigen::VectorXd tmp_state = problem.starts[robot_id];
+        problem.starts[robot_id] = problem.goals[robot_id];
+        problem.goals[robot_id] = tmp_state;
         LowLevelPlan<dynobench::Trajectory> tmp_solution;
         expanded_trajs_tmp.clear();
         options_tdbastar.motions_ptr = &robot_motions[problem.robotTypes[robot_id]]; 
@@ -193,6 +197,7 @@ int main(int argc, char* argv[]) {
       }
     }
     bool solved_db = false;
+    
     // main loop
     options_tdbastar.delta = cfg["delta_0"].as<float>();
     for (size_t iteration = 0; ; ++iteration) {
@@ -224,6 +229,10 @@ int main(int argc, char* argv[]) {
       bool start_node_valid = true;
       robot_id = 0;
       for (const auto &robot : robots){
+        // swap back start-goal 
+        Eigen::VectorXd tmp_state = problem.starts[robot_id];
+        problem.starts[robot_id] = problem.goals[robot_id];
+        problem.goals[robot_id] = tmp_state;
         expanded_trajs_tmp.clear();
         options_tdbastar.motions_ptr = &robot_motions[problem.robotTypes[robot_id]]; 
         tdbastar(problem, options_tdbastar, start.solution[robot_id].trajectory, start.constraints[robot_id],
