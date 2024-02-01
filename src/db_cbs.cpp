@@ -65,7 +65,7 @@ int main(int argc, char* argv[]) {
       return 1;
     }
     YAML::Node cfg = YAML::LoadFile(cfgFile);
-    // cfg = cfg["db-cbs"]["default"];
+    cfg = cfg["db-cbs"]["default"];
     float alpha = cfg["alpha"].as<float>();
     bool filter_duplicates = cfg["filter_duplicates"].as<bool>();
     fs::path output_path(outputFile);
@@ -183,7 +183,6 @@ int main(int argc, char* argv[]) {
       for (const auto &robot : robots){
         // start to inf for the reverse search
         // problem.starts[robot_id].setConstant(std::sqrt(std::numeric_limits<double>::max()));
-        // swap back start-goal 
         Eigen::VectorXd tmp_state = problem.starts[robot_id];
         problem.starts[robot_id] = problem.goals[robot_id];
         problem.goals[robot_id] = tmp_state;
@@ -193,6 +192,10 @@ int main(int argc, char* argv[]) {
         tdbastar(problem, options_tdbastar, tmp_solution.trajectory,/*constraints*/{},
                   out_tdb, robot_id,/*reverse_search*/true, expanded_trajs_tmp, nullptr, &heuristics[robot_id]);
         std::cout << "computed heuristic with " << heuristics[robot_id]->size() << " entries." << std::endl;
+        // swap back start-goal 
+        tmp_state = problem.starts[robot_id];
+        problem.starts[robot_id] = problem.goals[robot_id];
+        problem.goals[robot_id] = tmp_state;
         robot_id++;
       }
     }
@@ -229,10 +232,6 @@ int main(int argc, char* argv[]) {
       bool start_node_valid = true;
       robot_id = 0;
       for (const auto &robot : robots){
-        // swap back start-goal 
-        Eigen::VectorXd tmp_state = problem.starts[robot_id];
-        problem.starts[robot_id] = problem.goals[robot_id];
-        problem.goals[robot_id] = tmp_state;
         expanded_trajs_tmp.clear();
         options_tdbastar.motions_ptr = &robot_motions[problem.robotTypes[robot_id]]; 
         tdbastar(problem, options_tdbastar, start.solution[robot_id].trajectory, start.constraints[robot_id],
