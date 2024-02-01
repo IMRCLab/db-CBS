@@ -206,12 +206,11 @@ int main(int argc, char* argv[]) {
         options_tdbastar.max_motions = std::min<size_t>(options_tdbastar.max_motions, 1e6);
       }
       // disable/enable motions 
-      std::map<std::string, std::vector<Motion>>::iterator it = robot_motions.begin();
-      while (it != robot_motions.end()) {
+      for (auto& iter : robot_motions) {
           for (size_t i = 0; i < problem.robotTypes.size(); ++i) {
-              if (it->first == problem.robotTypes[i]) {
+              if (iter.first == problem.robotTypes[i]) {
                   disable_motions(robots[i], problem.robotTypes[i], options_tdbastar.delta, filter_duplicates, alpha, 
-                                  options_tdbastar.max_motions, it->second);
+                                  options_tdbastar.max_motions, iter.second);
                   break;
               }
           }
