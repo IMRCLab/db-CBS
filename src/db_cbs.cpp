@@ -81,6 +81,7 @@ int main(int argc, char* argv[]) {
     bool save_expanded_trajs = false;
     // tdbastar problem
     dynobench::Problem problem(inputFile);
+    dynobench::Problem problem_original(inputFile);
     std::string models_base_path = DYNOBENCH_BASE + std::string("models/");
     problem.models_base_path = models_base_path;
     Out_info_tdb out_tdb;
@@ -182,7 +183,7 @@ int main(int argc, char* argv[]) {
       options_tdbastar.delta = cfg["heuristic1_delta"].as<float>();
       for (const auto &robot : robots){
         // start to inf for the reverse search
-        // problem.starts[robot_id].setConstant(std::sqrt(std::numeric_limits<double>::max()));
+        problem.starts[robot_id].setConstant(std::sqrt(std::numeric_limits<double>::max()));
         Eigen::VectorXd tmp_state = problem.starts[robot_id];
         problem.starts[robot_id] = problem.goals[robot_id];
         problem.goals[robot_id] = tmp_state;
@@ -192,16 +193,14 @@ int main(int argc, char* argv[]) {
         tdbastar(problem, options_tdbastar, tmp_solution.trajectory,/*constraints*/{},
                   out_tdb, robot_id,/*reverse_search*/true, expanded_trajs_tmp, nullptr, &heuristics[robot_id]);
         std::cout << "computed heuristic with " << heuristics[robot_id]->size() << " entries." << std::endl;
-        // swap back start-goal 
-        tmp_state = problem.starts[robot_id];
-        problem.starts[robot_id] = problem.goals[robot_id];
-        problem.goals[robot_id] = tmp_state;
         robot_id++;
       }
     }
     bool solved_db = false;
     
     // main loop
+    problem.starts = problem_original.starts;
+    problem.goals = problem_original.goals;
     options_tdbastar.delta = cfg["delta_0"].as<float>();
     for (size_t iteration = 0; ; ++iteration) {
       if (iteration > 0) {
@@ -235,7 +234,7 @@ int main(int argc, char* argv[]) {
         expanded_trajs_tmp.clear();
         options_tdbastar.motions_ptr = &robot_motions[problem.robotTypes[robot_id]]; 
         tdbastar(problem, options_tdbastar, start.solution[robot_id].trajectory, start.constraints[robot_id],
-                  out_tdb, robot_id,/*reverse_search*/false, expanded_trajs_tmp, heuristics[robot_id]);
+                  out_tdb, robot_id,/*reverse_search*/false, expanded_trajs_tmp, heuristics[robot_id], nullptr);
         if(!out_tdb.solved){
           std::cout << "Couldn't find initial solution for robot " << robot_id << "." << std::endl;
           start_node_valid = false;
@@ -271,7 +270,7 @@ int main(int argc, char* argv[]) {
               out2 << "trajs:" << std::endl;
               for (auto traj : expanded_trajs_tmp){
                 out2 << "  - " << std::endl;
-                traj.to_yaml_format_short(out2, "    ");
+                traj.to_yaml_format(out2, "    ");
               }
             }
             bool sum_robot_cost = true;

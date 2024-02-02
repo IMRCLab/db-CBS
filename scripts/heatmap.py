@@ -28,15 +28,9 @@ for i in range(0,N,10):
     Y.append(state[0][1])
 costs_norm = (costs-np.min(costs))/(np.max(costs)-np.min(costs))
 # plot the data
-# for state, c in zip(states, costs_norm):
-    # b = c
-    # ax.scatter(state[0], state[1], s=4, color=[r,g,b])
 ax.scatter(1, 2.5, s=4, color='r')
 ax.scatter(4, 2.5, s=4, color='r')
-# plt.show()
-# scatterplot 
 plt.scatter(x=X, y=Y, s=3, c=costs, cmap="summer") 
-  
 plt.colorbar(label="gScore", orientation="vertical") 
 plt.show() 
 
