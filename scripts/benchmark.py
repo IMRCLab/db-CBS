@@ -185,11 +185,11 @@ def main():
 
 	algs = [
 		# "sst",
-		"s2m2",
+		# "s2m2",
 		# "k-cbs",
 		"db-cbs",
 	]
-	trials = 5*1
+	trials = 1
 	timelimit = 5*60
 
 	tasks = []
