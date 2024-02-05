@@ -177,7 +177,7 @@ int main(int argc, char* argv[]) {
     col_mng_robots->registerObjects(robot_objs);
     // Heuristic computation
     size_t robot_id = 0;
-    std::vector<ompl::NearestNeighbors<AStarNode*>*> heuristics(robots.size(), nullptr);
+    std::vector<ompl::NearestNeighbors<std::shared_ptr<AStarNode>>*> heuristics(robots.size(), nullptr);
     std::vector<dynobench::Trajectory> expanded_trajs_tmp;
     if (cfg["heuristic1"].as<std::string>() == "reverse-search"){
       options_tdbastar.delta = cfg["heuristic1_delta"].as<float>();
