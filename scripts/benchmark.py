@@ -138,8 +138,8 @@ def main():
 		"swap2_trailer",
 		"swap2_unicycle2",
 		"swap2_hetero",
-		# "makespan_vs_soc_1",
-		# "makespan_vs_soc_0",
+		"makespan_vs_soc_1",
+		"makespan_vs_soc_0",
 		"alcove_unicycle",
 		"alcove_unicycle_sphere",
 		"at_goal_unicycle",
@@ -158,16 +158,16 @@ def main():
 		"swap4_unicycle2",
 
 		# special test cases
-		# "infeasible_0",
+		"infeasible_0",
 
 		# windows cases
-		# "window2_unicycle",
-		# "window3_unicycle",
-		# "window4_unicycle",
-		# "window4_unicycle2",
-		# "window4_double_integrator",
-		# "window4_trailer",
-		# "window4_unicycle_sphere",
+		"window2_unicycle",
+		"window3_unicycle",
+		"window4_unicycle",
+		"window4_unicycle2",
+		"window4_double_integrator",
+		"window4_trailer",
+		"window4_unicycle_sphere",
 
 		#demo
 		# "swap2_demo",
@@ -175,11 +175,11 @@ def main():
 		# "window4_demo",
 	]
 
-	#add random cases
-	# for kind in ["unicycle_sphere", "hetero"]:
-	# 	for n in [2,4,8]:
-	# 		for k in range(10):
-	# 			instances.append("gen_p10_n{}_{}_{}".format(n,k, kind))
+	# add random cases
+	for kind in ["unicycle_sphere", "hetero"]:
+		for n in [2,4,8]:
+			for k in range(10):
+				instances.append("gen_p10_n{}_{}_{}".format(n,k, kind))
 
 	# instances = ["window4_unicycle_sphere"]
 
