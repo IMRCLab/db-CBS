@@ -116,10 +116,10 @@ def execute_task(task: ExecutionTask):
 	for file in visualize_files:
 		run_visualize(vis_script, env, result_folder / file)
 	
-	search_viz_script = scripts_path / "visualize_search.py"
-	if(len(search_plot_files) > 0):
-		for file in search_plot_files:
-			run_search_visualize(search_viz_script, result_folder / file)
+	# search_viz_script = scripts_path / "visualize_search.py"
+	# if(len(search_plot_files) > 0):
+	# 	for file in search_plot_files:
+	# 		run_search_visualize(search_viz_script, result_folder / file)
 
 
 def main():
