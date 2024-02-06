@@ -139,6 +139,8 @@ int main(int argc, char* argv[]) {
             motionsFile = "../new_format_motions/car1_v0/car1_v0.msgpack";
         } else if (robotType == "integrator2_2d_v0"){
             motionsFile = "../new_format_motions/integrator2_2d_v0/integrator2_2d_v0.msgpack";
+        } else if (robotType == "integrator2_3d_v0"){
+            motionsFile = "../new_format_motions/integrator2_3d_v0/integrator2_3d_v0.bin.im.bin.sp.bin";
         } else{
             throw std::runtime_error("Unknown motion filename for this robottype!");
         }
