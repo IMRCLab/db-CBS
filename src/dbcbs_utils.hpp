@@ -31,6 +31,8 @@ struct HighLevelNode {
     std::vector<LowLevelPlan<dynobench::Trajectory>> solution;
     std::vector<std::vector<dynoplan::Constraint>> constraints;
     float cost; 
+    float LB;
+    size_t focalHeuristic;
     int id;
 
     typename boost::heap::d_ary_heap<HighLevelNode, boost::heap::arity<2>,
@@ -138,4 +140,9 @@ void export_solutions(const std::vector<LowLevelPlan<dynobench::Trajectory>>& so
             
         }
     }
+}
+
+int focalStateHeuristic(){
+  int numConflicts = 0;
+  return numConflicts;
 }
