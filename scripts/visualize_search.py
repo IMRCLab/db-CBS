@@ -21,11 +21,11 @@ def plot_expanded_trajs(filename_env, filename_trajs, filename_result = None, fi
         motions = yaml.safe_load(motions_file)
     trajs = motions["trajs"]
     starts = []
-    N = len(filename_trajs)
+    N = len(trajs)
     fps, duration = 24, 100
     folder = f"../dynoplan/plot/" # maybe better way with not saving images
     pathlib.Path(folder).mkdir(parents=True,exist_ok=True)
-    for i in range(0,N,10):
+    for i in range(0,N):
         states = trajs[i]["states"]
         X = [s[0] for s in states]
         Y = [s[1] for s in states]
@@ -44,7 +44,7 @@ def plot_expanded_trajs(filename_env, filename_trajs, filename_result = None, fi
     ax.scatter([s[0] for s in starts], [s[1] for s in starts], s=2, color="k")
     plt.savefig(f"../dynoplan/plot/fig_{i+1}.png")
     if filename_video is not None:
-        subprocess.call(["ffmpeg","-y","-r",str(fps),"-i", "../dynoplan/plot/fig_%d.png","-vcodec","mpeg4", "-qscale","5", "-r", str(fps), name_video])
+        subprocess.call(["ffmpeg","-y","-r",str(fps),"-i", "../dynoplan/plot/fig_%d.png","-vcodec","mpeg4", "-qscale","5", "-r", str(fps), filename_video])
 
 
 def main():

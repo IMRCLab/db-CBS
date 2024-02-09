@@ -164,7 +164,7 @@ int main(int argc, char* argv[]) {
             options_tdbastar.motionsFile = all_motionsFile[i];
             load_motion_primitives_new(options_tdbastar.motionsFile, *robot, robot_motions[problem.robotTypes[i]], 
                                        options_tdbastar.max_motions,
-                                       options_tdbastar.cut_actions, false, options_tdbastar.check_cols);
+                                       options_tdbastar.cut_actions, /*shuffle*/true, options_tdbastar.check_cols);
         }
         if (robot->name == "car_with_trailers") {
           col_geom_id++;
@@ -237,6 +237,8 @@ int main(int argc, char* argv[]) {
         options_tdbastar.motions_ptr = &robot_motions[problem.robotTypes[robot_id]]; 
         tdbastar(problem, options_tdbastar, start.solution[robot_id].trajectory, start.constraints[robot_id],
                   out_tdb, robot_id,/*reverse_search*/false, expanded_trajs_tmp, heuristics[robot_id], nullptr);
+        // std::ofstream out(outputFile);
+        // export_solutions(start.solution, 1, &out);
         if(!out_tdb.solved){
           std::cout << "Couldn't find initial solution for robot " << robot_id << "." << std::endl;
           start_node_valid = false;
