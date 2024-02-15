@@ -158,7 +158,7 @@ def main():
 		"swap4_unicycle2",
 
 		# # special test cases
-		# "infeasible_0",
+		"infeasible_0",
 
 		# # windows cases
 		# "window2_unicycle",
@@ -208,27 +208,27 @@ def main():
 		for task in tasks:
 			execute_task(task)
 	
-	# run_benchmark_stats(instances, algs, trials, timelimit)
+	run_benchmark_stats(instances, algs, trials, timelimit)
 
-	# write_table(instances, algs, Path("../results"), "table.pdf", trials, timelimit)
+	write_table(instances, algs, Path("../results"), "table.pdf", trials, timelimit)
 
-	# subprocess.run(
-	# 	['pdftk',
-	# 	 Path("../results") / 'table.pdf',
-	# 	 Path("../results") / 'stats.pdf',
-	# 	 'cat', 'output',
-	# 	 Path("../results") / 'results.pdf'
-	# 	]
-	# )
-	# # delete temp files
-	# (Path("../results") / 'table.pdf').unlink()
-	# (Path("../results") / 'stats.pdf').unlink()
+	subprocess.run(
+		['pdftk',
+		 Path("../results") / 'table.pdf',
+		 Path("../results") / 'stats.pdf',
+		 'cat', 'output',
+		 Path("../results") / 'results.pdf'
+		]
+	)
+	# delete temp files
+	(Path("../results") / 'table.pdf').unlink()
+	(Path("../results") / 'stats.pdf').unlink()
 
-	# paper_tables.write_table1(trials, timelimit)
-	# paper_tables.write_table2(trials, timelimit)
-	# paper_tables.write_table3(trials, timelimit)
-	# paper_tables.write_table4(trials, timelimit)
-	# paper_tables.write_table5(trials, timelimit)
+	paper_tables.write_table1(trials, timelimit)
+	paper_tables.write_table2(trials, timelimit)
+	paper_tables.write_table3(trials, timelimit)
+	paper_tables.write_table4(trials, timelimit)
+	paper_tables.write_table5(trials, timelimit)
 
 if __name__ == '__main__':
 	main()
