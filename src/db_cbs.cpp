@@ -555,9 +555,7 @@ int main(int argc, char* argv[]) {
                 HighLevelNode newNode = P;
                 size_t i = c.first;
                 newNode.id = id;
-#ifdef DBG_PRINTS
                 std::cout << "Node ID is " << id << std::endl;
-#endif
                 newNode.constraints[i].insert(newNode.constraints[i].end(), c.second.begin(), c.second.end());
                 newNode.cost -= newNode.solution[i].cost;
 #ifdef DBG_PRINTS
