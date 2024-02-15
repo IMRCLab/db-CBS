@@ -22,7 +22,7 @@ def plot_expanded_trajs(filename_env, filename_trajs, filename_result = None, fi
     trajs = motions["trajs"]
     starts = []
     N = len(trajs)
-    fps, duration = 24, 100
+    fps = 24
     folder = f"../dynoplan/plot/" # maybe better way with not saving images
     pathlib.Path(folder).mkdir(parents=True,exist_ok=True)
     for i in range(0,N):
@@ -37,14 +37,14 @@ def plot_expanded_trajs(filename_env, filename_trajs, filename_result = None, fi
     if filename_result is not None:
         with open(filename_result, "r") as f:
             data_sol = yaml.safe_load(f)
-        result = data_sol["result"][1]
+        result = data_sol["result"][0]
         x_sol = [X[0] for X in result["states"]]
         y_sol = [X[1] for X in result["states"]]
         ax.plot(x_sol, y_sol, color="orange")
     ax.scatter([s[0] for s in starts], [s[1] for s in starts], s=2, color="k")
     plt.savefig(f"../dynoplan/plot/fig_{i+1}.png")
     if filename_video is not None:
-        subprocess.call(["ffmpeg","-y","-r",str(fps),"-i", "../dynoplan/plot/fig_%d.png","-vcodec","mpeg4", "-qscale","5", "-r", str(fps), filename_video])
+        subprocess.call(["ffmpeg","-y","-r",str(fps),"-i", "../dynoplan/plot/fig_%d.png","-vcodec","mpeg4", "-qscale","5", "-r", str(fps), "../dynoplan/plot/" + filename_video])
 
 
 def main():
@@ -55,7 +55,7 @@ def main():
   parser.add_argument("--video", help="output file for video")
   args = parser.parse_args()
 
-  plot_expanded_trajs(args.env, args.trajs, args.video)
+  plot_expanded_trajs(args.env, args.trajs, args.result, args.video)
 
 if __name__ == "__main__":
   main()
