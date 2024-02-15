@@ -144,7 +144,7 @@ def main():
 		"alcove_unicycle_sphere",
 		"at_goal_unicycle",
 		"at_goal_unicycle_sphere",
-		3 robot cases
+		# 3 robot cases
 		"swap3_unicycle",
 		"swap3_unicycle_sphere",
 		"swap3_double_integrator",
