@@ -78,7 +78,8 @@ int main(int argc, char* argv[]) {
     options_tdbastar.fix_seed = 1;
     options_tdbastar.max_motions = cfg["num_primitives_0"].as<size_t>();
     options_tdbastar.rewire = true;
-    bool save_expanded_trajs = false;
+    bool save_forward_search_expansion = false;
+    bool save_reverse_search_expansion = true;
     // tdbastar problem
     dynobench::Problem problem(inputFile);
     dynobench::Problem problem_original(inputFile);
@@ -185,7 +186,7 @@ int main(int argc, char* argv[]) {
       options_tdbastar.delta = cfg["heuristic1_delta"].as<float>();
       for (const auto &robot : robots){
         // start to inf for the reverse search
-        problem.starts[robot_id].setConstant(std::sqrt(std::numeric_limits<double>::max()));
+        problem.starts[robot_id].head<2>().setConstant(std::sqrt(std::numeric_limits<double>::max())); // assumes 2D robots! 
         Eigen::VectorXd tmp_state = problem.starts[robot_id];
         problem.starts[robot_id] = problem.goals[robot_id];
         problem.goals[robot_id] = tmp_state;
@@ -195,6 +196,11 @@ int main(int argc, char* argv[]) {
         tdbastar(problem, options_tdbastar, tmp_solution.trajectory,/*constraints*/{},
                   out_tdb, robot_id,/*reverse_search*/true, expanded_trajs_tmp, nullptr, &heuristics[robot_id]);
         std::cout << "computed heuristic with " << heuristics[robot_id]->size() << " entries." << std::endl;
+        if (save_reverse_search_expansion){
+          std::string output_folder = output_path.parent_path().string();
+          std::ofstream out2(output_folder + "/expanded_trajs_rev_" + gen_random(6) + ".yaml");
+          export_node_expansion(expanded_trajs_tmp, &out2);
+        }
         robot_id++;
       }
     }
@@ -237,8 +243,6 @@ int main(int argc, char* argv[]) {
         options_tdbastar.motions_ptr = &robot_motions[problem.robotTypes[robot_id]]; 
         tdbastar(problem, options_tdbastar, start.solution[robot_id].trajectory, start.constraints[robot_id],
                   out_tdb, robot_id,/*reverse_search*/false, expanded_trajs_tmp, heuristics[robot_id], nullptr);
-        // std::ofstream out(outputFile);
-        // export_solutions(start.solution, 1, &out);
         if(!out_tdb.solved){
           std::cout << "Couldn't find initial solution for robot " << robot_id << "." << std::endl;
           start_node_valid = false;
@@ -268,14 +272,10 @@ int main(int argc, char* argv[]) {
             std::ofstream out(outputFile);
             export_solutions(P.solution, robots.size(), &out);
             // get motion_primitives_plot
-            if (save_expanded_trajs){
+            if (save_forward_search_expansion){
               std::string output_folder = output_path.parent_path().string();
-              std::ofstream out2(output_folder + "/expanded_trajs.yaml");
-              out2 << "trajs:" << std::endl;
-              for (auto traj : expanded_trajs_tmp){
-                out2 << "  - " << std::endl;
-                traj.to_yaml_format(out2, "    ");
-              }
+              std::ofstream out2(output_folder + "/expanded_trajs_forward_solution_" + gen_random(6) + ".yaml");
+              export_node_expansion(expanded_trajs_tmp, &out2);
             }
             bool sum_robot_cost = true;
             bool feasible = execute_optimizationMultiRobot(inputFile,
