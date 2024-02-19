@@ -462,7 +462,7 @@ int main(int argc, char* argv[]) {
     bool solved_db = false;
 
     for (size_t iteration = 0; ; ++iteration) {
-
+        std::cout << "HL Iteration: " << iteration << std::endl;
         if (iteration > 0) {
             if (solved_db) {
                 delta *= cfg["delta_rate"].as<float>();
@@ -472,7 +472,7 @@ int main(int argc, char* argv[]) {
             max_motions *= cfg["num_primitives_rate"].as<float>();
             max_motions = std::min<size_t>(max_motions, 1e6);
         }
-
+        std::cout << "HL Max motions: " << max_motions << std::endl;
         std::cout << "Search with delta=" << delta << " and motions=" << max_motions << std::endl;
 
         // disable/enable motions
