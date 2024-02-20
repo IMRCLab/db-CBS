@@ -170,10 +170,10 @@ def main():
 	# instances = ["window4_unicycle_sphere"]
 
 	algs = [
-		"sst",
-		"s2m2",
+		# "sst",
+		# "s2m2",
 		"k-cbs",
-		"db-cbs",
+		# "db-cbs",
 	]
 	trials = 1
 	timelimit = 5*60
