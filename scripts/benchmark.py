@@ -172,8 +172,8 @@ def main():
 	algs = [
 		# "sst",
 		# "s2m2",
-		"k-cbs",
-		# "db-cbs",
+		# "k-cbs",
+		"db-cbs",
 	]
 	trials = 1
 	timelimit = 5*60

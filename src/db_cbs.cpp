@@ -576,7 +576,6 @@ int main(int argc, char* argv[]) {
             if (!getEarliestConflict(P.solution, robots, col_mng_robots, col_mng_objs, inter_robot_conflict)) {
                 solved_db = true;
                 std::cout << "Final solution! cost: " << P.cost << std::endl;
-                std::cout << "HL Cost: " << P.cost << std::endl;
                 export_solutions(P.solution, robots, outputFile);
                 export_joint_solutions(P.solution, robots, jointFile);
 
@@ -589,17 +588,16 @@ int main(int argc, char* argv[]) {
                                                     dynobench_base,
                                                     sum_robot_cost);
                 if (feasible) {
-                    // return 0;
                     std::cout << "Have optimized trajectory, going to get motion primitives!" << std::endl;
                     for (auto& iter : robot_motions){
-                        std::cout << "For robot " << iter.first << " " << iter.second.motions.size() << "  motions before!";
+                        std::cout << "For robot " << iter.first << " " << iter.second.motions.size() << "  motions before!" << std::endl;
                     }
                     extract_motion_primitives(robot_motions, 
                                             optimizationFile,
                                             robot_types,
                                             robots);
                     for (auto& iter : robot_motions){
-                        std::cout << "For robot " << iter.first << " " << iter.second.motions.size() << "  motions after!";
+                        std::cout << "For robot " << iter.first << " " << iter.second.motions.size() << "  motions after!" << std::endl;
                     }
                 }
 
@@ -636,8 +634,6 @@ int main(int argc, char* argv[]) {
 #ifdef DBG_PRINTS
                     std::cout << "Updated New node cost: " << newNode.cost << std::endl;
 #endif
-                    //   print_solution(newNode.solution, robots);
-
                     auto handle = open.push(newNode);
                     (*handle).handle = handle;
                     
