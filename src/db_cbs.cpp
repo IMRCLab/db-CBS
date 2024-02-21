@@ -12,28 +12,79 @@
 #include <ompl/control/spaces/RealVectorControlSpace.h>
 #include <ompl/control/planners/rrt/RRT.h>
 #include <ompl/control/planners/sst/SST.h>
-// #include <ompl/base/objectives/ControlDurationObjective.h>
 #include <ompl/base/OptimizationObjective.h>
 
 #include "robots.h"
 #include "robotStatePropagator.hpp"
 #include "fclStateValidityChecker.hpp"
 
-// #define DBG_PRINTS
 #include "db_astar.hpp"
 #include "planresult.hpp"
 
 #include <dynoplan/optimization/ocp.hpp>
 #include <boost/program_options.hpp>
 #include <boost/heap/d_ary_heap.hpp>
-
-
-// #include "multirobot_trajectory.hpp"
 #include "dynoplan/optimization/multirobot_optimization.hpp"
 
 namespace ob = ompl::base;
 namespace oc = ompl::control;
 
+void extract_motion_primitives(std::map<std::string, Motions>& robot_motions, 
+                                const std::string &result_file,
+                                std::vector<std::string> &robot_types,
+                                std::vector<std::shared_ptr<Robot>> robots){
+    YAML::Node results = YAML::LoadFile(result_file);
+    std::vector length_options {5,6,7,8,9,10}; // desired length of motion primitives
+    for (size_t i = 0; i < results["result"].size(); ++i){ // for each robot
+        auto states = results["result"][i]["states"];
+        auto actions = results["result"][i]["actions"];
+        auto si = robots[i]->getSpaceInformation();
+        size_t T = states.size();
+        size_t start_t = 0;
+        std::vector<std::vector<double>> real_states;
+        std::vector<std::vector<double>> real_actions;
+
+        for (size_t t = 0; t < T; ++t){ 
+          real_states.push_back(states[t].as<std::vector<double>>());
+        }
+        // for the actions
+        for (size_t t = 0; t < T-1; ++t){
+          real_actions.push_back(actions[t].as<std::vector<double>>());
+        }
+
+        for (size_t t = 0; t < T; ++t){ 
+          if (t - start_t > rand() % length_options.size()){
+            // Normalize
+            for(size_t j = start_t; j < states.size(); ++j){
+                real_states[j][0] -= real_states[start_t][0];
+                real_states[j][1] -= real_states[start_t][1];
+            }
+            // break into small motions
+            Motion tmp_motion;
+            for (size_t k = start_t; k < t; ++k){
+                ob::State* state = si->allocState();
+                oc::Control *control = si->allocControl();
+                si->getStateSpace()->copyFromReals(state, real_states[k]);
+                tmp_motion.states.push_back(state);
+            }
+            for (size_t k = start_t; k < t - 1; ++k){
+                oc::Control *control = si->allocControl();
+                for (size_t idx = 0; idx < real_actions[k].size(); ++idx)
+                {
+                    double* address = si->getControlSpace()->getValueAddressAtIndex(control, idx);
+                    if (address) {
+                    *address = real_actions[k][idx];
+                    }
+                }
+                tmp_motion.actions.push_back(control);
+            }
+            robot_motions[robot_types[i]].motions.push_back(tmp_motion);
+		    start_t = t;
+          } // if to cut motion primitives
+          
+        } // loop over states for a single robot
+    } // loop over all robots
+};
 // Conflicts 
 struct Conflict {
   float time;
@@ -503,7 +554,6 @@ int main(int argc, char* argv[]) {
                 start_node_valid = false;
                 break;
             }
-
             start.cost += start.solution[i].cost;
             std::cout << "High Level Node Cost: " << start.cost << std::endl;
             i++;
@@ -540,6 +590,17 @@ int main(int argc, char* argv[]) {
                                                     sum_robot_cost);
                 if (feasible) {
                     // return 0;
+                    std::cout << "Have optimized trajectory, going to get motion primitives!" << std::endl;
+                    for (auto& iter : robot_motions){
+                        std::cout << "For robot " << iter.first << " " << iter.second.motions.size() << "  motions before!";
+                    }
+                    extract_motion_primitives(robot_motions, 
+                                            optimizationFile,
+                                            robot_types,
+                                            robots);
+                    for (auto& iter : robot_motions){
+                        std::cout << "For robot " << iter.first << " " << iter.second.motions.size() << "  motions after!";
+                    }
                 }
 
                 break;
