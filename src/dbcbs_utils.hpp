@@ -32,7 +32,7 @@ struct HighLevelNode {
     std::vector<std::vector<dynoplan::Constraint>> constraints;
     float cost; 
     float LB;
-    size_t focalHeuristic;
+    int focalHeuristic;
     int id;
 
     typename boost::heap::d_ary_heap<HighLevelNode, boost::heap::arity<2>,
@@ -146,3 +146,4 @@ int focalStateHeuristic(){
   int numConflicts = 0;
   return numConflicts;
 }
+
