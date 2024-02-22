@@ -29,6 +29,14 @@
 namespace ob = ompl::base;
 namespace oc = ompl::control;
 
+double get_solution_cost(const std::string &result_file){
+    YAML::Node results = YAML::LoadFile(result_file);
+    double cost = 0.0;
+    for (auto r : results["result"]){
+        cost += r["actions"].size() * 0.1;
+    }
+    return cost;
+};
 void extract_motion_primitives(std::map<std::string, Motions>& robot_motions, 
                                 const std::string &result_file,
                                 std::vector<std::string> &robot_types,
@@ -339,6 +347,7 @@ int main(int argc, char* argv[]) {
     std::string outputFile;
     std::string jointFile;
     std::string optimizationFile;
+    std::string statsFile;
     std::string cfgFile;
 
     // std::string outputFileSimple;
@@ -348,6 +357,7 @@ int main(int argc, char* argv[]) {
       ("output,o", po::value<std::string>(&outputFile)->required(), "output file (yaml)")
       ("joint,jnt", po::value<std::string>(&jointFile)->required(), "joint output file (yaml)")
       ("optimization,opt", po::value<std::string>(&optimizationFile)->required(), "optimization file (yaml)")
+      ("stats", po::value<std::string>(&statsFile)->default_value("stats.yaml"), "output stats file (yaml)")
       ("cfg,c", po::value<std::string>(&cfgFile)->required(), "configuration file (yaml)");
 
     try {
@@ -511,7 +521,10 @@ int main(int argc, char* argv[]) {
     float delta = cfg["delta_0"].as<float>();
     size_t max_motions = cfg["num_primitives_0"].as<size_t>();
     bool solved_db = false;
-
+    // for cost over time
+    std::ofstream stats(statsFile);
+    stats << "stats:" << std::endl;
+    auto start_time = std::chrono::steady_clock::now();
     for (size_t iteration = 0; ; ++iteration) {
         std::cout << "HL Iteration: " << iteration << std::endl;
         if (iteration > 0) {
@@ -523,7 +536,6 @@ int main(int argc, char* argv[]) {
             max_motions *= cfg["num_primitives_rate"].as<float>();
             max_motions = std::min<size_t>(max_motions, 1e6);
         }
-        std::cout << "HL Max motions: " << max_motions << std::endl;
         std::cout << "Search with delta=" << delta << " and motions=" << max_motions << std::endl;
 
         // disable/enable motions
@@ -555,7 +567,7 @@ int main(int argc, char* argv[]) {
                 break;
             }
             start.cost += start.solution[i].cost;
-            std::cout << "High Level Node Cost: " << start.cost << std::endl;
+            // std::cout << "High Level Node Cost: " << start.cost << std::endl;
             i++;
         } 
         if (!start_node_valid) {
@@ -588,6 +600,11 @@ int main(int argc, char* argv[]) {
                                                     dynobench_base,
                                                     sum_robot_cost);
                 if (feasible) {
+                    auto now = std::chrono::steady_clock::now();
+                    double t = std::chrono::duration_cast<std::chrono::milliseconds>(now - start_time).count();
+                    double cost = get_solution_cost(optimizationFile);
+                    stats << "  - t: " << t/1000.0f << std::endl;
+                    stats << "    cost: " << cost << std::endl;
                     std::cout << "Have optimized trajectory, going to get motion primitives!" << std::endl;
                     for (auto& iter : robot_motions){
                         std::cout << "For robot " << iter.first << " " << iter.second.motions.size() << "  motions before!" << std::endl;
