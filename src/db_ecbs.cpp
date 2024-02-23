@@ -15,6 +15,8 @@
 #include "dynoplan/optimization/multirobot_optimization.hpp"
 #include "dynoplan/tdbastar/tdbastar.hpp"
 #include "dynoplan/tdbastar/tdbastar_epsilon.hpp"
+#include "dynoplan/tdbastar/planresult.hpp"
+
 
 // DYNOBENCH
 #include "dynobench/general_utils.hpp"
@@ -25,7 +27,7 @@
 #include "fclStateValidityChecker.hpp"
 #include "fcl/broadphase/broadphase_collision_manager.h"
 #include <fcl/fcl.h>
-#include "planresult.hpp"
+// #include "planresult.hpp"
 #include "dbcbs_utils.hpp"
 
 using namespace dynoplan;
@@ -185,19 +187,20 @@ int main(int argc, char* argv[]) {
     std::vector<dynobench::Trajectory> expanded_trajs_tmp;
     if (cfg["heuristic1"].as<std::string>() == "reverse-search"){
       options_tdbastar.delta = cfg["heuristic1_delta"].as<float>();
+      std::vector<LowLevelPlan<dynobench::Trajectory>> tmp_solutions;
       for (const auto &robot : robots){
         // start to inf for the reverse search
+        LowLevelPlan<dynobench::Trajectory> tmp_solution;
         problem.starts[robot_id].setConstant(std::sqrt(std::numeric_limits<double>::max()));
         Eigen::VectorXd tmp_state = problem.starts[robot_id];
         problem.starts[robot_id] = problem.goals[robot_id];
         problem.goals[robot_id] = tmp_state;
-        LowLevelPlan<dynobench::Trajectory> tmp_solution;
         expanded_trajs_tmp.clear();
         options_tdbastar.motions_ptr = &robot_motions[problem.robotTypes[robot_id]]; 
         tdbastar_epsilon(problem, options_tdbastar, 
                 tmp_solution.trajectory,/*constraints*/{},
                 out_tdb, robot_id,/*reverse_search*/true, 
-                expanded_trajs_tmp, /*solution*/{}, robots, col_mng_robots, robot_objs,
+                expanded_trajs_tmp, tmp_solutions, robots, col_mng_robots, robot_objs,
                 nullptr, &heuristics[robot_id], options_tdbastar.w);
         std::cout << "computed heuristic with " << heuristics[robot_id]->size() << " entries." << std::endl;
         robot_id++;

@@ -14,6 +14,8 @@
 #include <dynoplan/optimization/ocp.hpp>
 #include "dynoplan/optimization/multirobot_optimization.hpp"
 #include "dynoplan/tdbastar/tdbastar.hpp"
+#include "dynoplan/tdbastar/planresult.hpp"
+
 // DYNOBENCH
 #include "dynobench/general_utils.hpp"
 #include "dynobench/robot_models_base.hpp"
@@ -23,7 +25,7 @@
 #include "fclStateValidityChecker.hpp"
 #include "fcl/broadphase/broadphase_collision_manager.h"
 #include <fcl/fcl.h>
-#include "planresult.hpp"
+// #include "planresult.hpp"
 #include "dbcbs_utils.hpp"
 
 using namespace dynoplan;

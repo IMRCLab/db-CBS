@@ -14,8 +14,8 @@
 #include "fclStateValidityChecker.hpp"
 #include "fcl/broadphase/broadphase_collision_manager.h"
 #include <fcl/fcl.h>
-#include "planresult.hpp"
-
+// #include "planresult.hpp"
+#include "dynoplan/tdbastar/planresult.hpp"
 #include "dynoplan/tdbastar/tdbastar.hpp"
 
 // Conflicts 
