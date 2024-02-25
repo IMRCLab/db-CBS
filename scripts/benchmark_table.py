@@ -159,6 +159,7 @@ def write_table(rows, algs, results_path, fname, trials, T, regret=False):
 			"s2m2": "S2M2",
 			"k-cbs": "k-CBS",
 			"db-cbs": "db-CBS",
+			"db-ecbs": "db-ECBS",
 		}
 
 		out = r"\begin{tabular}{c || c"
@@ -243,6 +244,7 @@ def main():
 		"s2m2",
 		"k-cbs",
 		"db-cbs",
+		"db-ecbs",
 	]
 
 	write_table(rows, algs, results_path, "table.pdf", 1, 5*60)
