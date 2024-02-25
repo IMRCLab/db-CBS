@@ -35,12 +35,14 @@ class Report:
       's2m2': {'idx': 1, 'color': cmap.colors[1], 'name': 'S2SM'},
       'k-cbs': {'idx': 2, 'color': cmap.colors[2], 'name': 'K-CBS'},
       'db-cbs': {'idx': 3, 'color': cmap.colors[3], 'name': 'DB-CBS'},
+      'db-ecbs': {'idx': 4, 'color': cmap.colors[4], 'name': 'DB-ECBS'},
     }
     self.color_dict = {
       'sst': cmap.colors[0],
       's2m2': cmap.colors[1],
       'k-cbs': cmap.colors[2],
       'db-cbs': cmap.colors[3],
+      'db-ecbs': cmap.colors[4],
     }
     self.trials = trials
     self.T = T

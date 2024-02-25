@@ -34,6 +34,7 @@ using namespace dynoplan;
 namespace fs = std::filesystem;
 
 #define DYNOBENCH_BASE "../dynoplan/dynobench/"
+#define REBUILT_FOCAL_LIST
 
 int main(int argc, char* argv[]) {
     
@@ -69,7 +70,7 @@ int main(int argc, char* argv[]) {
       return 1;
     }
     YAML::Node cfg = YAML::LoadFile(cfgFile);
-    cfg = cfg["db-cbs"]["default"];
+    // cfg = cfg["db-cbs"]["default"];
     float alpha = cfg["alpha"].as<float>();
     bool filter_duplicates = cfg["filter_duplicates"].as<bool>();
     fs::path output_path(outputFile);
