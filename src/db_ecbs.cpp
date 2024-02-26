@@ -70,7 +70,7 @@ int main(int argc, char* argv[]) {
       return 1;
     }
     YAML::Node cfg = YAML::LoadFile(cfgFile);
-    cfg = cfg["db-cbs"]["default"];
+    // cfg = cfg["db-cbs"]["default"];
     float alpha = cfg["alpha"].as<float>();
     bool filter_duplicates = cfg["filter_duplicates"].as<bool>();
     fs::path output_path(outputFile);
@@ -364,9 +364,11 @@ int main(int argc, char* argv[]) {
           Out_info_tdb tmp_out_tdb; 
           expanded_trajs_tmp.clear();
           options_tdbastar.motions_ptr = &robot_motions[problem.robotTypes[tmp_robot_id]]; 
-          tdbastar(problem, options_tdbastar, newNode.solution[tmp_robot_id].trajectory, 
-                  newNode.constraints[tmp_robot_id], tmp_out_tdb, tmp_robot_id,/*reverse_search*/false, 
-                  expanded_trajs_tmp, heuristics[tmp_robot_id]);
+          tdbastar_epsilon(problem, options_tdbastar, 
+                newNode.solution[tmp_robot_id].trajectory, newNode.constraints[tmp_robot_id],
+                tmp_out_tdb, tmp_robot_id, /*reverse_search*/false, 
+                expanded_trajs_tmp, newNode.solution, robots, col_mng_robots, robot_objs,
+                heuristics[tmp_robot_id], nullptr, options_tdbastar.w);
           if (tmp_out_tdb.solved){
               newNode.cost += newNode.solution[tmp_robot_id].trajectory.cost;
               newNode.LB += newNode.solution[tmp_robot_id].trajectory.fmin;
