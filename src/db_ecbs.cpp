@@ -70,7 +70,7 @@ int main(int argc, char* argv[]) {
       return 1;
     }
     YAML::Node cfg = YAML::LoadFile(cfgFile);
-    // cfg = cfg["db-cbs"]["default"];
+    cfg = cfg["db-cbs"]["default"];
     float alpha = cfg["alpha"].as<float>();
     bool filter_duplicates = cfg["filter_duplicates"].as<bool>();
     fs::path output_path(outputFile);
@@ -374,7 +374,8 @@ int main(int argc, char* argv[]) {
 
               auto handle = open.push(newNode);
               (*handle).handle = handle;
-              if (newNode.cost <= best_cost * options_tdbastar.w){
+              // if (newNode.cost <= best_cost * options_tdbastar.w)
+              if (newNode.cost <= open.top().LB * options_tdbastar.w){ 
                 focal.push(handle);
               }
               id++;
