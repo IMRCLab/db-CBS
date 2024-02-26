@@ -270,7 +270,6 @@ int main(int argc, char* argv[]) {
 
       auto handle = open.push(start);
       (*handle).handle = handle;
-      // focal.push((*handle).handle);
       focal.push(handle);
       
       int id = 1;
