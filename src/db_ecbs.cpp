@@ -82,7 +82,7 @@ int main(int argc, char* argv[]) {
     options_tdbastar.fix_seed = 1;
     options_tdbastar.max_motions = cfg["num_primitives_0"].as<size_t>();
     options_tdbastar.rewire = true;
-    options_tdbastar.w = 1.0;
+    options_tdbastar.w = 1.3;
     bool save_expanded_trajs = false;
     // tdbastar problem
     dynobench::Problem problem(inputFile);
@@ -341,6 +341,11 @@ int main(int argc, char* argv[]) {
                                           optimizationFile,
                                           DYNOBENCH_BASE,
                                           sum_robot_cost);
+            // debug
+            std::string output_folder = output_path.parent_path().string();
+            std::ofstream out2(output_folder + "/expanded_nodes.yaml");
+            out2 << "nodes: " << id << std::endl;
+
             if (feasible) {
               return 0;
             }

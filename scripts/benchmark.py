@@ -13,6 +13,7 @@ import tqdm
 import psutil
 # import checker
 from benchmark_stats import run_benchmark_stats
+from benchmark_stats import exp_nodes_table
 from benchmark_table import write_table
 import paper_tables
 
@@ -194,7 +195,7 @@ def main():
 		"db-ecbs",
 	]
 	trials = 1
-	timelimit = 10*60
+	timelimit = 5*60
 
 	tasks = []
 	for instance in instances:
@@ -212,6 +213,7 @@ def main():
 		for task in tasks:
 			execute_task(task)
 	
+	exp_nodes_table(instances, algs)
 	run_benchmark_stats(instances, algs, trials, timelimit)
 
 	write_table(instances, algs, Path("../results"), "table.pdf", trials, timelimit)

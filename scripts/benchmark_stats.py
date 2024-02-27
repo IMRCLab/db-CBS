@@ -2,7 +2,8 @@ import yaml
 from pathlib import Path
 import plot_stats
 import argparse
-
+import pandas as pd
+import matplotlib.pyplot as plt
 
 def run_benchmark_stats(instances, algs, trials, T):
 	results_path = Path("../results")
@@ -25,8 +26,35 @@ def run_benchmark_stats(instances, algs, trials, T):
 		# # report.add_success_rate_plot(instance)
 		# report.add_boxplot_initial_time_plot(instance)
 		# report.add_boxplot_initial_cost_plot([instance])
-
+	
 	report.close()
+
+def exp_nodes_table(instances, algs):
+	fig, ax = plt.subplots()
+	fig.patch.set_visible(False)
+	ax.axis('off')
+	ax.axis('tight')
+	results_path = Path("../results")
+	all_data = []
+	for instance in instances:
+		per_instance = []
+		per_instance.append(instance)
+		for alg in algs:
+			result_folder = results_path / instance / alg
+			stat_files = [str(p) for p in result_folder.glob("**/expanded_nodes.yaml")]
+			with open(str(stat_files[0])) as f: # for a single trial
+				data = yaml.safe_load(f)
+			per_instance.append(data["nodes"])
+		all_data.append(per_instance)
+		
+			
+	col_names = ["instance"]
+	col_names[1:] = algs
+	
+	df = pd.DataFrame(all_data, columns=col_names)
+	ax.table(cellText=df.values, colLabels=df.columns, loc='center')
+	fig.tight_layout()
+	plt.savefig(results_path / "node_expansion_stats.pdf")
 
 def main():
     parser = argparse.ArgumentParser()
