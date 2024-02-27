@@ -137,6 +137,29 @@ target_include_directories(main_ompl PUBLIC
   ${FCL_INCLUDE_DIRS}
 )
 
+# db-Ecbs
+add_executable(db_ecbs
+  src/db_ecbs.cpp
+)
+
+target_include_directories(db_ecbs PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}/dynoplan/include
+)
+
+target_link_libraries(db_ecbs PRIVATE 
+  idbastar::optimization
+  idbastar::tdbastar_epsilon
+  motion_planning_common
+  ${Boost_LIBRARIES}
+  ${YAML_LIBRARIES}
+  ompl
+  ${FCL_LIBRARIES}
+)
+target_include_directories(main_ompl PUBLIC 
+  ${YAML_INCLUDE_DIRS}
+  ${FCL_INCLUDE_DIRS}
+)
+
 ## standalone tdbA*
 
 # add_executable(tdbastar_standalone

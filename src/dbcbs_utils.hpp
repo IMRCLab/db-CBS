@@ -14,8 +14,8 @@
 #include "fclStateValidityChecker.hpp"
 #include "fcl/broadphase/broadphase_collision_manager.h"
 #include <fcl/fcl.h>
-#include "planresult.hpp"
-
+// #include "planresult.hpp"
+#include "dynoplan/tdbastar/planresult.hpp"
 #include "dynoplan/tdbastar/tdbastar.hpp"
 
 // Conflicts 
@@ -30,18 +30,40 @@ struct Conflict {
 struct HighLevelNode {
     std::vector<LowLevelPlan<dynobench::Trajectory>> solution;
     std::vector<std::vector<dynoplan::Constraint>> constraints;
-    float cost; 
-    float LB;
-    size_t focalHeuristic;
+    double cost; 
+    double LB;
+    int focalHeuristic;
     int id;
 
     typename boost::heap::d_ary_heap<HighLevelNode, boost::heap::arity<2>,
-                                     boost::heap::mutable_<true> >::handle_type
+                                     boost::heap::mutable_<true> >::handle_type // openset_handle_type
         handle;
+
     bool operator<(const HighLevelNode& n) const {
       return cost > n.cost;
     }
 };
+
+ // fefine your binary heap type
+typedef boost::heap::d_ary_heap<HighLevelNode, boost::heap::arity<2>, boost::heap::mutable_<true>> openset_t;
+// access its handle_type
+typedef openset_t::handle_type openset_handle_type;
+// create binary heap of handle_type (nested type) of openset_t binary heap
+// typedef boost::heap::d_ary_heap<openset_handle_type, boost::heap::arity<2>, boost::heap::mutable_<true>> focalset_t;
+struct compareFocalHeuristic { 
+  bool operator()(const openset_handle_type& h1,
+                  const openset_handle_type& h2) const{
+  if ((*h1).focalHeuristic != (*h2).focalHeuristic) {
+      return (*h1).focalHeuristic > (*h2).focalHeuristic;
+    }
+    return (*h1).cost > (*h2).cost; 
+  }
+};
+
+typedef boost::heap::d_ary_heap<
+      openset_handle_type, boost::heap::arity<2>, 
+      boost::heap::compare<compareFocalHeuristic>, boost::heap::mutable_<true>>
+      focalset_t;
 
 bool getEarliestConflict(
     const std::vector<LowLevelPlan<dynobench::Trajectory>>& solution,
@@ -142,7 +164,18 @@ void export_solutions(const std::vector<LowLevelPlan<dynobench::Trajectory>>& so
     }
 }
 
-int focalStateHeuristic(){
-  int numConflicts = 0;
-  return numConflicts;
-}
+
+// #include <boost/heap/d_ary_heap.hpp>
+
+// // Define your element type (e.g., HighLevelNode)
+// struct HighLevelNode {
+//     // Define your element properties and methods
+// };
+
+// // Define your binary heap type
+// typedef boost::heap::d_ary_heap<HighLevelNode, boost::heap::arity<2>, boost::heap::mutable_<true>> BinaryHeap;
+
+// // Access the handle_type typedef
+// typedef BinaryHeap::handle_type HandleType;
+
+// Now you can use HandleType to declare variables that represent handles to elements in the binary heap

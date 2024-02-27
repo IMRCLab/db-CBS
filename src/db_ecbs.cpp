@@ -14,7 +14,9 @@
 #include <dynoplan/optimization/ocp.hpp>
 #include "dynoplan/optimization/multirobot_optimization.hpp"
 #include "dynoplan/tdbastar/tdbastar.hpp"
+#include "dynoplan/tdbastar/tdbastar_epsilon.hpp"
 #include "dynoplan/tdbastar/planresult.hpp"
+
 
 // DYNOBENCH
 #include "dynobench/general_utils.hpp"
@@ -32,6 +34,7 @@ using namespace dynoplan;
 namespace fs = std::filesystem;
 
 #define DYNOBENCH_BASE "../dynoplan/dynobench/"
+#define REBUILT_FOCAL_LIST
 
 int main(int argc, char* argv[]) {
     
@@ -76,10 +79,10 @@ int main(int argc, char* argv[]) {
     options_tdbastar.outFile = outputFile;
     options_tdbastar.search_timelimit = timeLimit;
     options_tdbastar.cost_delta_factor = 0;
-    // options_tdbastar.delta = cfg["delta_0"].as<float>();
     options_tdbastar.fix_seed = 1;
     options_tdbastar.max_motions = cfg["num_primitives_0"].as<size_t>();
     options_tdbastar.rewire = true;
+    options_tdbastar.w = 1.3;
     bool save_expanded_trajs = false;
     // tdbastar problem
     dynobench::Problem problem(inputFile);
@@ -183,19 +186,23 @@ int main(int argc, char* argv[]) {
     size_t robot_id = 0;
     std::vector<ompl::NearestNeighbors<std::shared_ptr<AStarNode>>*> heuristics(robots.size(), nullptr);
     std::vector<dynobench::Trajectory> expanded_trajs_tmp;
+    std::vector<LowLevelPlan<dynobench::Trajectory>> tmp_solutions;
     if (cfg["heuristic1"].as<std::string>() == "reverse-search"){
       options_tdbastar.delta = cfg["heuristic1_delta"].as<float>();
       for (const auto &robot : robots){
         // start to inf for the reverse search
+        LowLevelPlan<dynobench::Trajectory> tmp_solution;
         problem.starts[robot_id].setConstant(std::sqrt(std::numeric_limits<double>::max()));
         Eigen::VectorXd tmp_state = problem.starts[robot_id];
         problem.starts[robot_id] = problem.goals[robot_id];
         problem.goals[robot_id] = tmp_state;
-        LowLevelPlan<dynobench::Trajectory> tmp_solution;
         expanded_trajs_tmp.clear();
         options_tdbastar.motions_ptr = &robot_motions[problem.robotTypes[robot_id]]; 
-        tdbastar(problem, options_tdbastar, tmp_solution.trajectory,/*constraints*/{},
-                  out_tdb, robot_id,/*reverse_search*/true, expanded_trajs_tmp, nullptr, &heuristics[robot_id]);
+        tdbastar_epsilon(problem, options_tdbastar, 
+                tmp_solution.trajectory,/*constraints*/{},
+                out_tdb, robot_id,/*reverse_search*/true, 
+                expanded_trajs_tmp, tmp_solutions, robots, col_mng_robots, robot_objs,
+                nullptr, &heuristics[robot_id], options_tdbastar.w);
         std::cout << "computed heuristic with " << heuristics[robot_id]->size() << " entries." << std::endl;
         robot_id++;
       }
@@ -232,13 +239,17 @@ int main(int argc, char* argv[]) {
       start.constraints.resize(env["robots"].size());
       start.cost = 0;
       start.id = 0;
+      start.LB = 0;
       bool start_node_valid = true;
       robot_id = 0;
       for (const auto &robot : robots){
         expanded_trajs_tmp.clear();
         options_tdbastar.motions_ptr = &robot_motions[problem.robotTypes[robot_id]]; 
-        tdbastar(problem, options_tdbastar, start.solution[robot_id].trajectory, start.constraints[robot_id],
-                  out_tdb, robot_id,/*reverse_search*/false, expanded_trajs_tmp, heuristics[robot_id], nullptr);
+        tdbastar_epsilon(problem, options_tdbastar, 
+                start.solution[robot_id].trajectory,start.constraints[robot_id],
+                out_tdb, robot_id,/*reverse_search*/false, 
+                expanded_trajs_tmp, tmp_solutions, robots, col_mng_robots, robot_objs,
+                heuristics[robot_id], nullptr, options_tdbastar.w);
         if(!out_tdb.solved){
           std::cout << "Couldn't find initial solution for robot " << robot_id << "." << std::endl;
           start_node_valid = false;
@@ -246,20 +257,67 @@ int main(int argc, char* argv[]) {
         }
 
         start.cost += start.solution[robot_id].trajectory.cost;
+        start.LB += start.solution[robot_id].trajectory.fmin;
         robot_id++;
       }
+      start.focalHeuristic = highLevelfocalHeuristic(start.solution, robots, col_mng_robots, robot_objs); 
       if (!start_node_valid) {
             continue;
       }
-      typename boost::heap::d_ary_heap<HighLevelNode, boost::heap::arity<2>,
-                                        boost::heap::mutable_<true> > open;
+      
+      openset_t open;
+      focalset_t focal;
+
       auto handle = open.push(start);
       (*handle).handle = handle;
+      focal.push(handle);
+      
       int id = 1;
       size_t expands = 0;
+      double best_cost = (*handle).cost;
+
       while (!open.empty()){
-        HighLevelNode P = open.top();
-        open.pop();
+        #ifdef REBUILT_FOCAL_LIST
+          focal.clear();
+          double LB = open.top().LB;
+          auto iter = open.ordered_begin();
+          auto iterEnd = open.ordered_end();
+          for (; iter != iterEnd; ++iter) {
+            auto cost = (*iter).cost;
+            if (cost <= LB * options_tdbastar.w) {
+              const HighLevelNode& n = *iter;
+              focal.push(n.handle);
+            }
+            else {
+              break;
+            }
+          }
+        #else 
+        {
+          double oldbest_best_cost = best_cost;
+          best_cost = open.top().cost;
+          if (best_cost > oldbest_best_cost) {
+            auto iter = open.ordered_begin();
+            auto iterEnd = open.ordered_end();
+            for (; iter != iterEnd; ++iter) {
+              auto cost = (*iter).cost;
+              if (cost > oldbest_best_cost * options_tdbastar.w && cost <= best_cost * options_tdbastar.w) { // check, LB ?
+                const HighLevelNode& n = *iter;
+                focal.push(n.handle);
+              }
+              if (cost > best_cost * options_tdbastar.w) {
+                break;
+              }
+            }
+          }
+        }
+        #endif
+        auto current_handle = focal.top();
+        HighLevelNode P = *current_handle;
+        
+        focal.pop();
+        open.erase(current_handle);
+
         Conflict inter_robot_conflict;
         if (!getEarliestConflict(P.solution, robots, col_mng_robots, robot_objs, inter_robot_conflict)){
             solved_db = true;
@@ -307,22 +365,26 @@ int main(int argc, char* argv[]) {
           std::cout << "Node ID is " << id << std::endl;
           newNode.constraints[tmp_robot_id].insert(newNode.constraints[tmp_robot_id].end(), c.second.begin(), c.second.end());
           newNode.cost -= newNode.solution[tmp_robot_id].trajectory.cost;
-#ifdef DBG_PRINTS
-          std::cout << "New node cost: " << newNode.cost << std::endl;
-#endif
-          Out_info_tdb tmp_out_tdb; // should I keep the old one ?
+          newNode.LB -= newNode.solution[tmp_robot_id].trajectory.fmin;
+          Out_info_tdb tmp_out_tdb; 
           expanded_trajs_tmp.clear();
           options_tdbastar.motions_ptr = &robot_motions[problem.robotTypes[tmp_robot_id]]; 
-          tdbastar(problem, options_tdbastar, newNode.solution[tmp_robot_id].trajectory, 
-                  newNode.constraints[tmp_robot_id], tmp_out_tdb, tmp_robot_id,/*reverse_search*/false, 
-                  expanded_trajs_tmp, heuristics[tmp_robot_id]);
+          tdbastar_epsilon(problem, options_tdbastar, 
+                newNode.solution[tmp_robot_id].trajectory, newNode.constraints[tmp_robot_id],
+                tmp_out_tdb, tmp_robot_id, /*reverse_search*/false, 
+                expanded_trajs_tmp, newNode.solution, robots, col_mng_robots, robot_objs,
+                heuristics[tmp_robot_id], nullptr, options_tdbastar.w);
           if (tmp_out_tdb.solved){
               newNode.cost += newNode.solution[tmp_robot_id].trajectory.cost;
-#ifdef DBG_PRINTS
-              std::cout << "Updated New node cost: " << newNode.cost << std::endl;
-#endif
+              newNode.LB += newNode.solution[tmp_robot_id].trajectory.fmin;
+              newNode.focalHeuristic = highLevelfocalHeuristic(newNode.solution, robots, col_mng_robots, robot_objs); 
+
               auto handle = open.push(newNode);
               (*handle).handle = handle;
+              // if (newNode.cost <= best_cost * options_tdbastar.w)
+              if (newNode.cost <= open.top().LB * options_tdbastar.w){ 
+                focal.push(handle);
+              }
               id++;
           }
 

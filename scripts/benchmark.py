@@ -3,6 +3,7 @@ from main_ompl import run_ompl
 from main_s2m2 import run_s2m2
 from main_kcbs import run_kcbs
 from main_dbcbs import run_dbcbs
+from main_dbecbs import run_dbecbs
 from pathlib import Path
 import shutil
 import subprocess
@@ -12,6 +13,7 @@ import tqdm
 import psutil
 # import checker
 from benchmark_stats import run_benchmark_stats
+from benchmark_stats import exp_nodes_table
 from benchmark_table import write_table
 import paper_tables
 
@@ -57,7 +59,6 @@ def run_search_visualize(script, filename_env, filename_trajs, filename_result):
 def execute_task(task: ExecutionTask):
 	scripts_path = Path("../scripts")
 	results_path = Path("../results")
-	# tuning_path = Path("../tuning")
 	env_path = Path().resolve() / "../example"
 	env = (env_path / task.instance).with_suffix(".yaml") 
 	assert(env.is_file())
@@ -106,6 +107,10 @@ def execute_task(task: ExecutionTask):
 		visualize_files = [p.name for p in result_folder.glob('result_*')]
 		check_files = [p.name for p in result_folder.glob('result_dbcbs_opt*')]
 		search_plot_files = [p.name for p in result_folder.glob('expanded_trajs*')]
+	elif task.alg == "db-ecbs":
+		run_dbecbs(str(env), str(result_folder), task.timelimit, mycfg)
+		visualize_files = [p.name for p in result_folder.glob('result_*')]
+		check_files = [p.name for p in result_folder.glob('result_dbecbs_opt*')]
 	
 	for file in check_files:
 		if not run_checker(env, result_folder / file, (result_folder / file).with_suffix(".check.txt")):
@@ -181,13 +186,13 @@ def main():
 			for k in range(10):
 				instances.append("gen_p10_n{}_{}_{}".format(n,k, kind))
 
-	# instances = ["window4_unicycle_sphere"]
 
 	algs = [
 		# "sst",
 		# "s2m2",
 		# "k-cbs",
 		"db-cbs",
+		"db-ecbs",
 	]
 	trials = 1
 	timelimit = 5*60
@@ -208,6 +213,7 @@ def main():
 		for task in tasks:
 			execute_task(task)
 	
+	exp_nodes_table(instances, algs)
 	run_benchmark_stats(instances, algs, trials, timelimit)
 
 	write_table(instances, algs, Path("../results"), "table.pdf", trials, timelimit)
