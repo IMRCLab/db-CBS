@@ -42,9 +42,12 @@ def exp_nodes_table(instances, algs):
 		for alg in algs:
 			result_folder = results_path / instance / alg
 			stat_files = [str(p) for p in result_folder.glob("**/expanded_nodes.yaml")]
-			with open(str(stat_files[0])) as f: # for a single trial
-				data = yaml.safe_load(f)
-			per_instance.append(data["nodes"])
+			if len(stat_files) > 0:
+				with open(str(stat_files[0])) as f: # for a single trial
+					data = yaml.safe_load(f)
+				per_instance.append(data["nodes"])
+			else: 
+				per_instance.append('*')
 		all_data.append(per_instance)
 		
 			
