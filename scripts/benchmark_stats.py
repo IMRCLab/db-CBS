@@ -2,8 +2,7 @@ import yaml
 from pathlib import Path
 import plot_stats
 import argparse
-import pandas as pd
-import matplotlib.pyplot as plt
+from tabulate import tabulate
 
 def run_benchmark_stats(instances, algs, trials, T):
 	results_path = Path("../results")
@@ -30,10 +29,6 @@ def run_benchmark_stats(instances, algs, trials, T):
 	report.close()
 
 def exp_nodes_table(instances, algs):
-	fig, ax = plt.subplots()
-	fig.patch.set_visible(False)
-	ax.axis('off')
-	ax.axis('tight')
 	results_path = Path("../results")
 	all_data = []
 	for instance in instances:
@@ -50,14 +45,12 @@ def exp_nodes_table(instances, algs):
 				per_instance.append('*')
 		all_data.append(per_instance)
 		
-			
 	col_names = ["instance"]
 	col_names[1:] = algs
 	
-	df = pd.DataFrame(all_data, columns=col_names)
-	ax.table(cellText=df.values, colLabels=df.columns, loc='center')
-	fig.tight_layout()
-	plt.savefig(results_path / "node_expansion_stats.pdf")
+	# df = pd.DataFrame(all_data, columns=col_names)
+	with open(results_path / "node_expansion_stats.txt", 'w') as f:
+		f.write(tabulate(all_data, headers=col_names, tablefmt="fancy_grid"))
 
 def main():
     parser = argparse.ArgumentParser()
