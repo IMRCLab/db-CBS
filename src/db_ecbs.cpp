@@ -27,7 +27,6 @@
 #include "fclStateValidityChecker.hpp"
 #include "fcl/broadphase/broadphase_collision_manager.h"
 #include <fcl/fcl.h>
-// #include "planresult.hpp"
 #include "dbcbs_utils.hpp"
 
 using namespace dynoplan;
@@ -70,7 +69,7 @@ int main(int argc, char* argv[]) {
       return 1;
     }
     YAML::Node cfg = YAML::LoadFile(cfgFile);
-    // cfg = cfg["db-cbs"]["default"];
+    // cfg = cfg["db-ecbs"]["default"];
     float alpha = cfg["alpha"].as<float>();
     bool filter_duplicates = cfg["filter_duplicates"].as<bool>();
     fs::path output_path(outputFile);
@@ -96,25 +95,8 @@ int main(int argc, char* argv[]) {
 
     // load problem description
     YAML::Node env = YAML::LoadFile(inputFile);
-    std::vector<fcl::CollisionObjectf *> obstacles;
     std::vector<std::vector<fcl::Vector3f>> positions;
     std::vector<std::shared_ptr<fcl::CollisionGeometryd>> collision_geometries;
-    for (const auto &obs : env["environment"]["obstacles"])
-    {
-        if (obs["type"].as<std::string>() == "box"){
-            const auto &size = obs["size"];
-            std::shared_ptr<fcl::CollisionGeometryf> geom;
-            geom.reset(new fcl::Boxf(size[0].as<float>(), size[1].as<float>(), 1.0));
-            const auto &center = obs["center"];
-            auto co = new fcl::CollisionObjectf(geom);
-            co->setTranslation(fcl::Vector3f(center[0].as<float>(), center[1].as<float>(), 0));
-            co->computeAABB();
-            obstacles.push_back(co);
-        }
-        else {
-        throw std::runtime_error("Unknown obstacle type!");
-        }
-    }
     const auto &env_min = env["environment"]["min"];
     const auto &env_max = env["environment"]["max"];
     ob::RealVectorBounds position_bounds(env_min.size());
