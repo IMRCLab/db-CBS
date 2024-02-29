@@ -3,7 +3,8 @@ environment:
   max: [5, 5, 5]
   obstacles: 
     - type: octomap
-      file: map
+      octomap_file: "../octomaps/map.bt"
+      octomap_stl: "../meshes/map.stl"
       center: []
       size: []
     - type: box

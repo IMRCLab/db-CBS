@@ -9,7 +9,7 @@ from meshcat.animation import Animation
 import argparse
 import yaml
 import time
-
+import os
 def visualize(env_file, result_file):
     vis = meshcat.Visualizer()
     anim = Animation()
@@ -33,7 +33,8 @@ def visualize(env_file, result_file):
       size = obs["size"]
       obs_type = obs["type"]
       if (obs_type == 'octomap'):
-         vis[f"Obstacle{k}"].set_object(g.StlMeshGeometry.from_file('../meshes/map.stl'), g.MeshLambertMaterial(color="blue")) # hard-coded
+         octomap_stl = obs["octomap_stl"]
+         vis[f"Obstacle{k}"].set_object(g.StlMeshGeometry.from_file(octomap_stl), g.MeshLambertMaterial(color="blue")) # hard-coded
       elif (obs_type == 'box'):
         vis[f"Obstacle{k}"].set_object(g.Mesh(g.Box(size)))
         vis[f"Obstacle{k}"].set_transform(tf.translation_matrix(center))
@@ -46,12 +47,14 @@ def visualize(env_file, result_file):
     name_robot = 0
     for i in range(len(result["result"])):
         state = []
+        position = [] 
         for s in result["result"][i]["states"]:
           state.append(s)
         states.append(state)
-
+        position = [[sublist[i] for sublist in state] for i in range(3)] # assumes 3D 
+        position = np.array(position)
         vis["Quadrotor" + str(name_robot)].set_object(g.StlMeshGeometry.from_file('../meshes/cf2_assembly.stl'), g.MeshLambertMaterial(color="green"))
-      
+        vis["trajectory" + str(name_robot)].set_object(g.Line(g.PointsGeometry(position), g.LineBasicMaterial(color="green")))
         name_robot+=1
     max_k = len(max(states))
     for k in range(max_k):
@@ -63,11 +66,13 @@ def visualize(env_file, result_file):
             robot_state = states[l][k]
           frame["Quadrotor" + str(l)].set_transform(tf.translation_matrix(robot_state[0:3]).dot(
               tf.quaternion_matrix(np.array([1,0,0,0]))))
+          
       time.sleep(0.1)
 
     vis.set_animation(anim)
     res = vis.static_html()
-    with open("octomap_test.html", "w") as f:
+
+    with open("octomap_" + os.path.basename(env_file).split('.')[0] + ".html", "w") as f:
         f.write(res)
             
 def main():
