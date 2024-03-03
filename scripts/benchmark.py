@@ -13,7 +13,7 @@ import tqdm
 import psutil
 # import checker
 from benchmark_stats import run_benchmark_stats
-from benchmark_stats import exp_nodes_table
+from benchmark_stats import export_table_txt
 from benchmark_table import write_table
 import paper_tables
 
@@ -213,7 +213,7 @@ def main():
 		for task in tasks:
 			execute_task(task)
 	
-	exp_nodes_table(instances, algs)
+	export_table_txt(instances, algs)
 	run_benchmark_stats(instances, algs, trials, timelimit)
 
 	write_table(instances, algs, Path("../results"), "table.pdf", trials, timelimit)
