@@ -7,6 +7,7 @@ find_package(Eigen3 REQUIRED)
 find_package(PkgConfig)
 pkg_check_modules(YAML REQUIRED yaml-cpp)
 find_package(fcl REQUIRED)
+find_package(octomap REQUIRED)
 
 
 
@@ -30,6 +31,7 @@ include_directories(
   ${FCL_INCLUDE_DIRS}
   ${CMAKE_SOURCE_DIR}/k_cbs/Kinodynamic-Conflict-Based-Search/src
   ${CMAKE_BINARY_DIR}/k_cbs/Kinodynamic-Conflict-Based-Search/src
+  ${OCTOMAP_INCLUDE_DIRS}
 )
 
 add_library(motion_planning_common
@@ -160,6 +162,17 @@ target_include_directories(main_ompl PUBLIC
   ${FCL_INCLUDE_DIRS}
 )
 
+add_executable(octomap2openscad
+  src/octomap2openscad
+)
+
+target_link_libraries(octomap2openscad
+  ${Boost_LIBRARIES}
+  ${YAML_CPP_LIBRARIES}
+  ${OCTOMAP_LIBRARIES}
+)
+
+target_compile_options(octomap2openscad PUBLIC -std=c++11 -Wall)
 ## standalone tdbA*
 
 # add_executable(tdbastar_standalone

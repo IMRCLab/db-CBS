@@ -47,6 +47,7 @@ def run_dbecbs(filename_env, folder, timelimit, cfg):
                         result = yaml.safe_load(f)
                         for r in result["result"]:
                             cost += len(r["actions"]) * 0.1
+                        nodes = result["result"][-1]["nodes"]
 
                     now = time.time()
                     t = now - start
@@ -54,6 +55,7 @@ def run_dbecbs(filename_env, folder, timelimit, cfg):
                     stats.write("  - t: {}\n".format(t))
                     stats.write("    cost: {}\n".format(cost))
                     stats.write("    duration_dbecbs: {}\n".format(duration_dbcbs))
+                    stats.write("    expanded_nodes: {}\n".format(nodes))
                     stats.flush()
             except:
                 print("Failure!")

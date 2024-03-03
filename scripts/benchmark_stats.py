@@ -52,6 +52,32 @@ def exp_nodes_table(instances, algs):
 	with open(results_path / "node_expansion_stats.txt", 'w') as f:
 		f.write(tabulate(all_data, headers=col_names, tablefmt="fancy_grid"))
 
+def export_table_txt(instances, algs):
+	results_path = Path("../results")
+	all_data = []
+	for instance in instances:
+		per_instance = []
+		per_instance.append(instance)
+		for alg in algs:
+			result_folder = results_path / instance / alg
+			stat_files = [str(p) for p in result_folder.glob("**/stats.yaml")]
+			if len(stat_files) > 0:
+				with open(str(stat_files[0])) as f: # for a single trial
+					data = yaml.safe_load(f)
+				data = (data["stats"])[0]
+				per_instance.extend([data["t"], data["cost"], data["expanded_nodes"]])
+			else: 
+				per_instance.extend(['*', '*', '*'])
+		all_data.append(per_instance)
+		
+	col_names = ["instances"]
+	for i in range(len(algs)):
+		col_names.extend(["t (" + algs[i] + ")", "cost (" + algs[i] + ")", "nodes (" + algs[i] + ")"])
+
+	# df = pd.DataFrame(all_data, columns=col_names)
+	with open(results_path / "results_nodes.txt", 'w') as f:
+		f.write(tabulate(all_data, headers=col_names, tablefmt="fancy_grid"))
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('instances', help="instances")
