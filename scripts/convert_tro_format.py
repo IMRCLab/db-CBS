@@ -4,7 +4,7 @@ import yaml
 import sys
 import shutil
 # converts TRO(18) problem instance format into db-ecbs
-
+# python3 convert_tro_format.py folder instance1 instance2 etc.,
 def main_conversion(folder, instances):
     folder = Path(folder)
     num_zeros = 3 # for vx, vy, vz
@@ -12,8 +12,13 @@ def main_conversion(folder, instances):
         new_format_instance = {}
         # set the environment
         new_format_instance["environment"] = {}
-        new_format_instance["environment"]["min"] = [-6,-6,0]
-        new_format_instance["environment"]["max"] = [6,6,6]
+        new_format_instance["environment"]["min"] = [0,0,0] 
+        if instance == 'drone32b':
+            new_format_instance["environment"]["max"] = [13,13,3] 
+        elif instance == 'drone32c' or instance == 'swap50':
+            new_format_instance["environment"]["max"] = [7.5,6.5,2.5] 
+        else: 
+            new_format_instance["environment"]["max"] = [6,6,6] 
         new_format_instance["environment"]["obstacles"] = []
         if (folder / (instance + ".bt")).is_file() and (folder / (instance + ".stl")).is_file():
             obstacle = {}
