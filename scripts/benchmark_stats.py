@@ -64,8 +64,11 @@ def export_table_txt(instances, algs):
 			if len(stat_files) > 0:
 				with open(str(stat_files[0])) as f: # for a single trial
 					data = yaml.safe_load(f)
-				data = (data["stats"])[0]
-				per_instance.extend([data["t"], data["cost"], data["expanded_nodes"]])
+				if (data["stats"]) != None:
+					data = (data["stats"])[0]
+					per_instance.extend([data["t"], data["cost"], data["expanded_nodes"]])
+				else:
+					per_instance.extend(['*', '*', '*'])
 			else: 
 				per_instance.extend(['*', '*', '*'])
 		all_data.append(per_instance)

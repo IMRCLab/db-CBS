@@ -213,7 +213,7 @@ def main():
 		for task in tasks:
 			execute_task(task)
 	
-	# export_table_txt(instances, algs)
+	export_table_txt(instances, algs)
 	run_benchmark_stats(instances, algs, trials, timelimit)
 
 	write_table(instances, algs, Path("../results"), "table.pdf", trials, timelimit)
