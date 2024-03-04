@@ -7,3 +7,6 @@ demo/
 cloud/motions/
 .vscode/
 __pycache__/
+meshes/
+octomaps/
+example/tro/
