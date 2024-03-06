@@ -44,8 +44,26 @@ struct HighLevelNode {
     }
 };
 
+struct HighLevelNodeFocal {
+    std::vector<LowLevelPlan<dynobench::Trajectory>> solution;
+    std::vector<std::vector<dynoplan::Constraint>> constraints;
+    std::vector<std::vector<std::pair<std::shared_ptr<dynoplan::AStarNode>, size_t>>> result;
+    double cost; 
+    double LB;
+    int focalHeuristic;
+    int id;
+
+    typename boost::heap::d_ary_heap<HighLevelNodeFocal, boost::heap::arity<2>,
+                                     boost::heap::mutable_<true> >::handle_type // openset_handle_type
+        handle;
+
+    bool operator<(const HighLevelNodeFocal& n) const {
+      return cost > n.cost;
+    }
+};
+
  // fefine your binary heap type
-typedef boost::heap::d_ary_heap<HighLevelNode, boost::heap::arity<2>, boost::heap::mutable_<true>> openset_t;
+typedef boost::heap::d_ary_heap<HighLevelNodeFocal, boost::heap::arity<2>, boost::heap::mutable_<true>> openset_t;
 // access its handle_type
 typedef openset_t::handle_type openset_handle_type;
 // create binary heap of handle_type (nested type) of openset_t binary heap

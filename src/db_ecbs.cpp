@@ -69,7 +69,7 @@ int main(int argc, char* argv[]) {
       return 1;
     }
     YAML::Node cfg = YAML::LoadFile(cfgFile);
-    // cfg = cfg["db-ecbs"]["default"];
+    cfg = cfg["db-ecbs"]["default"];
     float alpha = cfg["alpha"].as<float>();
     bool filter_duplicates = cfg["filter_duplicates"].as<bool>();
     fs::path output_path(outputFile);
@@ -169,6 +169,7 @@ int main(int argc, char* argv[]) {
     std::vector<ompl::NearestNeighbors<std::shared_ptr<AStarNode>>*> heuristics(robots.size(), nullptr);
     std::vector<dynobench::Trajectory> expanded_trajs_tmp;
     std::vector<LowLevelPlan<dynobench::Trajectory>> tmp_solutions;
+    std::vector<std::vector<std::pair<std::shared_ptr<AStarNode>, size_t>>> tmp_results;
     if (cfg["heuristic1"].as<std::string>() == "reverse-search"){
       options_tdbastar.delta = cfg["heuristic1_delta"].as<float>();
       for (const auto &robot : robots){
@@ -183,7 +184,7 @@ int main(int argc, char* argv[]) {
         tdbastar_epsilon(problem, options_tdbastar, 
                 tmp_solution.trajectory,/*constraints*/{},
                 out_tdb, robot_id,/*reverse_search*/true, 
-                expanded_trajs_tmp, tmp_solutions, robots, col_mng_robots, robot_objs,
+                expanded_trajs_tmp, tmp_solutions, tmp_results, robots, col_mng_robots, robot_objs,
                 nullptr, &heuristics[robot_id], options_tdbastar.w);
         std::cout << "computed heuristic with " << heuristics[robot_id]->size() << " entries." << std::endl;
         robot_id++;
@@ -216,9 +217,10 @@ int main(int argc, char* argv[]) {
           }
       }
       solved_db = false;
-      HighLevelNode start;
+      HighLevelNodeFocal start;
       start.solution.resize(env["robots"].size());
       start.constraints.resize(env["robots"].size());
+      start.result.resize(env["robots"].size());
       start.cost = 0;
       start.id = 0;
       start.LB = 0;
@@ -230,7 +232,7 @@ int main(int argc, char* argv[]) {
         tdbastar_epsilon(problem, options_tdbastar, 
                 start.solution[robot_id].trajectory,start.constraints[robot_id],
                 out_tdb, robot_id,/*reverse_search*/false, 
-                expanded_trajs_tmp, tmp_solutions, robots, col_mng_robots, robot_objs,
+                expanded_trajs_tmp, tmp_solutions, tmp_results, robots, col_mng_robots, robot_objs,
                 heuristics[robot_id], nullptr, options_tdbastar.w);
         if(!out_tdb.solved){
           std::cout << "Couldn't find initial solution for robot " << robot_id << "." << std::endl;
@@ -267,7 +269,7 @@ int main(int argc, char* argv[]) {
           for (; iter != iterEnd; ++iter) {
             auto cost = (*iter).cost;
             if (cost <= LB * options_tdbastar.w) {
-              const HighLevelNode& n = *iter;
+              const HighLevelNodeFocal& n = *iter;
               focal.push(n.handle);
             }
             else {
@@ -284,7 +286,7 @@ int main(int argc, char* argv[]) {
             for (; iter != iterEnd; ++iter) {
               auto cost = (*iter).cost;
               if (cost > oldbest_best_cost * options_tdbastar.w && cost <= best_cost * options_tdbastar.w) { // check, LB ?
-                const HighLevelNode& n = *iter;
+                const HighLevelNodeFocal& n = *iter;
                 focal.push(n.handle);
               }
               if (cost > best_cost * options_tdbastar.w) {
@@ -295,7 +297,7 @@ int main(int argc, char* argv[]) {
         }
         #endif
         auto current_handle = focal.top();
-        HighLevelNode P = *current_handle;
+        HighLevelNodeFocal P = *current_handle;
         
         focal.pop();
         open.erase(current_handle);
@@ -342,7 +344,7 @@ int main(int argc, char* argv[]) {
         std::map<size_t, std::vector<Constraint>> constraints;
         createConstraintsFromConflicts(inter_robot_conflict, constraints);
         for (const auto& c : constraints){
-          HighLevelNode newNode = P;
+          HighLevelNodeFocal newNode = P;
           size_t tmp_robot_id = c.first;
           newNode.id = id;
           std::cout << "Node ID is " << id << std::endl;
@@ -355,7 +357,7 @@ int main(int argc, char* argv[]) {
           tdbastar_epsilon(problem, options_tdbastar, 
                 newNode.solution[tmp_robot_id].trajectory, newNode.constraints[tmp_robot_id],
                 tmp_out_tdb, tmp_robot_id, /*reverse_search*/false, 
-                expanded_trajs_tmp, newNode.solution, robots, col_mng_robots, robot_objs,
+                expanded_trajs_tmp, newNode.solution, newNode.result, robots, col_mng_robots, robot_objs,
                 heuristics[tmp_robot_id], nullptr, options_tdbastar.w);
           if (tmp_out_tdb.solved){
               newNode.cost += newNode.solution[tmp_robot_id].trajectory.cost;
