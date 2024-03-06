@@ -69,7 +69,7 @@ int main(int argc, char* argv[]) {
       return 1;
     }
     YAML::Node cfg = YAML::LoadFile(cfgFile);
-    cfg = cfg["db-ecbs"]["default"];
+    // cfg = cfg["db-ecbs"]["default"];
     float alpha = cfg["alpha"].as<float>();
     bool filter_duplicates = cfg["filter_duplicates"].as<bool>();
     fs::path output_path(outputFile);
@@ -170,6 +170,7 @@ int main(int argc, char* argv[]) {
     std::vector<dynobench::Trajectory> expanded_trajs_tmp;
     std::vector<LowLevelPlan<dynobench::Trajectory>> tmp_solutions;
     std::vector<std::vector<std::pair<std::shared_ptr<AStarNode>, size_t>>> tmp_results;
+    std::vector<std::map<size_t, Motion*>> tmp_motions;
     if (cfg["heuristic1"].as<std::string>() == "reverse-search"){
       options_tdbastar.delta = cfg["heuristic1_delta"].as<float>();
       for (const auto &robot : robots){
@@ -184,7 +185,8 @@ int main(int argc, char* argv[]) {
         tdbastar_epsilon(problem, options_tdbastar, 
                 tmp_solution.trajectory,/*constraints*/{},
                 out_tdb, robot_id,/*reverse_search*/true, 
-                expanded_trajs_tmp, tmp_solutions, tmp_results, robots, col_mng_robots, robot_objs,
+                expanded_trajs_tmp, tmp_solutions, tmp_results, tmp_motions,
+                robots, col_mng_robots, robot_objs,
                 nullptr, &heuristics[robot_id], options_tdbastar.w);
         std::cout << "computed heuristic with " << heuristics[robot_id]->size() << " entries." << std::endl;
         robot_id++;
@@ -221,6 +223,7 @@ int main(int argc, char* argv[]) {
       start.solution.resize(env["robots"].size());
       start.constraints.resize(env["robots"].size());
       start.result.resize(env["robots"].size());
+      start.result_motions.resize(env["robots"].size());
       start.cost = 0;
       start.id = 0;
       start.LB = 0;
@@ -232,7 +235,8 @@ int main(int argc, char* argv[]) {
         tdbastar_epsilon(problem, options_tdbastar, 
                 start.solution[robot_id].trajectory,start.constraints[robot_id],
                 out_tdb, robot_id,/*reverse_search*/false, 
-                expanded_trajs_tmp, tmp_solutions, tmp_results, robots, col_mng_robots, robot_objs,
+                expanded_trajs_tmp, tmp_solutions, tmp_results, tmp_motions,
+                robots, col_mng_robots, robot_objs,
                 heuristics[robot_id], nullptr, options_tdbastar.w);
         if(!out_tdb.solved){
           std::cout << "Couldn't find initial solution for robot " << robot_id << "." << std::endl;
@@ -325,9 +329,6 @@ int main(int argc, char* argv[]) {
                                           optimizationFile,
                                           DYNOBENCH_BASE,
                                           sum_robot_cost);
-            // debug
-            // std::string output_folder = output_path.parent_path().string();
-            // std::ofstream out2(output_folder + "/expanded_nodes.yaml");
             std::ofstream fout(optimizationFile, std::ios::app); 
             fout << "  nodes: " << id << std::endl;
 
@@ -357,7 +358,8 @@ int main(int argc, char* argv[]) {
           tdbastar_epsilon(problem, options_tdbastar, 
                 newNode.solution[tmp_robot_id].trajectory, newNode.constraints[tmp_robot_id],
                 tmp_out_tdb, tmp_robot_id, /*reverse_search*/false, 
-                expanded_trajs_tmp, newNode.solution, newNode.result, robots, col_mng_robots, robot_objs,
+                expanded_trajs_tmp, newNode.solution, newNode.result, newNode.result_motions,
+                robots, col_mng_robots, robot_objs,
                 heuristics[tmp_robot_id], nullptr, options_tdbastar.w);
           if (tmp_out_tdb.solved){
               newNode.cost += newNode.solution[tmp_robot_id].trajectory.cost;
