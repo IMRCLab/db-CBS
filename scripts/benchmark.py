@@ -191,7 +191,7 @@ def main():
 		# "sst",
 		# "s2m2",
 		# "k-cbs",
-		"db-cbs",
+		# "db-cbs",
 		"db-ecbs",
 	]
 	trials = 1
