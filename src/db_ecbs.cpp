@@ -69,7 +69,7 @@ int main(int argc, char* argv[]) {
       return 1;
     }
     YAML::Node cfg = YAML::LoadFile(cfgFile);
-    // cfg = cfg["db-ecbs"]["default"];
+    cfg = cfg["db-ecbs"]["default"];
     float alpha = cfg["alpha"].as<float>();
     bool filter_duplicates = cfg["filter_duplicates"].as<bool>();
     fs::path output_path(outputFile);
@@ -82,6 +82,7 @@ int main(int argc, char* argv[]) {
     options_tdbastar.max_motions = cfg["num_primitives_0"].as<size_t>();
     options_tdbastar.rewire = true;
     options_tdbastar.w = 1.3;
+    std::vector<std::string> focal_heuristics = {"state_wise", "volume_wise"}; 
     bool save_expanded_trajs = false;
     // tdbastar problem
     dynobench::Problem problem(inputFile);
@@ -169,14 +170,14 @@ int main(int argc, char* argv[]) {
     std::vector<ompl::NearestNeighbors<std::shared_ptr<AStarNode>>*> heuristics(robots.size(), nullptr);
     std::vector<dynobench::Trajectory> expanded_trajs_tmp;
     std::vector<LowLevelPlan<dynobench::Trajectory>> tmp_solutions;
-    std::vector<std::vector<std::pair<std::shared_ptr<AStarNode>, size_t>>> tmp_results;
+    std::vector<std::vector<std::pair<std::shared_ptr<AStarNode>, size_t>>> tmp_results(env["robots"].size());
     std::vector<std::map<size_t, Motion*>> tmp_motions;
     if (cfg["heuristic1"].as<std::string>() == "reverse-search"){
       options_tdbastar.delta = cfg["heuristic1_delta"].as<float>();
       for (const auto &robot : robots){
         // start to inf for the reverse search
         LowLevelPlan<dynobench::Trajectory> tmp_solution;
-        problem.starts[robot_id].setConstant(std::sqrt(std::numeric_limits<double>::max()));
+        problem.starts[robot_id].head(robot->translation_invariance).setConstant(std::sqrt(std::numeric_limits<double>::max()));
         Eigen::VectorXd tmp_state = problem.starts[robot_id];
         problem.starts[robot_id] = problem.goals[robot_id];
         problem.goals[robot_id] = tmp_state;
@@ -185,9 +186,9 @@ int main(int argc, char* argv[]) {
         tdbastar_epsilon(problem, options_tdbastar, 
                 tmp_solution.trajectory,/*constraints*/{},
                 out_tdb, robot_id,/*reverse_search*/true, 
-                expanded_trajs_tmp, tmp_solutions, tmp_results, tmp_motions,
+                expanded_trajs_tmp, tmp_solutions, tmp_results, robot_motions,
                 robots, col_mng_robots, robot_objs,
-                nullptr, &heuristics[robot_id], options_tdbastar.w);
+                nullptr, &heuristics[robot_id], options_tdbastar.w, focal_heuristics[1]);
         std::cout << "computed heuristic with " << heuristics[robot_id]->size() << " entries." << std::endl;
         robot_id++;
       }
@@ -223,7 +224,6 @@ int main(int argc, char* argv[]) {
       start.solution.resize(env["robots"].size());
       start.constraints.resize(env["robots"].size());
       start.result.resize(env["robots"].size());
-      start.result_motions.resize(env["robots"].size());
       start.cost = 0;
       start.id = 0;
       start.LB = 0;
@@ -235,9 +235,9 @@ int main(int argc, char* argv[]) {
         tdbastar_epsilon(problem, options_tdbastar, 
                 start.solution[robot_id].trajectory,start.constraints[robot_id],
                 out_tdb, robot_id,/*reverse_search*/false, 
-                expanded_trajs_tmp, tmp_solutions, tmp_results, tmp_motions,
+                expanded_trajs_tmp, tmp_solutions, tmp_results, robot_motions,
                 robots, col_mng_robots, robot_objs,
-                heuristics[robot_id], nullptr, options_tdbastar.w);
+                heuristics[robot_id], nullptr, options_tdbastar.w, focal_heuristics[1]);
         if(!out_tdb.solved){
           std::cout << "Couldn't find initial solution for robot " << robot_id << "." << std::endl;
           start_node_valid = false;
@@ -358,9 +358,9 @@ int main(int argc, char* argv[]) {
           tdbastar_epsilon(problem, options_tdbastar, 
                 newNode.solution[tmp_robot_id].trajectory, newNode.constraints[tmp_robot_id],
                 tmp_out_tdb, tmp_robot_id, /*reverse_search*/false, 
-                expanded_trajs_tmp, newNode.solution, newNode.result, newNode.result_motions,
+                expanded_trajs_tmp, newNode.solution, newNode.result, robot_motions,
                 robots, col_mng_robots, robot_objs,
-                heuristics[tmp_robot_id], nullptr, options_tdbastar.w);
+                heuristics[tmp_robot_id], nullptr, options_tdbastar.w, focal_heuristics[1]);
           if (tmp_out_tdb.solved){
               newNode.cost += newNode.solution[tmp_robot_id].trajectory.cost;
               newNode.LB += newNode.solution[tmp_robot_id].trajectory.fmin;

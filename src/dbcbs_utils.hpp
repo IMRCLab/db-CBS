@@ -48,7 +48,7 @@ struct HighLevelNodeFocal {
     std::vector<LowLevelPlan<dynobench::Trajectory>> solution;
     std::vector<std::vector<dynoplan::Constraint>> constraints;
     std::vector<std::vector<std::pair<std::shared_ptr<dynoplan::AStarNode>, size_t>>> result;
-    std::vector<std::map<size_t, dynoplan::Motion*>> result_motions;
+    // std::vector<std::map<size_t, dynoplan::Motion*>> result_motions;
     double cost; 
     double LB;
     int focalHeuristic;
