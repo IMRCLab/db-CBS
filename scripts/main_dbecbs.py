@@ -48,6 +48,7 @@ def run_dbecbs(filename_env, folder, timelimit, cfg):
                         for r in result["result"]:
                             cost += len(r["actions"]) * 0.1
                         nodes = result["result"][-1]["nodes"]
+                        discrete_search_cost = result["result"][-1]["discrete_search_cost"]
 
                     now = time.time()
                     t = now - start
@@ -56,6 +57,7 @@ def run_dbecbs(filename_env, folder, timelimit, cfg):
                     stats.write("    cost: {}\n".format(cost))
                     stats.write("    duration_dbecbs: {}\n".format(duration_dbcbs))
                     stats.write("    expanded_nodes: {}\n".format(nodes))
+                    stats.write("    discrete_search_cost: {}\n".format(discrete_search_cost))
                     stats.flush()
             except:
                 print("Failure!")

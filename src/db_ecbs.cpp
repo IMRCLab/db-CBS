@@ -312,7 +312,9 @@ int main(int argc, char* argv[]) {
             std::cout << "Final solution!" << std::endl; 
             create_dir_if_necessary(outputFile);
             std::ofstream out(outputFile);
-            export_solutions(P.solution, robots.size(), &out);
+            // export_solutions(P.solution, robots.size(), &out);
+            float discrete_search_cost = 0;
+            export_solutions2(P.solution, robots.size(), discrete_search_cost, &out);
             // get motion_primitives_plot
             if (save_expanded_trajs){
               std::string output_folder = output_path.parent_path().string();
@@ -331,7 +333,7 @@ int main(int argc, char* argv[]) {
                                           sum_robot_cost);
             std::ofstream fout(optimizationFile, std::ios::app); 
             fout << "  nodes: " << id << std::endl;
-
+            fout << "  discrete_search_cost: " <<  discrete_search_cost << std::endl;
             if (feasible) {
               return 0;
             }
