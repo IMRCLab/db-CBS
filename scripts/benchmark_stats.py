@@ -66,7 +66,7 @@ def export_table_txt(instances, algs):
 					data = yaml.safe_load(f)
 				if (data["stats"]) != None:
 					data = (data["stats"])[0]
-					per_instance.extend([data["t"], data["cost"], data["expanded_nodes"]])
+					per_instance.extend([f'{data["t"]:.2f}', data["cost"], data["expanded_nodes"]])
 				else:
 					per_instance.extend(['*', '*', '*'])
 			else: 
