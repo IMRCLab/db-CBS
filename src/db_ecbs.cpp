@@ -188,7 +188,7 @@ int main(int argc, char* argv[]) {
                 out_tdb, robot_id,/*reverse_search*/true, 
                 expanded_trajs_tmp, tmp_solutions, tmp_results, robot_motions,
                 robots, col_mng_robots, robot_objs,
-                nullptr, &heuristics[robot_id], options_tdbastar.w, focal_heuristics[1]);
+                nullptr, &heuristics[robot_id], options_tdbastar.w, focal_heuristics[0]);
         std::cout << "computed heuristic with " << heuristics[robot_id]->size() << " entries." << std::endl;
         robot_id++;
       }
@@ -237,7 +237,7 @@ int main(int argc, char* argv[]) {
                 out_tdb, robot_id,/*reverse_search*/false, 
                 expanded_trajs_tmp, tmp_solutions, tmp_results, robot_motions,
                 robots, col_mng_robots, robot_objs,
-                heuristics[robot_id], nullptr, options_tdbastar.w, focal_heuristics[1]);
+                heuristics[robot_id], nullptr, options_tdbastar.w, focal_heuristics[0]);
         if(!out_tdb.solved){
           std::cout << "Couldn't find initial solution for robot " << robot_id << "." << std::endl;
           start_node_valid = false;
@@ -360,7 +360,7 @@ int main(int argc, char* argv[]) {
                 tmp_out_tdb, tmp_robot_id, /*reverse_search*/false, 
                 expanded_trajs_tmp, newNode.solution, newNode.result, robot_motions,
                 robots, col_mng_robots, robot_objs,
-                heuristics[tmp_robot_id], nullptr, options_tdbastar.w, focal_heuristics[1]);
+                heuristics[tmp_robot_id], nullptr, options_tdbastar.w, focal_heuristics[0]);
           if (tmp_out_tdb.solved){
               newNode.cost += newNode.solution[tmp_robot_id].trajectory.cost;
               newNode.LB += newNode.solution[tmp_robot_id].trajectory.fmin;
