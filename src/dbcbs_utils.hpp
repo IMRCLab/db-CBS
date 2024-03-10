@@ -183,7 +183,29 @@ void export_solutions(const std::vector<LowLevelPlan<dynobench::Trajectory>>& so
     }
 }
 
-
+void export_constraints(const std::vector<std::vector<dynoplan::Constraint>> &final_constraints,
+                        std::ofstream *out) {
+  *out << "constraints:" << std::endl;
+  // for (const auto& c : final_constraints){
+  for (size_t j = 0; j < final_constraints.size(); j++){ 
+    if (final_constraints[j].size() > 0){
+      const auto& c = final_constraints[j];
+      *out << "  - robot_id: " << j << std::endl;
+      *out << "    states:" << std::endl;
+      for (size_t i = 0; i < c.size(); i ++){
+          if (c[i].constrained_state.size() > 0)
+            *out << "      - ";
+            *out << c[i].constrained_state.format(dynobench::FMT) << std::endl;
+      }
+      *out << "    time:" << std::endl;
+      for (size_t i = 0; i < c.size(); i ++){
+          if (c[i].constrained_state.size() > 0)
+            *out << "      - ";
+            *out << c[i].time << std::endl;
+      }
+    }
+  }
+}
 // #include <boost/heap/d_ary_heap.hpp>
 
 // // Define your element type (e.g., HighLevelNode)

@@ -73,6 +73,7 @@ int main(int argc, char* argv[]) {
     float alpha = cfg["alpha"].as<float>();
     bool filter_duplicates = cfg["filter_duplicates"].as<bool>();
     fs::path output_path(outputFile);
+    std::string output_folder = output_path.parent_path().string();
     // tdbstar options
     Options_tdbastar options_tdbastar;
     options_tdbastar.outFile = outputFile;
@@ -315,7 +316,6 @@ int main(int argc, char* argv[]) {
             export_solutions(P.solution, robots.size(), &out);
             // get motion_primitives_plot
             if (save_expanded_trajs){
-              std::string output_folder = output_path.parent_path().string();
               std::ofstream out2(output_folder + "/expanded_trajs.yaml");
               out2 << "trajs:" << std::endl;
               for (auto traj : expanded_trajs_tmp){
@@ -329,10 +329,12 @@ int main(int argc, char* argv[]) {
                                           optimizationFile,
                                           DYNOBENCH_BASE,
                                           sum_robot_cost);
-            std::ofstream fout(optimizationFile, std::ios::app); 
-            fout << "  nodes: " << id << std::endl;
 
             if (feasible) {
+              std::ofstream fout(optimizationFile, std::ios::app); 
+              fout << "  nodes: " << id << std::endl;
+              std::ofstream out3(output_folder + "/final_constraints.yaml");
+              export_constraints(P.constraints, &out3);
               return 0;
             }
             break;
