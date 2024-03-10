@@ -6,9 +6,6 @@ import matplotlib.pyplot as plt
 import matplotlib
 from matplotlib.patches import Circle, Circle, Arrow, Rectangle
 from matplotlib import animation
-import matplotlib.animation as manimation
-import os
-import sys
 import subprocess
 
 def draw_sphere_patch(ax, center, radius, angle = 0, **kwargs):
@@ -47,6 +44,7 @@ class Animation:
     self.big_radius = 0.40
     self.robot_types = []
 
+    filename_constraint = "/home/akmarak-laptop/IMRC/db-CBS/results/swap3_unicycle/db-ecbs/000/final_constraints.yaml"
     for obstacle in env["environment"]["obstacles"]:
       if obstacle["type"] == "box":
         draw_box_patch(
@@ -54,7 +52,6 @@ class Animation:
       else:
         print("ERROR: unknown obstacle type")
 
-    # cmap = matplotlib.cm.get_cmap('jet')
     cmap = matplotlib.colormaps.get_cmap('jet')
 
     self.colors = cmap(np.linspace(0, 1, len(env["robots"]), True))
@@ -65,6 +62,13 @@ class Animation:
         self.draw_robot(robot["start"], robot["type"], facecolor=color, alpha=0.3)
       if filename_output is None:
         self.draw_robot(robot["goal"], robot["type"], facecolor='none', edgecolor=color, alpha=0.3)
+
+    if filename_constraint is not None:
+      with open(filename_constraint) as constraint_file:
+        self.constraints = yaml.safe_load(constraint_file)
+      # Draw constraints
+      for robot, color in zip(self.constraints["constraints"], self.colors):
+        self.draw_constraints(robot["states"], robot["time"], color=color, alpha=0.5)
 
     if filename_result is not None:
       with open(filename_result) as result_file:
@@ -89,7 +93,6 @@ class Animation:
               state = robot["states"][-1]
             else:
               state = robot["states"][t]
-            print(t, state, len(robot["states"]))
             add_patches.extend(self.draw_robot(state, robot_type, facecolor=color, alpha=0.2+0.6*min(t,len(robot["states"]))/T))
             if t >= len(robot["states"]):
               break
@@ -103,6 +106,7 @@ class Animation:
         self.ax.get_xaxis().set_visible(True)
         self.ax.get_yaxis().set_visible(True)
 
+      
       self.robot_patches = []
       i = 0
       for robot, color in zip(self.result["result"], self.colors):
@@ -121,7 +125,6 @@ class Animation:
       "ffmpeg",
       fps=10 * speed,
       dpi=200),
-      # savefig_kwargs={"pad_inches": 0, "bbox_inches": "tight"})
 
   def show(self):
     plt.show()
@@ -233,18 +236,9 @@ class Animation:
     if color is not None:
       self.ax.plot(states[:,0], states[:,1], color=color, **kwargs)
     else:
-
-      # self.ax.scatter(states[:,0], states[:,1],c=range(len(states)), marker='o',s=5)
       from matplotlib.collections import LineCollection
 
       points = states[:,0:2].reshape(-1, 1, 2)
-      # print(points.shape)
-      # x    = np.linspace(0,1, 100)
-      # y    = np.linspace(0,1, 100)
-      # cols = np.linspace(0,1,len(x))
-      # points = np.array([x, y]).T.reshape(-1, 1, 2)
-      # print(points.shape)
-      # exit()
 
       segments = np.concatenate([points[:-1], points[1:]], axis=1)
       cols = np.linspace(0,1,len(points))
@@ -253,13 +247,17 @@ class Animation:
       lc.set_array(cols)
       lc.set_linewidth(5)
       line = self.ax.add_collection(lc)
-      # fig.colorbar(line,ax=ax)
-
+  
+  def draw_constraints(self, constraint_states, constraint_time, color, **kwargs):
+    constr_states = np.array(constraint_states)
+    if color is not None:
+      for i in range(len(constraint_states)):
+        self.ax.plot(constr_states[i,0], constr_states[i,1], color=color, alpha=0.2*constraint_time[i], marker = 'X', markersize = 10)
 
 
 def visualize(filename_env, filename_result = None, filename_video=None):
   anim = Animation(filename_env, filename_result, filename_video)
-  # anim.save(filename_video, 1)
+  anim.save(filename_video, 1)
   # anim.show()
   if filename_video is not None:
     anim.save(filename_video, 1)
