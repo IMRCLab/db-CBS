@@ -12,11 +12,12 @@ def main_conversion(folder, instances):
         new_format_instance = {}
         # set the environment
         new_format_instance["environment"] = {}
-        new_format_instance["environment"]["min"] = [0,0,0] 
         if instance == 'drone32b':
-            new_format_instance["environment"]["max"] = [13,13,3] 
+            new_format_instance["environment"]["min"] = [0, 0, 0] 
+            new_format_instance["environment"]["max"] = [13, 13, 5] 
         elif instance == 'drone32c' or instance == 'swap50':
-            new_format_instance["environment"]["max"] = [7.5,6.5,2.5] 
+            new_format_instance["environment"]["min"] = [-5.5, -3, 0] 
+            new_format_instance["environment"]["max"] = [2, 3.5, 2.5] 
         else: 
             new_format_instance["environment"]["max"] = [6,6,6] 
         new_format_instance["environment"]["obstacles"] = []
