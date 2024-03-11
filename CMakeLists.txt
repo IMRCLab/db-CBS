@@ -161,7 +161,7 @@ target_include_directories(main_ompl PUBLIC
   ${YAML_INCLUDE_DIRS}
   ${FCL_INCLUDE_DIRS}
 )
-
+# octomap2openscad
 add_executable(octomap2openscad
   src/octomap2openscad
 )
@@ -173,6 +173,18 @@ target_link_libraries(octomap2openscad
 )
 
 target_compile_options(octomap2openscad PUBLIC -std=c++11 -Wall)
+# octomap_stats
+add_executable(octomap_stats
+  src/octomap_stats
+)
+
+target_link_libraries(octomap_stats
+  ${Boost_LIBRARIES}
+  ${YAML_CPP_LIBRARIES}
+  ${OCTOMAP_LIBRARIES}
+)
+
+target_compile_options(octomap_stats PUBLIC -std=c++11 -Wall)
 ## standalone tdbA*
 
 # add_executable(tdbastar_standalone
