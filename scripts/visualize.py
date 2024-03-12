@@ -7,6 +7,7 @@ import matplotlib
 from matplotlib.patches import Circle, Circle, Arrow, Rectangle
 from matplotlib import animation
 import subprocess
+from pathlib import Path
 
 def draw_sphere_patch(ax, center, radius, angle = 0, **kwargs):
   xy = np.asarray(center) 
@@ -43,8 +44,16 @@ class Animation:
     self.radius = 0.1
     self.big_radius = 0.40
     self.robot_types = []
+    self.visualize_constraints = False
+    self.interval = 100 
 
-    filename_constraint = "/home/akmarak-laptop/IMRC/db-CBS/results/swap3_unicycle/db-ecbs/000/final_constraints.yaml"
+    result_folder = Path(filename_result).resolve().parent
+    if (result_folder / "final_constraints.yaml").exists():
+      filename_constraint = result_folder / "final_constraints.yaml"
+      self.visualize_constraints = True
+      with open(filename_constraint) as constraint_file:
+        self.constraints = yaml.safe_load(constraint_file)
+
     for obstacle in env["environment"]["obstacles"]:
       if obstacle["type"] == "box":
         draw_box_patch(
@@ -63,12 +72,6 @@ class Animation:
       if filename_output is None:
         self.draw_robot(robot["goal"], robot["type"], facecolor='none', edgecolor=color, alpha=0.3)
 
-    if filename_constraint is not None:
-      with open(filename_constraint) as constraint_file:
-        self.constraints = yaml.safe_load(constraint_file)
-      # Draw constraints
-      for robot, color in zip(self.constraints["constraints"], self.colors):
-        self.draw_constraints(robot["states"], robot["time"], color=color, alpha=0.5)
 
     if filename_result is not None:
       with open(filename_result) as result_file:
@@ -84,7 +87,6 @@ class Animation:
       print("T", T)
 
       if filename_output is not None:
-        from pathlib import Path
 
         add_patches = []
         for robot, robot_type, color in zip(self.result["result"], self.robot_types, self.colors):
@@ -114,9 +116,14 @@ class Animation:
         patches = self.draw_robot(state, self.robot_types[i], facecolor=color, alpha=0.8)
         self.robot_patches.append(patches)
         i += 1
+
+      if(self.visualize_constraints):
+        for color in (self.colors):
+          self.robot_patches.append(self.draw_robot([0,0], "constraint", facecolor=color, alpha=0.8))
+          self.interval = 400 # to visualize constraints
       self.anim = animation.FuncAnimation(self.fig, self.animate_func,
                                 frames=T,
-                                interval=100,
+                                interval=self.interval,
                                 blit=True)
 
   def save(self, file_name, speed):
@@ -189,6 +196,19 @@ class Animation:
             pos2 = pos0 + np.array([np.cos(theta0), np.sin(theta0)])*self.size[0]/2*0.8
             self.robot_patches[k][2].center = pos2
 
+      if(self.visualize_constraints):
+        if len(self.constraints["constraints"]) > k: # not all robots have constraints
+          if any(i == time * 10 for time in self.constraints["constraints"][k]["time"]):
+            index = (self.constraints["constraints"][k]["time"]).index(i / 10)
+            pos = self.constraints["constraints"][k]["states"][index]
+            xy = np.asarray(pos[:2])
+            patch_id = k + self.robot_numbers
+            self.robot_patches[patch_id][0].set(visible=True)
+            self.robot_patches[patch_id][0].center = xy
+          else:
+            patch_id = k + self.robot_numbers
+            self.robot_patches[patch_id][0].set(visible=False)
+            # self.robot_patches[patch_id][0].set(edgecolor = 'red')
     return [item for row in self.robot_patches for item in row]
 
   def draw_robot(self, state, type, **kwargs):
@@ -229,6 +249,9 @@ class Animation:
         pos2 = pos + np.array([np.cos(theta0), np.sin(theta0)])*self.size[0]/2*0.8
         kwargs['facecolor'] = 'black'
         patches.append(draw_sphere_patch(self.ax, pos2, 0.03, 0, **kwargs))
+    elif type == "constraint":
+        pos = state
+        patches.append(draw_sphere_patch(self.ax, state, 0.05, 0, **kwargs))
     return patches
   
   def draw_trajectory(self, states, type, color, **kwargs):
@@ -257,8 +280,6 @@ class Animation:
 
 def visualize(filename_env, filename_result = None, filename_video=None):
   anim = Animation(filename_env, filename_result, filename_video)
-  anim.save(filename_video, 1)
-  # anim.show()
   if filename_video is not None:
     anim.save(filename_video, 1)
   else:
