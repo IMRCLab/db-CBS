@@ -39,10 +39,10 @@ jobs:
 
     - name: Output profile
       run: |
-        perf report -i ${{github.workspace}}/results/alcove_unicycle/db-ecbs/perf.data -g graph --no-children > ${{github.workspace}}/results/alcove_unicycle/db-ecbs/perf.txt
+        find ../results/ -name "perf.data" -exec perf report -i {} -g graph --no-children > {}.txt \;
 
     - uses: actions/upload-artifact@v3
       with:
         name: results
         path: results/
-    
+  
