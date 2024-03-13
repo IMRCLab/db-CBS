@@ -29,7 +29,7 @@ def run_dbecbs(filename_env, folder, timelimit, cfg, profile = False):
 
             if profile:
                 filename_profile = Path(folder) / "perf.data"
-                cmd = ["perf", "record", "--call-graph", "dwarf", "-o", filename_profile]
+                cmd = ["perf", "record", "--call-graph", "fp", "-o", filename_profile]
             else:
                 cmd = []
 
