@@ -1,0 +1,48 @@
+name: Benchmark
+
+on:
+  # manual trigger
+  workflow_dispatch:
+
+env:
+  # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
+  BUILD_TYPE: RelWithDebInfo
+  JOBS: 12
+
+jobs:
+  build:
+    runs-on: self-hosted
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        submodules: recursive
+
+    - name: Configure CMake
+      # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
+      # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
+      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_PREFIX_PATH="~/__local;/opt/openrobots/"
+
+    - name: Build
+      # Build your program with the given configuration
+      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} -j ${{env.JOBS}}
+
+    - name: Get motion primitives
+      run: |
+        wget https://tubcloud.tu-berlin.de/s/wezMej9ieNjwjz6/download
+        unzip download
+        rm download
+
+    - name: Run Benchmark
+      run: |
+        cd ${{github.workspace}}/build
+        python3 ../scripts/benchmark_profile.py
+
+    - name: Output profile
+      run: |
+        perf report -i ${{github.workspace}}/results/alcove_unicycle/db-ecbs/perf.data -g graph --no-children > ${{github.workspace}}/results/alcove_unicycle/db-ecbs/perf.txt
+
+    - uses: actions/upload-artifact@v3
+      with:
+        name: results
+        path: results/
+    
