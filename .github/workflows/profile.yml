@@ -39,7 +39,7 @@ jobs:
 
     - name: Output profile
       run: |
-        find ../results/ -name "perf.data" -exec perf report -i {} -g graph --no-children > {}.txt \;
+        find ${{github.workspace}}/results/ -name "perf.data" -exec perf report -i {} -g graph --no-children > {}.txt \;
 
     - uses: actions/upload-artifact@v3
       with:
