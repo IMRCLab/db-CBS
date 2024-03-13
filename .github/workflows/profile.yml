@@ -39,7 +39,7 @@ jobs:
 
     - name: Output profile
       run: |
-        find ${{github.workspace}}/results/ -name "perf.data" -exec sh -c 'perf report -i "$1" -g graph > "$1.txt"' sh {} \;
+        find ${{github.workspace}}/results/ -name "perf.data" -exec sh -c 'perf report -i "$1" -g graph --no-inline > "$1.txt"' sh {} \;
 
     - uses: actions/upload-artifact@v3
       with:
