@@ -150,29 +150,29 @@ def main():
 		"at_goal_unicycle",
 		"at_goal_unicycle_sphere",
 		# 3 robot cases
-		"swap3_unicycle",
-		"swap3_unicycle_sphere",
-		"swap3_double_integrator",
-		"swap3_trailer",
-		"swap3_unicycle2",
-		# 4 robot cases
-		"swap4_unicycle",
-		"swap4_unicycle_sphere",
-		"swap4_double_integrator",
-		"swap4_trailer",
-		"swap4_unicycle2",
+		# "swap3_unicycle",
+		# "swap3_unicycle_sphere",
+		# "swap3_double_integrator",
+		# "swap3_trailer",
+		# "swap3_unicycle2",
+		# # 4 robot cases
+		# "swap4_unicycle",
+		# "swap4_unicycle_sphere",
+		# "swap4_double_integrator",
+		# "swap4_trailer",
+		# "swap4_unicycle2",
 
-		# special test cases
-		"infeasible_0",
+		# # special test cases
+		# "infeasible_0",
 
-		# windows cases
-		"window2_unicycle",
-		"window3_unicycle",
-		"window4_unicycle",
-		"window4_unicycle2",
-		"window4_double_integrator",
-		"window4_trailer",
-		"window4_unicycle_sphere",
+		# # windows cases
+		# "window2_unicycle",
+		# "window3_unicycle",
+		# "window4_unicycle",
+		# "window4_unicycle2",
+		# "window4_double_integrator",
+		# "window4_trailer",
+		# "window4_unicycle_sphere",
 
 		#demo
 		# "swap2_demo",
@@ -185,10 +185,10 @@ def main():
 	]
 
 	# add random cases
-	for kind in ["unicycle_sphere", "hetero"]:
-		for n in [2,4,8]:
-			for k in range(10):
-				instances.append("gen_p10_n{}_{}_{}".format(n,k, kind))
+	# for kind in ["unicycle_sphere", "hetero"]:
+	# 	for n in [2,4,8]:
+	# 		for k in range(10):
+	# 			instances.append("gen_p10_n{}_{}_{}".format(n,k, kind))
 
 
 	algs = [
@@ -199,7 +199,7 @@ def main():
 		"db-ecbs",
 	]
 	trials = 1
-	timelimit = 10*60
+	timelimit = 5*60
 
 	tasks = []
 	for instance in instances:
