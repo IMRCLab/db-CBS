@@ -193,7 +193,6 @@ int main(int argc, char* argv[]) {
         robot_id++;
       }
     }
-    std::cout << "Going Out from Reverse Search!" << std::endl;
     bool solved_db = false;
     
     // main loop
