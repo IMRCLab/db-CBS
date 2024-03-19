@@ -62,6 +62,7 @@ db-ecbs:
     filter_duplicates: True
     heuristic1: "reverse-search"
     heuristic1_delta: 1.5
+    merge_aabb: True
   '*_unicycle_sphere':
     delta_0: 0.9
   '*_hetero':

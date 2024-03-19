@@ -72,6 +72,7 @@ int main(int argc, char* argv[]) {
     // cfg = cfg["db-ecbs"]["default"];
     float alpha = cfg["alpha"].as<float>();
     bool filter_duplicates = cfg["filter_duplicates"].as<bool>();
+    bool merge_aabb = cfg["merge_aabb"].as<bool>();
     fs::path output_path(outputFile);
     // tdbstar options
     Options_tdbastar options_tdbastar;
@@ -142,6 +143,7 @@ int main(int argc, char* argv[]) {
     size_t col_geom_id = 0;
     col_mng_robots->setup();
     size_t i = 0;
+    
     for (const auto &robot : robots){
         collision_geometries.insert(collision_geometries.end(), 
                               robot->collision_geometries.begin(), robot->collision_geometries.end());
@@ -152,7 +154,7 @@ int main(int argc, char* argv[]) {
             options_tdbastar.motionsFile = all_motionsFile[i];
             load_motion_primitives_new(options_tdbastar.motionsFile, *robot, robot_motions[problem.robotTypes[i]], 
                                        options_tdbastar.max_motions,
-                                       options_tdbastar.cut_actions, false, options_tdbastar.check_cols);
+                                       options_tdbastar.cut_actions, false, options_tdbastar.check_cols, merge_aabb);
         }
         if (robot->name == "car_with_trailers") {
           col_geom_id++;
