@@ -163,7 +163,7 @@ def main():
 		"swap4_unicycle2",
 
 		# # special test cases
-		# "infeasible_0",
+		"infeasible_0",
 
 		# # windows cases
 		# "window2_unicycle",
@@ -185,10 +185,10 @@ def main():
 	]
 
 	# add random cases
-	# for kind in ["unicycle_sphere", "hetero"]:
-	# 	for n in [2,4,8]:
-	# 		for k in range(10):
-	# 			instances.append("gen_p10_n{}_{}_{}".format(n,k, kind))
+	for kind in ["unicycle_sphere", "hetero"]:
+		for n in [2,4,8]:
+			for k in range(10):
+				instances.append("gen_p10_n{}_{}_{}".format(n,k, kind))
 
 
 	algs = [
