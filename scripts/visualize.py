@@ -4,12 +4,10 @@ import numpy as np
 import yaml
 import matplotlib.pyplot as plt
 import matplotlib
-from matplotlib.patches import Circle, Circle, Arrow, Rectangle
+from matplotlib.patches import Circle, Rectangle
 from matplotlib import animation
-import matplotlib.animation as manimation
-import os
-import sys
 import subprocess
+from pathlib import Path
 
 def draw_sphere_patch(ax, center, radius, angle = 0, **kwargs):
   xy = np.asarray(center) 
@@ -46,6 +44,8 @@ class Animation:
     self.radius = 0.1
     self.big_radius = 0.40
     self.robot_types = []
+    self.visualize_conflict = False
+    self.interval = 100 
 
     for obstacle in env["environment"]["obstacles"]:
       if obstacle["type"] == "box":
@@ -54,7 +54,6 @@ class Animation:
       else:
         print("ERROR: unknown obstacle type")
 
-    # cmap = matplotlib.cm.get_cmap('jet')
     cmap = matplotlib.colormaps.get_cmap('jet')
 
     self.colors = cmap(np.linspace(0, 1, len(env["robots"]), True))
@@ -65,6 +64,65 @@ class Animation:
         self.draw_robot(robot["start"], robot["type"], facecolor=color, alpha=0.3)
       if filename_output is None:
         self.draw_robot(robot["goal"], robot["type"], facecolor='none', edgecolor=color, alpha=0.3)
+
+    result_folder = Path(filename_result).resolve().parent
+    conflicts_folder = result_folder / "conflicts"
+    # check if we got conflic files. They should be in algs/0xx/conflicts. It is created ONLY if the bool is true
+    if (conflicts_folder.exists):
+       fps = 4
+       conflict_filenames = [file.name for file in conflicts_folder.iterdir() if file.is_file()]
+       if len(conflict_filenames) > 0:
+        conflict_filenames = sorted(conflict_filenames, key=lambda x: int(''.join(filter(str.isdigit, x))))
+        # create tmp folder to save figs
+        tmp_folder = conflicts_folder / "figs"
+        tmp_folder.mkdir(exist_ok=True)
+        # read all intermediate solutions and plot
+        i = 0
+        for filename in conflict_filenames:
+        # for i in range(len(conflict_filenames)):
+          filename = conflict_filenames[i]
+          with open(conflicts_folder / filename) as f:
+            tmp_result = yaml.safe_load(f)
+            # clean axis 
+          self.ax.clear()
+          # draw trajectory for tmp_results
+          for robot, robot_type, color in zip(tmp_result["result"], self.robot_types, self.colors):
+            self.draw_trajectory(robot["states"], robot_type, color=color, alpha=0.5)
+          # mark the conflict, take ONLY one robot's state
+          conflict_state = tmp_result["conflict"]["states"][1]
+          self.ax.plot(conflict_state[0], conflict_state[1], color='red', marker = 'X', markersize = 20)
+
+          T = 0
+          for robot in tmp_result["result"]:
+            T = max(T, len(robot["states"]))
+          # plot them to pdf
+          add_patches = []
+          for robot, robot_type, color in zip(tmp_result["result"], self.robot_types, self.colors):
+            for t in np.arange(0, T+21, 20):
+              if t >= len(robot["states"]):
+                state = robot["states"][-1]
+              else:
+                state = robot["states"][t]
+              add_patches.extend(self.draw_robot(state, robot_type, facecolor=color, alpha=0.2+0.6*min(t,len(robot["states"]))/T))
+              if t >= len(robot["states"]):
+                break
+          # save with corresponding high-level node id
+          # fname = f"{tmp_folder}/fig_{str(Path(filename).stem)}.png"
+          fname = f"{tmp_folder}/fig_{i}.png" # for video record
+          self.ax.get_xaxis().set_visible(False)
+          self.ax.get_yaxis().set_visible(False)
+          self.fig.savefig(fname)
+          for p in add_patches:
+            p.remove()
+          self.ax.get_xaxis().set_visible(True)
+          self.ax.get_yaxis().set_visible(True)
+          i += 1
+         # save into video
+        name_video = result_folder / "conflicts.mp4"
+        subprocess.call(["ffmpeg","-y","-r", str(fps),"-i", tmp_folder / "fig_%d.png","-vcodec","mpeg4", "-qscale","5", name_video])
+        self.ax.clear()
+        # delete the tmp_folder
+        # tmp_folder.rmdir()
 
     if filename_result is not None:
       with open(filename_result) as result_file:
@@ -80,7 +138,6 @@ class Animation:
       print("T", T)
 
       if filename_output is not None:
-        from pathlib import Path
 
         add_patches = []
         for robot, robot_type, color in zip(self.result["result"], self.robot_types, self.colors):
@@ -89,7 +146,6 @@ class Animation:
               state = robot["states"][-1]
             else:
               state = robot["states"][t]
-            print(t, state, len(robot["states"]))
             add_patches.extend(self.draw_robot(state, robot_type, facecolor=color, alpha=0.2+0.6*min(t,len(robot["states"]))/T))
             if t >= len(robot["states"]):
               break
@@ -103,6 +159,7 @@ class Animation:
         self.ax.get_xaxis().set_visible(True)
         self.ax.get_yaxis().set_visible(True)
 
+      
       self.robot_patches = []
       i = 0
       for robot, color in zip(self.result["result"], self.colors):
@@ -110,9 +167,10 @@ class Animation:
         patches = self.draw_robot(state, self.robot_types[i], facecolor=color, alpha=0.8)
         self.robot_patches.append(patches)
         i += 1
+
       self.anim = animation.FuncAnimation(self.fig, self.animate_func,
                                 frames=T,
-                                interval=100,
+                                interval=self.interval,
                                 blit=True)
 
   def save(self, file_name, speed):
@@ -121,7 +179,6 @@ class Animation:
       "ffmpeg",
       fps=10 * speed,
       dpi=200),
-      # savefig_kwargs={"pad_inches": 0, "bbox_inches": "tight"})
 
   def show(self):
     plt.show()
@@ -226,6 +283,9 @@ class Animation:
         pos2 = pos + np.array([np.cos(theta0), np.sin(theta0)])*self.size[0]/2*0.8
         kwargs['facecolor'] = 'black'
         patches.append(draw_sphere_patch(self.ax, pos2, 0.03, 0, **kwargs))
+    elif type == "constraint":
+        pos = state
+        patches.append(draw_sphere_patch(self.ax, state, 0.05, 0, **kwargs))
     return patches
   
   def draw_trajectory(self, states, type, color, **kwargs):
@@ -233,18 +293,9 @@ class Animation:
     if color is not None:
       self.ax.plot(states[:,0], states[:,1], color=color, **kwargs)
     else:
-
-      # self.ax.scatter(states[:,0], states[:,1],c=range(len(states)), marker='o',s=5)
       from matplotlib.collections import LineCollection
 
       points = states[:,0:2].reshape(-1, 1, 2)
-      # print(points.shape)
-      # x    = np.linspace(0,1, 100)
-      # y    = np.linspace(0,1, 100)
-      # cols = np.linspace(0,1,len(x))
-      # points = np.array([x, y]).T.reshape(-1, 1, 2)
-      # print(points.shape)
-      # exit()
 
       segments = np.concatenate([points[:-1], points[1:]], axis=1)
       cols = np.linspace(0,1,len(points))
@@ -253,14 +304,16 @@ class Animation:
       lc.set_array(cols)
       lc.set_linewidth(5)
       line = self.ax.add_collection(lc)
-      # fig.colorbar(line,ax=ax)
-
+  
+  def draw_constraints(self, constraint_states, constraint_time, color, **kwargs):
+    constr_states = np.array(constraint_states)
+    if color is not None:
+      for i in range(len(constraint_states)):
+        self.ax.plot(constr_states[i,0], constr_states[i,1], color=color, alpha=0.2*constraint_time[i], marker = 'X', markersize = 10)
 
 
 def visualize(filename_env, filename_result = None, filename_video=None):
   anim = Animation(filename_env, filename_result, filename_video)
-  # anim.save(filename_video, 1)
-  # anim.show()
   if filename_video is not None:
     anim.save(filename_video, 1)
   else:
