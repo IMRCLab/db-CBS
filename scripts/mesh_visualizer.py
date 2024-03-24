@@ -34,7 +34,7 @@ def visualize(env_file, result_file):
       obs_type = obs["type"]
       if (obs_type == 'octomap'):
          octomap_stl = obs["octomap_stl"]
-         vis[f"Obstacle{k}"].set_object(g.StlMeshGeometry.from_file(octomap_stl), g.MeshLambertMaterial(color="blue")) # hard-coded
+         vis[f"Obstacle{k}"].set_object(g.StlMeshGeometry.from_file(octomap_stl), g.MeshLambertMaterial(opacity=0.4, color=0xFFFFFF)) 
       elif (obs_type == 'box'):
         vis[f"Obstacle{k}"].set_object(g.Mesh(g.Box(size)))
         vis[f"Obstacle{k}"].set_transform(tf.translation_matrix(center))
@@ -53,8 +53,8 @@ def visualize(env_file, result_file):
         states.append(state)
         position = [[sublist[i] for sublist in state] for i in range(3)] # assumes 3D 
         position = np.array(position)
-        vis["Quadrotor" + str(name_robot)].set_object(g.StlMeshGeometry.from_file('../meshes/cf2_assembly.stl'), g.MeshLambertMaterial(color="green"))
-        vis["trajectory" + str(name_robot)].set_object(g.Line(g.PointsGeometry(position), g.LineBasicMaterial(color="green")))
+        vis["Quadrotor" + str(name_robot)].set_object(g.StlMeshGeometry.from_file('../meshes/cf2_assembly.stl'), g.MeshLambertMaterial(color=0x0000FF)) # blue
+        vis["trajectory" + str(name_robot)].set_object(g.Line(g.PointsGeometry(position), g.LineBasicMaterial(color=0x00FF00))) # green
         name_robot+=1
     max_k = len(max(states))
     for k in range(max_k):
