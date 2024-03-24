@@ -4,7 +4,7 @@ import numpy as np
 import yaml
 import matplotlib.pyplot as plt
 import matplotlib
-from matplotlib.patches import Circle, Circle, Arrow, Rectangle
+from matplotlib.patches import Circle, Rectangle
 from matplotlib import animation
 import subprocess
 from pathlib import Path
@@ -44,15 +44,8 @@ class Animation:
     self.radius = 0.1
     self.big_radius = 0.40
     self.robot_types = []
-    self.visualize_constraints = False
+    self.visualize_conflict = False
     self.interval = 100 
-
-    result_folder = Path(filename_result).resolve().parent
-    if (result_folder / "final_constraints.yaml").exists():
-      filename_constraint = result_folder / "final_constraints.yaml"
-      self.visualize_constraints = True
-      with open(filename_constraint) as constraint_file:
-        self.constraints = yaml.safe_load(constraint_file)
 
     for obstacle in env["environment"]["obstacles"]:
       if obstacle["type"] == "box":
@@ -72,6 +65,64 @@ class Animation:
       if filename_output is None:
         self.draw_robot(robot["goal"], robot["type"], facecolor='none', edgecolor=color, alpha=0.3)
 
+    result_folder = Path(filename_result).resolve().parent
+    conflicts_folder = result_folder / "conflicts"
+    # check if we got conflic files. They should be in algs/0xx/conflicts. It is created ONLY if the bool is true
+    if (conflicts_folder.exists):
+       fps = 4
+       conflict_filenames = [file.name for file in conflicts_folder.iterdir() if file.is_file()]
+       if len(conflict_filenames) > 0:
+        conflict_filenames = sorted(conflict_filenames, key=lambda x: int(''.join(filter(str.isdigit, x))))
+        # create tmp folder to save figs
+        tmp_folder = conflicts_folder / "figs"
+        tmp_folder.mkdir(exist_ok=True)
+        # read all intermediate solutions and plot
+        i = 0
+        for filename in conflict_filenames:
+        # for i in range(len(conflict_filenames)):
+          filename = conflict_filenames[i]
+          with open(conflicts_folder / filename) as f:
+            tmp_result = yaml.safe_load(f)
+            # clean axis 
+          self.ax.clear()
+          # draw trajectory for tmp_results
+          for robot, robot_type, color in zip(tmp_result["result"], self.robot_types, self.colors):
+            self.draw_trajectory(robot["states"], robot_type, color=color, alpha=0.5)
+          # mark the conflict, take ONLY one robot's state
+          conflict_state = tmp_result["conflict"]["states"][1]
+          self.ax.plot(conflict_state[0], conflict_state[1], color='red', marker = 'X', markersize = 20)
+
+          T = 0
+          for robot in tmp_result["result"]:
+            T = max(T, len(robot["states"]))
+          # plot them to pdf
+          add_patches = []
+          for robot, robot_type, color in zip(tmp_result["result"], self.robot_types, self.colors):
+            for t in np.arange(0, T+21, 20):
+              if t >= len(robot["states"]):
+                state = robot["states"][-1]
+              else:
+                state = robot["states"][t]
+              add_patches.extend(self.draw_robot(state, robot_type, facecolor=color, alpha=0.2+0.6*min(t,len(robot["states"]))/T))
+              if t >= len(robot["states"]):
+                break
+          # save with corresponding high-level node id
+          # fname = f"{tmp_folder}/fig_{str(Path(filename).stem)}.png"
+          fname = f"{tmp_folder}/fig_{i}.png" # for video record
+          self.ax.get_xaxis().set_visible(False)
+          self.ax.get_yaxis().set_visible(False)
+          self.fig.savefig(fname)
+          for p in add_patches:
+            p.remove()
+          self.ax.get_xaxis().set_visible(True)
+          self.ax.get_yaxis().set_visible(True)
+          i += 1
+         # save into video
+        name_video = result_folder / "conflicts.mp4"
+        subprocess.call(["ffmpeg","-y","-r", str(fps),"-i", tmp_folder / "fig_%d.png","-vcodec","mpeg4", "-qscale","5", name_video])
+        self.ax.clear()
+        # delete the tmp_folder
+        # tmp_folder.rmdir()
 
     if filename_result is not None:
       with open(filename_result) as result_file:
@@ -117,10 +168,6 @@ class Animation:
         self.robot_patches.append(patches)
         i += 1
 
-      if(self.visualize_constraints):
-        for color in (self.colors):
-          self.robot_patches.append(self.draw_robot([0,0], "constraint", facecolor=color, alpha=0.8))
-          self.interval = 400 # to visualize constraints
       self.anim = animation.FuncAnimation(self.fig, self.animate_func,
                                 frames=T,
                                 interval=self.interval,
@@ -196,19 +243,6 @@ class Animation:
             pos2 = pos0 + np.array([np.cos(theta0), np.sin(theta0)])*self.size[0]/2*0.8
             self.robot_patches[k][2].center = pos2
 
-      if(self.visualize_constraints):
-        if len(self.constraints["constraints"]) > k: # not all robots have constraints
-          if any(i == time * 10 for time in self.constraints["constraints"][k]["time"]):
-            index = (self.constraints["constraints"][k]["time"]).index(i / 10)
-            pos = self.constraints["constraints"][k]["states"][index]
-            xy = np.asarray(pos[:2])
-            patch_id = k + self.robot_numbers
-            self.robot_patches[patch_id][0].set(visible=True)
-            self.robot_patches[patch_id][0].center = xy
-          else:
-            patch_id = k + self.robot_numbers
-            self.robot_patches[patch_id][0].set(visible=False)
-            # self.robot_patches[patch_id][0].set(edgecolor = 'red')
     return [item for row in self.robot_patches for item in row]
 
   def draw_robot(self, state, type, **kwargs):

@@ -74,6 +74,8 @@ int main(int argc, char* argv[]) {
     bool filter_duplicates = cfg["filter_duplicates"].as<bool>();
     fs::path output_path(outputFile);
     std::string output_folder = output_path.parent_path().string();
+    bool save_search_video = true;
+    std::string conflicts_folder = output_folder + "/conflicts";
     // tdbstar options
     Options_tdbastar options_tdbastar;
     options_tdbastar.outFile = outputFile;
@@ -83,7 +85,7 @@ int main(int argc, char* argv[]) {
     options_tdbastar.max_motions = cfg["num_primitives_0"].as<size_t>();
     options_tdbastar.rewire = true;
     options_tdbastar.w = 1.3;
-    std::vector<std::string> focal_heuristics = {"state_wise", "volume_wise"}; 
+    std::string focal_heuristic = "volume_wise"; 
     bool save_expanded_trajs = false;
     // tdbastar problem
     dynobench::Problem problem(inputFile);
@@ -189,9 +191,15 @@ int main(int argc, char* argv[]) {
                 out_tdb, robot_id,/*reverse_search*/true, 
                 expanded_trajs_tmp, tmp_solutions, tmp_results, robot_motions,
                 robots, col_mng_robots, robot_objs,
-                nullptr, &heuristics[robot_id], options_tdbastar.w, focal_heuristics[0]);
+                nullptr, &heuristics[robot_id], options_tdbastar.w, focal_heuristic);
         std::cout << "computed heuristic with " << heuristics[robot_id]->size() << " entries." << std::endl;
         robot_id++;
+      }
+    }
+    if (save_search_video){
+      std::cout << "***Going to save all intermediate solutions with conflicts!***" << std::endl;
+      if (!fs::exists(conflicts_folder)) {
+        fs::create_directory(conflicts_folder);
       }
     }
     bool solved_db = false;
@@ -238,7 +246,7 @@ int main(int argc, char* argv[]) {
                 out_tdb, robot_id,/*reverse_search*/false, 
                 expanded_trajs_tmp, tmp_solutions, tmp_results, robot_motions,
                 robots, col_mng_robots, robot_objs,
-                heuristics[robot_id], nullptr, options_tdbastar.w, focal_heuristics[0]);
+                heuristics[robot_id], nullptr, options_tdbastar.w, focal_heuristic);
         if(!out_tdb.solved){
           std::cout << "Couldn't find initial solution for robot " << robot_id << "." << std::endl;
           start_node_valid = false;
@@ -313,7 +321,7 @@ int main(int argc, char* argv[]) {
             std::cout << "Final solution!" << std::endl; 
             create_dir_if_necessary(outputFile);
             std::ofstream out(outputFile);
-            export_solutions(P.solution, robots.size(), &out);
+            export_solutions(P.solution, &out);
             // get motion_primitives_plot
             if (save_expanded_trajs){
               std::ofstream out2(output_folder + "/expanded_trajs.yaml");
@@ -333,8 +341,8 @@ int main(int argc, char* argv[]) {
             if (feasible) {
               std::ofstream fout(optimizationFile, std::ios::app); 
               fout << "  nodes: " << id << std::endl;
-              std::ofstream out3(output_folder + "/final_constraints.yaml");
-              export_constraints(P.constraints, &out3);
+              // std::ofstream out3(output_folder + "/final_constraints.yaml");
+              // export_constraints(P.constraints, &out3);
               return 0;
             }
             break;
@@ -346,6 +354,14 @@ int main(int argc, char* argv[]) {
 
         std::map<size_t, std::vector<Constraint>> constraints;
         createConstraintsFromConflicts(inter_robot_conflict, constraints);
+        if(save_search_video){
+          // get the plot of high-level node solution with conflicts
+          auto filename = conflicts_folder + "/" + std::to_string(P.id) + ".yaml";
+          std::cout << filename << std::endl;
+          std::ofstream int_out(filename);
+          export_intermediate_solutions(P.solution, inter_robot_conflict, &int_out);
+        }
+        
         for (const auto& c : constraints){
           HighLevelNodeFocal newNode = P;
           size_t tmp_robot_id = c.first;
@@ -362,7 +378,7 @@ int main(int argc, char* argv[]) {
                 tmp_out_tdb, tmp_robot_id, /*reverse_search*/false, 
                 expanded_trajs_tmp, newNode.solution, newNode.result, robot_motions,
                 robots, col_mng_robots, robot_objs,
-                heuristics[tmp_robot_id], nullptr, options_tdbastar.w, focal_heuristics[0]);
+                heuristics[tmp_robot_id], nullptr, options_tdbastar.w, focal_heuristic);
           if (tmp_out_tdb.solved){
               newNode.cost += newNode.solution[tmp_robot_id].trajectory.cost;
               newNode.LB += newNode.solution[tmp_robot_id].trajectory.fmin;

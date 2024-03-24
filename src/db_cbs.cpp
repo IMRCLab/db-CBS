@@ -266,7 +266,7 @@ int main(int argc, char* argv[]) {
             std::cout << "Final solution!" << std::endl; 
             create_dir_if_necessary(outputFile);
             std::ofstream out(outputFile);
-            export_solutions(P.solution, robots.size(), &out);
+            export_solutions(P.solution, &out);
             // get motion_primitives_plot
             if (save_expanded_trajs){
               std::string output_folder = output_path.parent_path().string();

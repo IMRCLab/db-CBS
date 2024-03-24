@@ -160,7 +160,7 @@ void createConstraintsFromConflicts(const Conflict& early_conflict, std::map<siz
 }
 
 void export_solutions(const std::vector<LowLevelPlan<dynobench::Trajectory>>& solution, 
-                        const int robot_numx, std::ofstream *out){
+                      std::ofstream *out){
     float cost = 0;
     for (auto& n : solution)
       cost += n.trajectory.cost;
@@ -181,6 +181,42 @@ void export_solutions(const std::vector<LowLevelPlan<dynobench::Trajectory>>& so
             
         }
     }
+}
+
+void export_intermediate_solutions(const std::vector<LowLevelPlan<dynobench::Trajectory>>& solution, 
+                      const Conflict& early_conflict, std::ofstream *out){
+    float cost = 0;
+    for (auto& n : solution)
+      cost += n.trajectory.cost;
+    *out << "cost: " << cost << std::endl; 
+    *out << "result:" << std::endl;
+    for (size_t i = 0; i < solution.size(); ++i){ 
+        std::vector<Eigen::VectorXd> tmp_states = solution[i].trajectory.states;
+        std::vector<Eigen::VectorXd> tmp_actions = solution[i].trajectory.actions;
+        *out << "  - states:" << std::endl;
+        for (size_t j = 0; j < tmp_states.size(); ++j){
+            *out << "      - ";
+            *out << tmp_states.at(j).format(dynobench::FMT)<< std::endl;
+        }
+        *out << "    actions:" << std::endl;
+        for (size_t j = 0; j < tmp_actions.size(); ++j){
+            *out << "      - ";
+            *out << tmp_actions.at(j).format(dynobench::FMT)<< std::endl;
+            
+        }
+    }
+    // write conflicts
+    *out << "conflict:" << std::endl;
+    *out << "    time:" << std::endl;
+    *out << "      - ";
+    *out << early_conflict.time << std::endl;
+    // only one state can be used for visualization
+    *out << "    states:" << std::endl;
+    *out << "      - ";
+    *out << early_conflict.robot_state_i.format(dynobench::FMT) << std::endl;
+    *out << "      - ";
+    *out << early_conflict.robot_state_j.format(dynobench::FMT) << std::endl;
+
 }
 
 void export_constraints(const std::vector<std::vector<dynoplan::Constraint>> &final_constraints,
