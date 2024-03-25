@@ -69,7 +69,7 @@ class Animation:
     conflicts_folder = result_folder / "conflicts"
     # check if we got conflic files. They should be in algs/0xx/conflicts. It is created ONLY if the bool is true
     if (conflicts_folder.exists):
-       fps = 4
+       fps = 2
        conflict_filenames = [file.name for file in conflicts_folder.iterdir() if file.is_file()]
        if len(conflict_filenames) > 0:
         conflict_filenames = sorted(conflict_filenames, key=lambda x: int(''.join(filter(str.isdigit, x))))
@@ -90,6 +90,9 @@ class Animation:
             self.draw_trajectory(robot["states"], robot_type, color=color, alpha=0.5)
           # mark the conflict, take ONLY one robot's state
           conflict_state = tmp_result["conflict"]["states"][1]
+          conflict_time = tmp_result["conflict"]["time"][0] # unique time for both
+          cost = tmp_result["cost"]
+          constraint_size = tmp_result["constraints"]
           self.ax.plot(conflict_state[0], conflict_state[1], color='red', marker = 'X', markersize = 20)
 
           T = 0
@@ -109,13 +112,26 @@ class Animation:
           # save with corresponding high-level node id
           # fname = f"{tmp_folder}/fig_{str(Path(filename).stem)}.png"
           fname = f"{tmp_folder}/fig_{i}.png" # for video record
+          self.ax.set_title("Cost: {}, "
+                            "Constraints number: {}, "
+                            "Conflict time: {}".format(cost,constraint_size,conflict_time), fontsize = 8,
+                            bbox = {'facecolor': 'oldlace', 'alpha': 0.5, 'pad': 8})
           self.ax.get_xaxis().set_visible(False)
           self.ax.get_yaxis().set_visible(False)
+          self.ax.spines['top'].set_visible(False)
+          self.ax.spines['right'].set_visible(False)
+          self.ax.spines['bottom'].set_visible(False)
+          self.ax.spines['left'].set_visible(False)
+          self.fig.tight_layout()
           self.fig.savefig(fname)
           for p in add_patches:
             p.remove()
           self.ax.get_xaxis().set_visible(True)
           self.ax.get_yaxis().set_visible(True)
+          self.ax.spines['top'].set_visible(True)
+          self.ax.spines['right'].set_visible(True)
+          self.ax.spines['bottom'].set_visible(True)
+          self.ax.spines['left'].set_visible(True)
           i += 1
          # save into video
         name_video = result_folder / "conflicts.mp4"
@@ -314,10 +330,11 @@ class Animation:
 
 def visualize(filename_env, filename_result = None, filename_video=None):
   anim = Animation(filename_env, filename_result, filename_video)
-  if filename_video is not None:
-    anim.save(filename_video, 1)
-  else:
-    anim.show()
+  anim.show()
+  # if filename_video is not None:
+  #   anim.save(filename_video, 1)
+  # else:
+  #   anim.show()
 
 def main():
   parser = argparse.ArgumentParser()

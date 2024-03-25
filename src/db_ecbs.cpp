@@ -359,7 +359,7 @@ int main(int argc, char* argv[]) {
           auto filename = conflicts_folder + "/" + std::to_string(P.id) + ".yaml";
           std::cout << filename << std::endl;
           std::ofstream int_out(filename);
-          export_intermediate_solutions(P.solution, inter_robot_conflict, &int_out);
+          export_intermediate_solutions(P.solution, P.constraints, inter_robot_conflict, &int_out);
         }
         
         for (const auto& c : constraints){

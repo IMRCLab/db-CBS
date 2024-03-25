@@ -184,10 +184,15 @@ void export_solutions(const std::vector<LowLevelPlan<dynobench::Trajectory>>& so
 }
 
 void export_intermediate_solutions(const std::vector<LowLevelPlan<dynobench::Trajectory>>& solution, 
-                      const Conflict& early_conflict, std::ofstream *out){
+                      std::vector<std::vector<dynoplan::Constraint>> constraints, const Conflict& early_conflict, std::ofstream *out){
     float cost = 0;
     for (auto& n : solution)
       cost += n.trajectory.cost;
+
+    size_t all_constraints = 0;
+    for (auto& c : constraints){
+      all_constraints += c.size(); // for each robot vector of constraints
+    }
     *out << "cost: " << cost << std::endl; 
     *out << "result:" << std::endl;
     for (size_t i = 0; i < solution.size(); ++i){ 
@@ -205,6 +210,8 @@ void export_intermediate_solutions(const std::vector<LowLevelPlan<dynobench::Tra
             
         }
     }
+    // constraints of the node
+    *out << "constraints: " << all_constraints << std::endl;
     // write conflicts
     *out << "conflict:" << std::endl;
     *out << "    time:" << std::endl;
