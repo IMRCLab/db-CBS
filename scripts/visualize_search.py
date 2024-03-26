@@ -4,11 +4,19 @@ import subprocess
 import pathlib
 import argparse
 
-def plot_expanded_trajs(filename_env, filename_trajs, filename_result = None, filename_video = None):
+def plot_expanded_trajs(filename_env, filename_trajs, filename_result = None, filename_video = None, dim_3D = False):
     with open(filename_env) as env_file:
       env = yaml.safe_load(env_file)
     fig = plt.figure()
-    ax = fig.add_subplot(111, aspect="equal")
+    if(dim_3D):
+       ax = plt.figure().add_subplot(projection='3d')
+    else:
+      ax = fig.add_subplot(111, aspect="equal")
+      ax.set_zlim(env["environment"]["min"][2], env["environment"]["max"][2])
+      # create folder to save images
+      folder = f"../dynoplan/plot/" # maybe better way with not saving images
+      pathlib.Path(folder).mkdir(parents=True,exist_ok=True)
+
     ax.set_xlim(env["environment"]["min"][0], env["environment"]["max"][0])
     ax.set_ylim(env["environment"]["min"][1], env["environment"]["max"][1])
 
@@ -21,30 +29,48 @@ def plot_expanded_trajs(filename_env, filename_trajs, filename_result = None, fi
         motions = yaml.safe_load(motions_file)
     trajs = motions["trajs"]
     starts = []
-    N = len(filename_trajs)
-    fps, duration = 24, 100
-    folder = f"../dynoplan/plot/" # maybe better way with not saving images
-    pathlib.Path(folder).mkdir(parents=True,exist_ok=True)
-    for i in range(0,N,10):
+    N = len(trajs)
+    fps = 24
+    step = 10
+    for i in range(0,N,step): 
         states = trajs[i]["states"]
         X = [s[0] for s in states]
         Y = [s[1] for s in states]
-        starts.append([states[0][0], states[0][1]])
-        ax.plot(X, Y, color=".5", alpha=0.2)
-        print("saving ", i)
-        file = f"{folder}/fig_{i}.png"
-        plt.savefig(file)
+        if dim_3D:
+          Z = [s[2] for s in states]
+          starts.append([states[0][0], states[0][1], states[0][2]])
+          ax.plot(X, Y, Z, color=".5", alpha=0.2)
+        else:
+          starts.append([states[0][0], states[0][1]])
+          ax.plot(X, Y, color=".5", alpha=0.2)
+          # can not save for 3D, doesn't make sense
+          print("saving ", i)
+          file = f"{folder}/fig_{i}.png"
+          plt.savefig(file)
+
+    # plot the start of motion primitives
+    # if dim_3D:
+    #   ax.scatter([x[0] for x in starts], [y[1] for y in starts], [z[2] for z in starts], color="k")
+    # else:
+    #   ax.scatter([x[0] for x in starts], [y[1] for y in starts], s=2, color="k")
+       
     if filename_result is not None:
         with open(filename_result, "r") as f:
             data_sol = yaml.safe_load(f)
-        result = data_sol["result"][1]
+        result = data_sol["result"][0]
         x_sol = [X[0] for X in result["states"]]
         y_sol = [X[1] for X in result["states"]]
-        ax.plot(x_sol, y_sol, color="orange")
-    ax.scatter([s[0] for s in starts], [s[1] for s in starts], s=2, color="k")
-    plt.savefig(f"../dynoplan/plot/fig_{i+1}.png")
-    if filename_video is not None:
-        subprocess.call(["ffmpeg","-y","-r",str(fps),"-i", "../dynoplan/plot/fig_%d.png","-vcodec","mpeg4", "-qscale","5", "-r", str(fps), name_video])
+        if dim_3D:
+          z_sol = [X[2] for X in result["states"]]
+          ax.plot(x_sol, y_sol, z_sol, color="orange")
+        else:
+          ax.plot(x_sol, y_sol, color="orange")
+    if (dim_3D):
+      plt.savefig(f"../dynoplan/expansion_3d.png")
+    else:
+      plt.savefig(f"../dynoplan/plot/fig_{i+1}.png")
+      if filename_video is not None:
+          subprocess.call(["ffmpeg","-y","-r",str(fps),"-i", "../dynoplan/plot/fig_%d.png","-vcodec","mpeg4", "-qscale","5", "-r", str(fps),  "../dynoplan/plot/" + filename_video])
 
 
 def main():
@@ -53,9 +79,11 @@ def main():
   parser.add_argument("--trajs", help="file with expanded trajectories during the search")
   parser.add_argument("--result", help="file with the final solution")
   parser.add_argument("--video", help="output file for video")
+  parser.add_argument("--dim_3D", default = False, help="dimension we consider")
+  
   args = parser.parse_args()
 
-  plot_expanded_trajs(args.env, args.trajs, args.video)
+  plot_expanded_trajs(args.env, args.trajs, args.result, args.video, args.dim_3D)
 
 if __name__ == "__main__":
   main()

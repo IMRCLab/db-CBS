@@ -129,7 +129,7 @@ int main(int argc, char* argv[]) {
         } else if (robotType == "integrator2_2d_v0"){
             motionsFile = "../new_format_motions/integrator2_2d_v0/integrator2_2d_v0.msgpack";
         } else if (robotType == "integrator2_3d_v0"){
-            motionsFile = "../new_format_motions/integrator2_3d_v0/integrator2_3d_v0.bin.im.bin.sp.bin";
+            motionsFile = "../new_format_motions/integrator2_3d_v0/integrator2_3d_v0_long.bin.im.bin.sp.bin";
         } else{
             throw std::runtime_error("Unknown motion filename for this robottype!");
         }
@@ -320,7 +320,16 @@ int main(int argc, char* argv[]) {
               std::string output_folder = output_path.parent_path().string();
               std::ofstream out2(output_folder + "/expanded_trajs.yaml");
               out2 << "trajs:" << std::endl;
-              for (auto traj : expanded_trajs_tmp){
+              // for (auto traj : expanded_trajs_tmp){
+              //   out2 << "  - " << std::endl;
+              //   traj.to_yaml_format(out2, "    ");
+              // }
+              // for DEBUG
+              // std::cout << "SIZE: " << expanded_trajs_tmp.size() << std::endl;
+              int step = expanded_trajs_tmp.size() / 5000;
+              for (size_t i = 0; i < expanded_trajs_tmp.size(); i += step){
+                std::cout << i << std::endl;
+                auto traj = expanded_trajs_tmp.at(i);
                 out2 << "  - " << std::endl;
                 traj.to_yaml_format(out2, "    ");
               }
