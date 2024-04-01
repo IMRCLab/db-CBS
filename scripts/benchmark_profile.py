@@ -113,12 +113,12 @@ def execute_task(task: ExecutionTask):
 def main():
 	parallel = True
 	instances = [
-		# "swap2_unicycle",
-		# "swap3_unicycle",
-		# "drone4b",
-		# "drone8b",
-		# "drone4c",
-		"alcove_unicycle",
+		"swap4_unicycle",
+		"swap4_unicycle_sphere",
+		"swap4_double_integrator",
+		"swap4_trailer",
+		"swap4_unicycle2",
+		# "alcove_unicycle",
 
 	]
 

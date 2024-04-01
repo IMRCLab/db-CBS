@@ -69,7 +69,7 @@ int main(int argc, char* argv[]) {
       return 1;
     }
     YAML::Node cfg = YAML::LoadFile(cfgFile);
-    cfg = cfg["db-ecbs"]["default"];
+    // cfg = cfg["db-ecbs"]["default"];
     float alpha = cfg["alpha"].as<float>();
     bool filter_duplicates = cfg["filter_duplicates"].as<bool>();
     bool merge_aabb = cfg["merge_aabb"].as<bool>();
@@ -129,7 +129,7 @@ int main(int argc, char* argv[]) {
         } else if (robotType == "integrator2_2d_v0"){
             motionsFile = "../new_format_motions/integrator2_2d_v0/integrator2_2d_v0.msgpack";
         } else if (robotType == "integrator2_3d_v0"){
-            motionsFile = "../new_format_motions/integrator2_3d_v0/integrator2_3d_v0.bin.im.bin.sp.bin";
+            motionsFile = "../new_format_motions/integrator2_3d_v0/integrator2_3d_v0_long.bin.im.bin.sp.bin";
         } else{
             throw std::runtime_error("Unknown motion filename for this robottype!");
         }
