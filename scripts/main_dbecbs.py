@@ -9,7 +9,7 @@ import yaml
 sys.path.append(os.getcwd())
 
 
-def run_dbecbs(filename_env, folder, timelimit, cfg):
+def run_dbecbs(filename_env, folder, timelimit, cfg, profile = False):
     with tempfile.TemporaryDirectory() as tmpdirname:
         p = Path(tmpdirname)
         filename_cfg = p / "cfg.yaml"
@@ -27,7 +27,13 @@ def run_dbecbs(filename_env, folder, timelimit, cfg):
             filename_result_dbcbs_opt = Path(folder) / "result_dbecbs_opt.yaml"
             t_dbcbs_start = time.time()
 
-            cmd = ["./db_ecbs", 
+            if profile:
+                filename_profile = Path(folder) / "perf.data"
+                cmd = ["perf", "record", "--call-graph", "fp", "-o", filename_profile]
+            else:
+                cmd = []
+
+            cmd += ["./db_ecbs", 
                 "-i", filename_env,
                 "-o", filename_result_dbcbs,
                 "--opt", filename_result_dbcbs_opt,
