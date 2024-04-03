@@ -176,6 +176,8 @@ int main(int argc, char* argv[]) {
     disable_motions(robot, problem.robotType, options_tdbastar.delta, filter_duplicates, alpha, 
             options_tdbastar.max_motions, robot_motions[problem.robotType]);
 
+    options_tdbastar.limit_branching_factor = cfg["limit_branching_factor"].as<int>();
+
     tdbastar_epsilon(problem, options_tdbastar, 
         final_trajectory, /*constraints*/{},
         out_tdb, fake_robot_id, /*reverse_search*/false, 

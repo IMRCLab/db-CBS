@@ -54,6 +54,7 @@ db-cbs:
     delta_0: 0.9
 db-ecbs:
   default:
+    limit_branching_factor: 10
     delta_0: 0.7
     delta_rate: 0.9
     num_primitives_0: 500
