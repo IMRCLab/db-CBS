@@ -84,7 +84,7 @@ int main(int argc, char* argv[]) {
     options_tdbastar.rewire = true;
     options_tdbastar.w = 1.3;
     std::string focal_heuristics = "volume_wise"; //  "state_wise";
-    bool save_expanded_trajs = false;
+    bool save_expanded_trajs = true;
     // tdbastar problem
     dynobench::Problem problem(inputFile);
     dynobench::Problem problem_original(inputFile);
@@ -192,6 +192,13 @@ int main(int argc, char* argv[]) {
                 robots, col_mng_robots, robot_objs,
                 nullptr, &heuristics[robot_id], options_tdbastar.w, focal_heuristics);
         std::cout << "computed heuristic with " << heuristics[robot_id]->size() << " entries." << std::endl;
+        std::string output_folder = output_path.parent_path().string();
+        std::ofstream out2(output_folder + "/expanded_trajs_rev.yaml");
+        out2 << "trajs:" << std::endl;
+        for (size_t i = 0; i < expanded_trajs_tmp.size(); i++){
+          out2 << "  - " << std::endl;
+          expanded_trajs_tmp.at(i).to_yaml_format(out2, "    ");
+        }
         robot_id++;
       }
     }
@@ -320,9 +327,9 @@ int main(int argc, char* argv[]) {
               std::string output_folder = output_path.parent_path().string();
               std::ofstream out2(output_folder + "/expanded_trajs.yaml");
               out2 << "trajs:" << std::endl;
-              for (auto traj : expanded_trajs_tmp){
+              for (size_t i = 0; i < 1000; i++){
                 out2 << "  - " << std::endl;
-                traj.to_yaml_format(out2, "    ");
+                expanded_trajs_tmp.at(i).to_yaml_format(out2, "    ");
               }
             }
             bool sum_robot_cost = true;
