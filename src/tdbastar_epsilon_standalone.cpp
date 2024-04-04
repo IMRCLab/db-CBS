@@ -165,7 +165,14 @@ int main(int argc, char* argv[]) {
                 nullptr, &heuristics[0], options_tdbastar.w, focal_heuristic);
 
         std::cout << "computed heuristic with " << heuristics[0]->size() << " entries." << std::endl;
-
+        // DEBGU, save reverse search expanded nodes
+        std::string output_folder = output_path.parent_path().string();
+        std::ofstream out2(output_folder + "/expanded_trajs_rev.yaml");
+        out2 << "trajs:" << std::endl;
+        for (size_t i = 0; i < expanded_trajs.size(); i++){
+            out2 << "  - " << std::endl;
+            expanded_trajs.at(i).to_yaml_format(out2, "    ");
+        }
     }
     // set back everything for forward search
     problem.start = problem_original.start;
@@ -190,9 +197,9 @@ int main(int argc, char* argv[]) {
         if (save_expanded_trajs){
             std::ofstream out2(output_folder + "/expanded_trajs.yaml");
             out2 << "trajs:" << std::endl;
-            for (auto traj : expanded_trajs){
-            out2 << "  - " << std::endl;
-            traj.to_yaml_format(out2, "    ");
+            for (size_t i = 0; i < 1000; i++){
+                out2 << "  - " << std::endl;
+                expanded_trajs.at(i).to_yaml_format(out2, "    ");
             }
         }
     }
