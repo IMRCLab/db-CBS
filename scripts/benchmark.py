@@ -180,8 +180,9 @@ def main():
 		# "window4_demo",
 
 		# 3D scenarios with octomap
-		"drone4c",
-		"drone8c",
+		"drone1c",
+		# "drone4c",
+		# "drone8c",
 	]
 
 	# add random cases
@@ -199,7 +200,7 @@ def main():
 		"db-ecbs",
 	]
 	trials = 1
-	timelimit = 10*60
+	timelimit = 5*60
 
 	tasks = []
 	for instance in instances:
@@ -218,27 +219,27 @@ def main():
 			execute_task(task)
 	
 	export_table_txt(instances, algs)
-	run_benchmark_stats(instances, algs, trials, timelimit)
+	# run_benchmark_stats(instances, algs, trials, timelimit)
 
-	write_table(instances, algs, Path("../results"), "table.pdf", trials, timelimit)
+	# write_table(instances, algs, Path("../results"), "table.pdf", trials, timelimit)
 
-	subprocess.run(
-		['pdftk',
-		 Path("../results") / 'table.pdf',
-		 Path("../results") / 'stats.pdf',
-		 'cat', 'output',
-		 Path("../results") / 'results.pdf'
-		]
-	)
-	# delete temp files
-	(Path("../results") / 'table.pdf').unlink()
-	(Path("../results") / 'stats.pdf').unlink()
+	# subprocess.run(
+	# 	['pdftk',
+	# 	 Path("../results") / 'table.pdf',
+	# 	 Path("../results") / 'stats.pdf',
+	# 	 'cat', 'output',
+	# 	 Path("../results") / 'results.pdf'
+	# 	]
+	# )
+	# # delete temp files
+	# (Path("../results") / 'table.pdf').unlink()
+	# (Path("../results") / 'stats.pdf').unlink()
 
-	paper_tables.write_table1(trials, timelimit)
-	paper_tables.write_table2(trials, timelimit)
-	paper_tables.write_table3(trials, timelimit)
-	paper_tables.write_table4(trials, timelimit)
-	paper_tables.write_table5(trials, timelimit)
+	# paper_tables.write_table1(trials, timelimit)
+	# paper_tables.write_table2(trials, timelimit)
+	# paper_tables.write_table3(trials, timelimit)
+	# paper_tables.write_table4(trials, timelimit)
+	# paper_tables.write_table5(trials, timelimit)
 
 if __name__ == '__main__':
 	main()

@@ -327,7 +327,7 @@ int main(int argc, char* argv[]) {
               std::string output_folder = output_path.parent_path().string();
               std::ofstream out2(output_folder + "/expanded_trajs.yaml");
               out2 << "trajs:" << std::endl;
-              for (size_t i = 0; i < 1000; i++){
+              for (size_t i = 0; i < expanded_trajs_tmp.size(); i+=1000){
                 out2 << "  - " << std::endl;
                 expanded_trajs_tmp.at(i).to_yaml_format(out2, "    ");
               }
