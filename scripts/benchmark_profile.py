@@ -105,9 +105,9 @@ def execute_task(task: ExecutionTask):
 			print("WARNING: CHECKER FAILED -> DELETING stats!")
 			(result_folder / "stats.yaml").unlink(missing_ok=True)
 
-	vis_script = scripts_path / "visualize.py"
-	for file in visualize_files:
-		run_visualize(vis_script, env, result_folder / file)
+	# vis_script = scripts_path / "visualize.py"
+	# for file in visualize_files:
+	# 	run_visualize(vis_script, env, result_folder / file)
 
 
 def main():
@@ -121,7 +121,7 @@ def main():
 		# "alcove_unicycle",
 		"drone1c",
 		"drone2c",
-		"drone3c",
+		# "drone3c",
 
 	]
 
