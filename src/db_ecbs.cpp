@@ -84,7 +84,7 @@ int main(int argc, char* argv[]) {
     options_tdbastar.rewire = true;
     options_tdbastar.w = 1.3;
     std::string focal_heuristics = "volume_wise"; //  "state_wise";
-    bool save_expanded_trajs = true;
+    bool save_expanded_trajs = false;
     // tdbastar problem
     dynobench::Problem problem(inputFile);
     dynobench::Problem problem_original(inputFile);
