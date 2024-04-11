@@ -120,6 +120,8 @@ def main():
 		# "swap4_unicycle2",
 		# "alcove_unicycle",
 		"drone1c",
+		"drone2c",
+		"drone3c",
 
 	]
 
@@ -128,7 +130,7 @@ def main():
 		"db-ecbs",
 	]
 	trials = 1
-	timelimit = 5*60
+	timelimit = 10*60
 
 	tasks = []
 	for instance in instances:
