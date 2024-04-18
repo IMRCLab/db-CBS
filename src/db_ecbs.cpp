@@ -69,12 +69,12 @@ int main(int argc, char* argv[]) {
       return 1;
     }
     YAML::Node cfg = YAML::LoadFile(cfgFile);
-    // cfg = cfg["db-ecbs"]["default"];
+    cfg = cfg["db-ecbs"]["default"];
     float alpha = cfg["alpha"].as<float>();
     bool filter_duplicates = cfg["filter_duplicates"].as<bool>();
     fs::path output_path(outputFile);
     std::string output_folder = output_path.parent_path().string();
-    bool save_search_video = true;
+    bool save_search_video = false;
     std::string conflicts_folder = output_folder + "/conflicts";
     // tdbstar options
     Options_tdbastar options_tdbastar;
@@ -257,7 +257,7 @@ int main(int argc, char* argv[]) {
         start.LB += start.solution[robot_id].trajectory.fmin;
         robot_id++;
       }
-      start.focalHeuristic = highLevelfocalHeuristic(start.solution, robots, col_mng_robots, robot_objs); 
+      start.focalHeuristic = highLevelfocalHeuristicState(start.solution, robots, col_mng_robots, robot_objs); 
       if (!start_node_valid) {
             continue;
       }
@@ -341,8 +341,6 @@ int main(int argc, char* argv[]) {
             if (feasible) {
               std::ofstream fout(optimizationFile, std::ios::app); 
               fout << "  nodes: " << id << std::endl;
-              // std::ofstream out3(output_folder + "/final_constraints.yaml");
-              // export_constraints(P.constraints, &out3);
               return 0;
             }
             break;
@@ -382,7 +380,7 @@ int main(int argc, char* argv[]) {
           if (tmp_out_tdb.solved){
               newNode.cost += newNode.solution[tmp_robot_id].trajectory.cost;
               newNode.LB += newNode.solution[tmp_robot_id].trajectory.fmin;
-              newNode.focalHeuristic = highLevelfocalHeuristic(newNode.solution, robots, col_mng_robots, robot_objs); 
+              newNode.focalHeuristic = highLevelfocalHeuristicState(newNode.solution, robots, col_mng_robots, robot_objs); 
 
               auto handle = open.push(newNode);
               (*handle).handle = handle;

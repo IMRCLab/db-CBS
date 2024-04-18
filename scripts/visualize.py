@@ -68,7 +68,7 @@ class Animation:
     result_folder = Path(filename_result).resolve().parent
     conflicts_folder = result_folder / "conflicts"
     # check if we got conflic files. They should be in algs/0xx/conflicts. It is created ONLY if the bool is true
-    if (conflicts_folder.exists):
+    if (conflicts_folder.exists()):
        fps = 2
        conflict_filenames = [file.name for file in conflicts_folder.iterdir() if file.is_file()]
        if len(conflict_filenames) > 0:
