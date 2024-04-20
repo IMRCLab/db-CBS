@@ -54,9 +54,9 @@ db-cbs:
     delta_0: 0.9
 db-ecbs:
   default:
-    delta_0: 0.7
+    delta_0: 0.5
     delta_rate: 0.9
-    num_primitives_0: 200
+    num_primitives_0: 1000
     num_primitives_rate: 1.5
     alpha: 0.5
     filter_duplicates: True

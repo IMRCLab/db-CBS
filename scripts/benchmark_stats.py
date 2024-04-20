@@ -66,7 +66,7 @@ def export_table_txt(instances, algs):
 					data = yaml.safe_load(f)
 				if (data["stats"]) != None:
 					data = (data["stats"])[0]
-					per_instance.extend([f'{data["t"]:.2f}', f'{data["cost"]:.2f}', data["expanded_nodes"]])
+					per_instance.extend([f'{data["t"]:.2f}', f'{data["cost"]:.2f}', data["hl_expanded_nodes"]])
 				else:
 					per_instance.extend(['*', '*', '*'])
 			else: 
@@ -75,7 +75,7 @@ def export_table_txt(instances, algs):
 		
 	col_names = ["instances"]
 	for i in range(len(algs)):
-		col_names.extend(["t (" + algs[i] + ")", "cost (" + algs[i] + ")", "nodes (" + algs[i] + ")"])
+		col_names.extend(["t (" + algs[i] + ")", "cost (" + algs[i] + ")", "hl_nodes (" + algs[i] + ")"])
 
 	# df = pd.DataFrame(all_data, columns=col_names)
 	with open(results_path / "results_nodes.txt", 'w') as f:

@@ -69,7 +69,7 @@ int main(int argc, char* argv[]) {
       return 1;
     }
     YAML::Node cfg = YAML::LoadFile(cfgFile);
-    cfg = cfg["db-ecbs"]["default"];
+    // cfg = cfg["db-ecbs"]["default"];
     float alpha = cfg["alpha"].as<float>();
     bool filter_duplicates = cfg["filter_duplicates"].as<bool>();
     fs::path output_path(outputFile);
@@ -257,7 +257,7 @@ int main(int argc, char* argv[]) {
         start.LB += start.solution[robot_id].trajectory.fmin;
         robot_id++;
       }
-      start.focalHeuristic = highLevelfocalHeuristicState(start.solution, robots, col_mng_robots, robot_objs); 
+      start.focalHeuristic = highLevelfocalHeuristic(start.solution, robots, col_mng_robots, robot_objs); 
       if (!start_node_valid) {
             continue;
       }
@@ -380,7 +380,7 @@ int main(int argc, char* argv[]) {
           if (tmp_out_tdb.solved){
               newNode.cost += newNode.solution[tmp_robot_id].trajectory.cost;
               newNode.LB += newNode.solution[tmp_robot_id].trajectory.fmin;
-              newNode.focalHeuristic = highLevelfocalHeuristicState(newNode.solution, robots, col_mng_robots, robot_objs); 
+              newNode.focalHeuristic = highLevelfocalHeuristic(newNode.solution, robots, col_mng_robots, robot_objs); 
 
               auto handle = open.push(newNode);
               (*handle).handle = handle;

@@ -55,7 +55,7 @@ def run_dbecbs(filename_env, folder, timelimit, cfg):
                     stats.write("  - t: {}\n".format(t))
                     stats.write("    cost: {}\n".format(cost))
                     stats.write("    duration_dbecbs: {}\n".format(duration_dbcbs))
-                    stats.write("    expanded_nodes: {}\n".format(nodes))
+                    stats.write("    hl_expanded_nodes: {}\n".format(nodes))
                     stats.flush()
             except:
                 print("Failure!")
