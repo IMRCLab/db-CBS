@@ -85,7 +85,7 @@ int main(int argc, char* argv[]) {
     options_tdbastar.max_motions = cfg["num_primitives_0"].as<size_t>();
     options_tdbastar.rewire = true;
     options_tdbastar.w = 1.3;
-    std::string focal_heuristic = "volume_wise"; 
+    std::string focal_heuristic = "state"; // "volume_wise"; 
     bool save_expanded_trajs = false;
     // tdbastar problem
     dynobench::Problem problem(inputFile);
@@ -189,7 +189,7 @@ int main(int argc, char* argv[]) {
         tdbastar_epsilon(problem, options_tdbastar, 
                 tmp_solution.trajectory,/*constraints*/{},
                 out_tdb, robot_id,/*reverse_search*/true, 
-                expanded_trajs_tmp, tmp_solutions, tmp_results, robot_motions,
+                expanded_trajs_tmp, tmp_solutions, robot_motions,
                 robots, col_mng_robots, robot_objs,
                 nullptr, &heuristics[robot_id], options_tdbastar.w, focal_heuristic);
         std::cout << "computed heuristic with " << heuristics[robot_id]->size() << " entries." << std::endl;
@@ -244,7 +244,7 @@ int main(int argc, char* argv[]) {
         tdbastar_epsilon(problem, options_tdbastar, 
                 start.solution[robot_id].trajectory,start.constraints[robot_id],
                 out_tdb, robot_id,/*reverse_search*/false, 
-                expanded_trajs_tmp, tmp_solutions, tmp_results, robot_motions,
+                expanded_trajs_tmp, tmp_solutions, robot_motions,
                 robots, col_mng_robots, robot_objs,
                 heuristics[robot_id], nullptr, options_tdbastar.w, focal_heuristic);
         if(!out_tdb.solved){
@@ -257,7 +257,7 @@ int main(int argc, char* argv[]) {
         start.LB += start.solution[robot_id].trajectory.fmin;
         robot_id++;
       }
-      start.focalHeuristic = highLevelfocalHeuristicState(start.solution, robots, col_mng_robots, robot_objs); 
+      start.focalHeuristic = highLevelfocalHeuristicState(start.solution, robots, robot_objs); 
       if (!start_node_valid) {
             continue;
       }
@@ -374,13 +374,13 @@ int main(int argc, char* argv[]) {
           tdbastar_epsilon(problem, options_tdbastar, 
                 newNode.solution[tmp_robot_id].trajectory, newNode.constraints[tmp_robot_id],
                 tmp_out_tdb, tmp_robot_id, /*reverse_search*/false, 
-                expanded_trajs_tmp, newNode.solution, newNode.result, robot_motions,
+                expanded_trajs_tmp, newNode.solution, robot_motions,
                 robots, col_mng_robots, robot_objs,
                 heuristics[tmp_robot_id], nullptr, options_tdbastar.w, focal_heuristic);
           if (tmp_out_tdb.solved){
               newNode.cost += newNode.solution[tmp_robot_id].trajectory.cost;
               newNode.LB += newNode.solution[tmp_robot_id].trajectory.fmin;
-              newNode.focalHeuristic = highLevelfocalHeuristicState(newNode.solution, robots, col_mng_robots, robot_objs); 
+              newNode.focalHeuristic = highLevelfocalHeuristicState(newNode.solution, robots, robot_objs); 
 
               auto handle = open.push(newNode);
               (*handle).handle = handle;
