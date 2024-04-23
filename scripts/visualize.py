@@ -330,11 +330,10 @@ class Animation:
 
 def visualize(filename_env, filename_result = None, filename_video=None):
   anim = Animation(filename_env, filename_result, filename_video)
-  anim.show()
-  # if filename_video is not None:
-  #   anim.save(filename_video, 1)
-  # else:
-  #   anim.show()
+  if filename_video is not None:
+    anim.save(filename_video, 1)
+  else:
+    anim.show()
 
 def main():
   parser = argparse.ArgumentParser()
