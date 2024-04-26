@@ -323,9 +323,9 @@ int main(int argc, char* argv[]) {
 #endif
               auto handle = open.push(newNode);
               (*handle).handle = handle;
-              id++;
+              // id++;
           }
-
+          id++;
         } 
 
       } 

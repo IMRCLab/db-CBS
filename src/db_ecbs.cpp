@@ -34,6 +34,7 @@ namespace fs = std::filesystem;
 
 #define DYNOBENCH_BASE "../dynoplan/dynobench/"
 #define REBUILT_FOCAL_LIST
+#define CHECK_FOCAL_LIST
 
 int main(int argc, char* argv[]) {
     
@@ -209,6 +210,7 @@ int main(int argc, char* argv[]) {
     problem.goals = problem_original.goals;
     options_tdbastar.delta = cfg["delta_0"].as<float>();
     for (size_t iteration = 0; ; ++iteration) {
+      std::cout << "iteration: " << iteration << std::endl;
       if (iteration > 0) {
         if (solved_db) {
             options_tdbastar.delta *= cfg["delta_0"].as<float>();
@@ -244,7 +246,7 @@ int main(int argc, char* argv[]) {
         tdbastar_epsilon(problem, options_tdbastar, 
                 start.solution[robot_id].trajectory,start.constraints[robot_id],
                 out_tdb, robot_id,/*reverse_search*/false, 
-                expanded_trajs_tmp, tmp_solutions, robot_motions,
+                expanded_trajs_tmp, start.solution, robot_motions,
                 robots, col_mng_robots, robot_objs,
                 heuristics[robot_id], nullptr, options_tdbastar.w, focal_heuristic);
         if(!out_tdb.solved){
@@ -258,6 +260,8 @@ int main(int argc, char* argv[]) {
         robot_id++;
       }
       start.focalHeuristic = highLevelfocalHeuristicState(start.solution, robots, robot_objs); 
+      // start.focalHeuristic = highLevelfocalHeuristicLazy(start.solution, robots, col_mng_robots, robot_objs); 
+
       if (!start_node_valid) {
             continue;
       }
@@ -272,9 +276,9 @@ int main(int argc, char* argv[]) {
       int id = 1;
       size_t expands = 0;
       double best_cost = (*handle).cost;
-
+      
       while (!open.empty()){
-        #ifdef REBUILT_FOCAL_LIST
+#ifdef REBUILT_FOCAL_LIST 
           focal.clear();
           double LB = open.top().LB;
           auto iter = open.ordered_begin();
@@ -289,7 +293,7 @@ int main(int argc, char* argv[]) {
               break;
             }
           }
-        #else 
+#else 
         {
           double oldbest_best_cost = best_cost;
           best_cost = open.top().cost;
@@ -308,10 +312,37 @@ int main(int argc, char* argv[]) {
             }
           }
         }
-        #endif
+#endif
+#ifdef CHECK_FOCAL_LIST 
+          bool mismatch = false;
+          auto LB_test = open.top().LB; // ? cost in Wolfgang's code
+          auto iter_test = open.ordered_begin();
+          auto iterEnd_test = open.ordered_end();
+          for (; iter_test != iterEnd_test; ++iter_test) {
+            const auto& node_test = *iter_test;
+            auto cost_test = node_test.cost;
+            if (cost_test <= LB_test * options_tdbastar.w) {
+              if (std::find(focal.begin(), focal.end(), node_test.handle) ==
+                  focal.end()) {
+                std::cout << "focal misses some nodes " << std::endl;
+                mismatch = true;
+              }
+
+            } else {
+              if (std::find(focal.begin(), focal.end(), node_test.handle) !=
+                  focal.end()) {
+                std::cout << "focalSet shouldn't have some nodes "  << std::endl;
+                mismatch = true;
+              }
+            }
+          }
+          assert(!mismatch);
+#endif
+        std::cout << "focal set size: " << focal.size() << std::endl;
+        std::cout << "cost bound: " << LB * options_tdbastar.w << std::endl;
         auto current_handle = focal.top();
         HighLevelNodeFocal P = *current_handle;
-        
+        std::cout << "high-level node focalHeuristic: " << P.focalHeuristic << std::endl;
         focal.pop();
         open.erase(current_handle);
 
@@ -381,6 +412,11 @@ int main(int argc, char* argv[]) {
               newNode.cost += newNode.solution[tmp_robot_id].trajectory.cost;
               newNode.LB += newNode.solution[tmp_robot_id].trajectory.fmin;
               newNode.focalHeuristic = highLevelfocalHeuristicState(newNode.solution, robots, robot_objs); 
+              std::cout << "New node solution cost:  " << newNode.solution[tmp_robot_id].trajectory.cost << std::endl;
+              std::cout << "New node cost: " << newNode.cost << " New node LB: " << newNode.LB << std::endl;
+              std::cout << "New node focal heuristic: " << newNode.focalHeuristic << std::endl;
+              
+              // newNode.focalHeuristic = highLevelfocalHeuristicLazy(newNode.solution, robots, col_mng_robots, robot_objs); 
 
               auto handle = open.push(newNode);
               (*handle).handle = handle;
@@ -388,8 +424,8 @@ int main(int argc, char* argv[]) {
               if (newNode.cost <= open.top().LB * options_tdbastar.w){ 
                 focal.push(handle);
               }
-              id++;
           }
+          id++;
 
         } 
 
