@@ -117,9 +117,9 @@ def execute_task(task: ExecutionTask):
 			print("WARNING: CHECKER FAILED -> DELETING stats!")
 			(result_folder / "stats.yaml").unlink(missing_ok=True)
 
-	vis_script = scripts_path / "visualize.py"
-	for file in visualize_files:
-		run_visualize(vis_script, env, result_folder / file)
+	# vis_script = scripts_path / "visualize.py"
+	# for file in visualize_files:
+	# 	run_visualize(vis_script, env, result_folder / file)
 	
 	# search_viz_script = scripts_path / "visualize_search.py"
 	# if(len(search_plot_files) > 0):
@@ -131,12 +131,12 @@ def main():
 	parallel = True
 	instances = [
 		# # 1 robot cases
-		# "swap1_unicycle",
-		# "swap1_unicycle_sphere",
-		# # "swap1_trailer",
-		# "swap1_unicycle2",
-		# "swap1_double_integrator",
-		# # 2 robot cases
+		"swap1_unicycle",
+		"swap1_unicycle_sphere",
+		# "swap1_trailer",
+		"swap1_unicycle2",
+		"swap1_double_integrator",
+		# 2 robot cases
 		"swap2_unicycle",
 		"swap2_unicycle_sphere",
 		"swap2_double_integrator",
@@ -155,7 +155,7 @@ def main():
 		"swap3_double_integrator",
 		# "swap3_trailer",
 		"swap3_unicycle2",
-		# # 4 robot cases
+		# 4 robot cases
 		"swap4_unicycle",
 		"swap4_unicycle_sphere",
 		"swap4_double_integrator",
@@ -195,7 +195,7 @@ def main():
 		# "sst",
 		# "s2m2",
 		# "k-cbs",
-		"db-cbs",
+		# "db-cbs",
 		"db-ecbs",
 	]
 	trials = 1
