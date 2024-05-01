@@ -185,6 +185,30 @@ target_link_libraries(octomap_stats
 )
 
 target_compile_options(octomap_stats PUBLIC -std=c++11 -Wall)
+
+# discrete_search_test - to debug the low-level focal heuristic
+add_executable(discrete_search_test
+  src/discrete_search_test.cpp
+)
+
+target_include_directories(discrete_search_test PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}/dynoplan/include
+)
+
+target_link_libraries(discrete_search_test PRIVATE 
+  idbastar::optimization
+  idbastar::tdbastar_epsilon
+  motion_planning_common
+  ${Boost_LIBRARIES}
+  ${YAML_LIBRARIES}
+  ompl
+  ${FCL_LIBRARIES}
+)
+target_include_directories(main_ompl PUBLIC 
+  ${YAML_INCLUDE_DIRS}
+  ${FCL_INCLUDE_DIRS}
+)
+
 ## standalone tdbA*
 
 # add_executable(tdbastar_standalone
