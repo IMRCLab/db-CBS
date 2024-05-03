@@ -72,6 +72,7 @@ int main(int argc, char* argv[]){
       return 1;
     }
     fs::path output_path(outputPath);
+    bool save_expansion = false;
     YAML::Node cfg = YAML::LoadFile(cfgFile);
     cfg = cfg["db-ecbs"]["default"];
     float alpha = cfg["alpha"].as<float>();
@@ -82,9 +83,11 @@ int main(int argc, char* argv[]){
     options_tdbastar.cost_delta_factor = 0;
     options_tdbastar.fix_seed = 1;
     options_tdbastar.max_motions = cfg["num_primitives_0"].as<size_t>();
-    options_tdbastar.w = 1.3;
+    options_tdbastar.w = cfg["suboptimality_factor"].as<float>(); 
     options_tdbastar.rewire = true;
     bool save_expanded_trajs = false;
+    size_t robot_id_to_check = 1;  
+    size_t robot_id_with_solution = 0; // robot with solution
     // tdbastar problem
     dynobench::Problem problem(envFile);
     dynobench::Problem problem_original(envFile);
@@ -162,7 +165,6 @@ int main(int argc, char* argv[]){
     col_mng_robots->registerObjects(robot_objs);
     std::vector<dynobench::Trajectory> expanded_trajs_tmp;
     std::vector<LowLevelPlan<dynobench::Trajectory>> tmp_solutions;
-    size_t robot_id_to_check = 1;  // robot we run planner for
     // Heuristic computation for tdbA*
     std::vector<ompl::NearestNeighbors<std::shared_ptr<AStarNode>>*> heuristics(robots.size(), nullptr);
     // for tdbA* epsilon
@@ -204,8 +206,8 @@ int main(int argc, char* argv[]){
     start.id = 0;
     start.LB = 0;
     // read the provided trajectory of the neighbor
-    read_input_yaml(inputFile, start.solution.at(0).trajectory); // for the provided solution, robot_id=0
-    start.solution[0].trajectory.cost = start.solution[0].trajectory.actions.size() * robots.at(0)->ref_dt; // set the cost of the provided solution
+    read_input_yaml(inputFile, start.solution.at(robot_id_with_solution).trajectory); // for the provided solution, robot_id=0
+    // start.solution[0].trajectory.cost = start.solution[0].trajectory.actions.size() * robots.at(0)->ref_dt; // set the cost of the provided solution
     HighLevelNodeFocal start_e = start; 
     // common parameters
     options_tdbastar.motions_ptr = &robot_motions[problem.robotTypes[robot_id_to_check]]; 
@@ -219,70 +221,97 @@ int main(int argc, char* argv[]){
     if(!out_tdb.solved){
         std::cout << "tdbA* couldn't find initial solution."<< std::endl;
     }
+    else {
+        std::cout << "tdbA* final solution with cost: " << start.solution[robot_id_to_check].trajectory.cost << std::endl; 
+        std::string out_file_tdb = output_path.string() + "tdb_solution.yaml";
+        create_dir_if_necessary(out_file_tdb);
+        std::ofstream out(out_file_tdb);
+        export_solutions(start.solution, &out);
+    }
+
     // run tdbA* epsilon, solution of the other robot is already added
     expanded_trajs_tmp.clear();
     tdbastar_epsilon(problem, options_tdbastar, 
-        start_e.solution[robot_id_to_check].trajectory,start.constraints[robot_id_to_check],
+        start_e.solution[robot_id_to_check].trajectory, start_e.constraints[robot_id_to_check],
         out_tdb_e, robot_id_to_check,/*reverse_search*/false, 
         expanded_trajs_tmp, start_e.solution, robot_motions,
         robots, col_mng_robots, robot_objs,
         heuristics_e[robot_id_to_check], nullptr, options_tdbastar.w);
+        // save the expansion
+        if (save_expansion){
+            std::string exp_file_tdb_e = output_path.string() + "tdb_epsilon_expansion.yaml";
+            std::ofstream out_e(exp_file_tdb_e);
+            out_e << "trajs:" << std::endl;
+            for (auto traj : expanded_trajs_tmp){
+            out_e << "  - " << std::endl;
+            traj.to_yaml_format(out_e, "    ");
+            }
+        }
+        
     if(!out_tdb_e.solved){
         std::cout << "tdbA*-epsilon couldn't find initial solution."<< std::endl;
     }
+    else {
+        std::cout << "tdbA*-epsilon final solution with cost: " << start_e.solution[robot_id_to_check].trajectory.cost << std::endl; 
+        std::string out_file_tdb_e = output_path.string() + "tdb_epsilon_solution.yaml";
+        create_dir_if_necessary(out_file_tdb_e);
+        std::ofstream out(out_file_tdb_e);
+        export_solutions(start_e.solution, &out);
+    }
+
     if (!out_tdb.solved && !out_tdb_e.solved){
         std::cout << "both planners failed, quitting the run!" << std::endl;
         return 0;
     }
     // tdbA*, run and get the solution
-    while (true){
-        Conflict conflict_tdb;
-        out_tdb.solved = false;
-        if(!getEarliestConflict(start.solution, robots, col_mng_robots, robot_objs, conflict_tdb)){
-            for (size_t i=0; i < start.solution.size(); i++){
-                start.cost += start.solution[i].trajectory.cost;
-            }
-            std::string out_file_tdb = output_path.string() + "/tdb_solution.yaml";
-            create_dir_if_necessary(out_file_tdb);
-            std::ofstream out(out_file_tdb);
-            export_solutions(start.solution, &out);
-            out_tdb.solved=true;
-            break;
-        }
+    // while (true){
+    //     Conflict conflict_tdb;
+    //     out_tdb.solved = false;
+    //     if(!getEarliestConflict(start.solution, robots, col_mng_robots, robot_objs, conflict_tdb)){
+    //         for (size_t i=0; i < start.solution.size(); i++){
+    //             start.cost += start.solution[i].trajectory.cost;
+    //         }
+    //         std::string out_file_tdb = output_path.string() + "/tdb_solution.yaml";
+    //         create_dir_if_necessary(out_file_tdb);
+    //         std::ofstream out(out_file_tdb);
+    //         export_solutions(start.solution, &out);
+    //         out_tdb.solved=true;
+    //         break;
+    //     }
 
-        std::map<size_t, std::vector<Constraint>> constraints_tdb;
-        createConstraintsFromConflicts(conflict_tdb, constraints_tdb);
-        // grow constraints of the same robot, use the same high-level node
-        auto c = constraints_tdb[robot_id_to_check];
-        start.constraints[robot_id_to_check].insert(start.constraints[robot_id_to_check].end(), 
-                                    c.begin(), c.end());
-        expanded_trajs_tmp.clear();
-        options_tdbastar.motions_ptr = &robot_motions[problem.robotTypes[robot_id_to_check]]; 
-        tdbastar(problem, options_tdbastar, start.solution[robot_id_to_check].trajectory, 
-                 start.constraints[robot_id_to_check], out_tdb, robot_id_to_check,/*reverse_search*/false, 
-                  expanded_trajs_tmp, heuristics[robot_id_to_check]);
-    }
-    // run tdbA*-epsilon, get the solution
-    while(true){
-        Conflict conflict_tdb_e;
-        out_tdb_e.solved = false;
-        if(!getEarliestConflict(start_e.solution, robots, col_mng_robots, robot_objs, conflict_tdb_e)){
-            for (size_t i=0; i < start_e.solution.size(); i++){
-                start_e.cost += start_e.solution[i].trajectory.cost;
-            }
-            std::string out_file_tdb_e = output_path.string() + "/tdb_epsilon_solution.yaml";
-            create_dir_if_necessary(out_file_tdb_e);
-            std::ofstream out(out_file_tdb_e);
-            export_solutions(start_e.solution, &out);
-            out_tdb_e.solved=true;
-            break;
-        } 
-    }
-    if (out_tdb.solved){
-        std::cout << "tdbA* final solution with cost: " << start.cost << std::endl; 
-    }
-    if (out_tdb_e.solved){
-        std::cout << "tdbA*-epsilon final solution with cost: " << start_e.cost << std::endl; 
-    }
+    //     std::map<size_t, std::vector<Constraint>> constraints_tdb;
+    //     createConstraintsFromConflicts(conflict_tdb, constraints_tdb);
+    //     // grow constraints of the same robot, use the same high-level node
+    //     auto c = constraints_tdb[robot_id_to_check];
+    //     start.constraints[robot_id_to_check].insert(start.constraints[robot_id_to_check].end(), 
+    //                                 c.begin(), c.end());
+    //     expanded_trajs_tmp.clear();
+    //     options_tdbastar.motions_ptr = &robot_motions[problem.robotTypes[robot_id_to_check]]; 
+    //     tdbastar(problem, options_tdbastar, start.solution[robot_id_to_check].trajectory, 
+    //              start.constraints[robot_id_to_check], out_tdb, robot_id_to_check,/*reverse_search*/false, 
+    //               expanded_trajs_tmp, heuristics[robot_id_to_check]);
+    // }
+    // // run tdbA*-epsilon, get the solution
+    // while(true){
+    //     Conflict conflict_tdb_e;
+    //     out_tdb_e.solved = false;
+    //     if(!getEarliestConflict(start_e.solution, robots, col_mng_robots, robot_objs, conflict_tdb_e)){
+    //         for (size_t i=0; i < start_e.solution.size(); i++){
+    //             start_e.cost += start_e.solution[i].trajectory.cost;
+    //         }
+    //         std::string out_file_tdb_e = output_path.string() + "/tdb_epsilon_solution.yaml";
+    //         create_dir_if_necessary(out_file_tdb_e);
+    //         std::ofstream out(out_file_tdb_e);
+    //         export_solutions(start_e.solution, &out);
+    //         out_tdb_e.solved=true;
+    //         break;
+    //     } 
+    // }
+    // if (out_tdb.solved){
+    //     std::cout << "tdbA* final solution with cost: " << start.cost << std::endl; 
+    // }
+    // if (out_tdb_e.solved){
+    //     std::cout << "tdbA*-epsilon final solution with cost: " << start_e.cost << std::endl; 
+    // }
     return 0;
 }
