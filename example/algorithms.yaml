@@ -1,0 +1,71 @@
+sst:
+  default:
+    goal_epsilon: 0.2
+    goal_bias: 0.05
+    selection_radius: 0.2 # delta_BN in paper
+    pruning_radius: 0.1  # delta_s in paper
+    propagation_step_size: 0.1 #s
+    control_duration: [1, 10] # multiples of step size
+  swap2_unicycle:
+    goal_epsilon: 0.4
+    goal_bias: 0.2
+    selection_radius: 0.4 # delta_BN in paper
+    pruning_radius: 0.2  # delta_s in paper
+s2m2:
+  default:
+    goal_epsilon: 0.2
+    min_seg: 2
+    max_seg: 10
+    obs_seg: 10
+    radius: 0.4
+    velocity: 0.45 # need to reduce this, since S2M is unaware of control limits
+    bloating: 0.12
+    k: [2.0, 2.0, 4.0]
+k-cbs:
+  default:
+    goal_epsilon: 0.2
+    goal_bias: 0.05
+    selection_radius: 0.2 # delta_BN in paper
+    pruning_radius: 0.1  # delta_s in paper
+    propagation_step_size: 0.1 #s
+    control_duration: [1, 10] # multiples of step size
+    ll_timelimit: 1
+  swap1_trailer:
+    goal_epsilon: 0.2
+  swap2_trailer:
+    goal_epsilon: 0.2
+  swap2_hetero:
+    goal_epsilon: 0.2
+db-cbs:
+  default:
+    delta_0: 0.5
+    delta_rate: 0.9
+    num_primitives_0: 100
+    num_primitives_rate: 1.5
+    alpha: 0.5
+    filter_duplicates: True
+    heuristic1: "reverse-search"
+    heuristic1_delta: 1.0
+  '*_unicycle_sphere':
+    delta_0: 0.9
+  '*_hetero':
+    delta_0: 0.75
+  '*_trailer':
+    delta_0: 0.9
+db-ecbs:
+  default:
+    delta_0: 0.5
+    delta_rate: 0.9
+    num_primitives_0: 100
+    num_primitives_rate: 1.5
+    alpha: 0.5
+    filter_duplicates: True
+    heuristic1: "reverse-search"
+    heuristic1_delta: 1.0
+    suboptimality_factor: 1.8
+  '*_unicycle_sphere':
+    delta_0: 0.9
+  '*_hetero':
+    delta_0: 0.75
+  '*_trailer':
+    delta_0: 0.9

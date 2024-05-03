@@ -1,0 +1,66 @@
+sst:
+  default:
+    goal_epsilon: 0.1
+    goal_bias: 0.05
+    selection_radius: 0.2 # delta_BN in paper
+    pruning_radius: 0.1  # delta_s in paper
+    propagation_step_size: 0.1 #s
+    control_duration: [1, 10] # multiples of step size
+    rai_cfg: |
+      opt/verbose: 4
+      KOMO/verbose: 3
+  parallelpark_0:
+    goal_epsilon: 0.05
+
+dbAstar-komo:
+  default:
+    add_primitives_per_iteration: 500
+    desired_branching_factor: 16
+    suboptimality_bound: 1.0
+    alpha: 0.3
+    filter_duplicates: False
+    # Config file (rai.cfg) that will be used
+    rai_cfg: |
+      opt/verbose: 4
+      KOMO/verbose: 3
+      opt/stopTolerance: 0.001
+      add_init_noise: 0.05
+
+dbAstar-scp:
+  default:
+    add_primitives_per_iteration: 100
+    desired_branching_factor: 16
+    suboptimality_bound: 1.0
+    
+dbAstar:
+  default:
+    add_primitives_per_iteration: 500
+    desired_branching_factor: 16
+    suboptimality_bound: 1.0
+    alpha: 0.3
+    filter_duplicates: False
+    
+sbpl:
+  default:
+    dummy: 0
+
+komo:
+  default:
+    # Config file (rai.cfg) that will be used
+    rai_cfg: |
+      opt/verbose: 4
+      KOMO/verbose: 3
+      opt/stopTolerance: 0.001
+      add_init_noise: 0.1
+
+scp:
+  default:
+    dummy: 0
+
+gen-motion:
+  timelimit: 120 # 2 min
+  search: "linear"
+  env_limit: 2 # m
+  rai_cfg: |
+    opt/stopTolerance: 0.001
+    add_init_noise: 0.1

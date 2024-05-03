@@ -1,0 +1,12 @@
+buildRelease/
+buildDebug/
+results/
+new_format_motions/
+debug/
+demo/
+cloud/motions/
+.vscode/
+__pycache__/
+meshes/
+octomaps/
+example/tro/

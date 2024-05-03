@@ -1,0 +1,19 @@
+environment:
+  min: [-5, -5, 0]
+  max: [5, 5, 5]
+  obstacles: 
+    - type: octomap
+      octomap_file: "../octomaps/map.bt"
+      octomap_stl: "../meshes/map.stl"
+      center: []
+      size: []
+    - type: box
+      center: [3.1, 1.1, 1.0]
+      size: [0.5, 0.25, 2.0]
+robots:
+  - type: integrator2_3d_v0
+    start: [0.0,1.0,0.5,0,0,0] 
+    goal: [0.0,-1.0,0.5,0,0,0] 
+  # - type: integrator2_3d_v0
+  #   start: [4,2.5,3,0,0,0] 
+  #   goal: [1,2.5,3,0,0,0] 
