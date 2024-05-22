@@ -84,7 +84,9 @@ int main(int argc, char* argv[]){
     options_tdbastar.fix_seed = 1;
     options_tdbastar.max_motions = cfg["num_primitives_0"].as<size_t>();
     options_tdbastar.w = cfg["suboptimality_factor"].as<float>(); 
-    options_tdbastar.rewire = true;
+    options_tdbastar.rewire = cfg["rewire"].as<bool>();
+    options_tdbastar.always_add_node = cfg["always_add_node"].as<bool>();
+    
     bool save_expanded_trajs = false;
     size_t robot_id_to_check = 1;  
     size_t robot_id_with_solution = 0; // robot with solution
@@ -190,7 +192,7 @@ int main(int argc, char* argv[]){
       LowLevelPlan<dynobench::Trajectory> tmp_solution_e;
       tdbastar_epsilon(problem, options_tdbastar, 
             tmp_solution_e.trajectory,/*constraints*/{},
-            out_tdb, robot_id_to_check,/*reverse_search*/true, 
+            out_tdb, robot_id_to_check,/*reverse_search*/false, 
             expanded_trajs_tmp, tmp_solutions, robot_motions,
             robots, col_mng_robots, robot_objs,
             nullptr, &heuristics_e[robot_id_to_check], options_tdbastar.w);
@@ -207,7 +209,7 @@ int main(int argc, char* argv[]){
     start.LB = 0;
     // read the provided trajectory of the neighbor
     read_input_yaml(inputFile, start.solution.at(robot_id_with_solution).trajectory); // for the provided solution, robot_id=0
-    // start.solution[0].trajectory.cost = start.solution[0].trajectory.actions.size() * robots.at(0)->ref_dt; // set the cost of the provided solution
+    // start.solution[robot_id_with_solution].trajectory.cost = start.solution[0].trajectory.actions.size() * robots.at(0)->ref_dt; // set the cost of the provided solution
     HighLevelNodeFocal start_e = start; 
     // common parameters
     options_tdbastar.motions_ptr = &robot_motions[problem.robotTypes[robot_id_to_check]]; 
