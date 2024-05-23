@@ -208,8 +208,9 @@ int main(int argc, char* argv[]){
     start.id = 0;
     start.LB = 0;
     // read the provided trajectory of the neighbor
-    read_input_yaml(inputFile, start.solution.at(robot_id_with_solution).trajectory); // for the provided solution, robot_id=0
-    // start.solution[robot_id_with_solution].trajectory.cost = start.solution[0].trajectory.actions.size() * robots.at(0)->ref_dt; // set the cost of the provided solution
+    read_input_yaml(inputFile, start.solution.at(robot_id_with_solution).trajectory); // for the provided solution
+    start.solution[robot_id_with_solution].trajectory.cost = start.solution[robot_id_with_solution].trajectory.actions.size() * robots.at(robot_id_with_solution)->ref_dt; 
+    // start.cost += start.solution[robot_id_with_solution].trajectory.actions.size() * robots.at(robot_id_with_solution)->ref_dt; 
     HighLevelNodeFocal start_e = start; 
     // common parameters
     options_tdbastar.motions_ptr = &robot_motions[problem.robotTypes[robot_id_to_check]]; 
@@ -224,6 +225,7 @@ int main(int argc, char* argv[]){
         std::cout << "tdbA* couldn't find initial solution."<< std::endl;
     }
     else {
+        // start.cost += start.solution[robot_id_to_check].trajectory.cost;
         std::cout << "tdbA* final solution with cost: " << start.solution[robot_id_to_check].trajectory.cost << std::endl; 
         std::string out_file_tdb = output_path.string() + "tdb_solution.yaml";
         create_dir_if_necessary(out_file_tdb);
@@ -254,6 +256,7 @@ int main(int argc, char* argv[]){
         std::cout << "tdbA*-epsilon couldn't find initial solution."<< std::endl;
     }
     else {
+        // start_e.cost += start_e.solution[robot_id_to_check].trajectory.cost;
         std::cout << "tdbA*-epsilon final solution with cost: " << start_e.solution[robot_id_to_check].trajectory.cost << std::endl; 
         std::string out_file_tdb_e = output_path.string() + "tdb_epsilon_solution.yaml";
         create_dir_if_necessary(out_file_tdb_e);
