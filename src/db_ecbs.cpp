@@ -175,8 +175,6 @@ int main(int argc, char* argv[]) {
     std::vector<ompl::NearestNeighbors<std::shared_ptr<AStarNode>>*> heuristics(robots.size(), nullptr);
     std::vector<dynobench::Trajectory> expanded_trajs_tmp;
     std::vector<LowLevelPlan<dynobench::Trajectory>> tmp_solutions;
-    // std::vector<std::vector<std::pair<std::shared_ptr<AStarNode>, size_t>>> tmp_results(env["robots"].size());
-    // std::vector<std::map<size_t, Motion*>> tmp_motions;
     if (cfg["heuristic1"].as<std::string>() == "reverse-search"){
       options_tdbastar.delta = cfg["heuristic1_delta"].as<float>();
       for (const auto &robot : robots){
@@ -261,7 +259,6 @@ int main(int argc, char* argv[]) {
         robot_id++;
       }
       start.focalHeuristic = highLevelfocalHeuristicState(start.solution, robots, robot_objs); 
-      // start.focalHeuristic = highLevelfocalHeuristicLazy(start.solution, robots, col_mng_robots, robot_objs); 
 
       if (!start_node_valid) {
             continue;
@@ -417,8 +414,6 @@ int main(int argc, char* argv[]) {
               std::cout << "New node cost: " << newNode.cost << " New node LB: " << newNode.LB << std::endl;
               std::cout << "New node focal heuristic: " << newNode.focalHeuristic << std::endl;
               
-              // newNode.focalHeuristic = highLevelfocalHeuristicLazy(newNode.solution, robots, col_mng_robots, robot_objs); 
-
               auto handle = open.push(newNode);
               (*handle).handle = handle;
               // if (newNode.cost <= best_cost * options_tdbastar.w)
