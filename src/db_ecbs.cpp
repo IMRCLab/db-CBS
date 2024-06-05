@@ -84,8 +84,9 @@ int main(int argc, char* argv[]) {
     options_tdbastar.cost_delta_factor = 0;
     options_tdbastar.fix_seed = 1;
     options_tdbastar.max_motions = cfg["num_primitives_0"].as<size_t>();
-    options_tdbastar.rewire = true;
-    options_tdbastar.w = 1.3;
+    options_tdbastar.w = cfg["suboptimality_factor"].as<float>(); 
+    options_tdbastar.rewire = cfg["rewire"].as<bool>();
+    options_tdbastar.always_add_node = cfg["always_add_node"].as<bool>();
     // std::string focal_heuristic = "state"; // "volume_wise"; 
     bool save_expanded_trajs = false;
     // tdbastar problem
