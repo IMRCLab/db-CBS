@@ -117,9 +117,9 @@ def execute_task(task: ExecutionTask):
 			print("WARNING: CHECKER FAILED -> DELETING stats!")
 			(result_folder / "stats.yaml").unlink(missing_ok=True)
 
-	# vis_script = scripts_path / "visualize.py"
-	# for file in visualize_files:
-	# 	run_visualize(vis_script, env, result_folder / file)
+	vis_script = scripts_path / "visualize.py"
+	for file in visualize_files:
+		run_visualize(vis_script, env, result_folder / file)
 	
 	# search_viz_script = scripts_path / "visualize_search.py"
 	# if(len(search_plot_files) > 0):
@@ -218,7 +218,7 @@ def main():
 			execute_task(task)
 	
 	export_table_txt(instances, algs)
-	# run_benchmark_stats(instances, algs, trials, timelimit)
+	run_benchmark_stats(instances, algs, trials, timelimit)
 
 	# write_table(instances, algs, Path("../results"), "table.pdf", trials, timelimit)
 
