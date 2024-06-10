@@ -21,7 +21,7 @@ def plot_expanded_trajs(filename_env, filename_trajs, filename_result = None, fi
         motions = yaml.safe_load(motions_file)
     trajs = motions["trajs"]
     starts = []
-    N = len(filename_trajs)
+    N = len(trajs)
     fps, duration = 24, 100
     folder = f"../dynoplan/plot/" # maybe better way with not saving images
     pathlib.Path(folder).mkdir(parents=True,exist_ok=True)
