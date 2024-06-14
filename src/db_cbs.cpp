@@ -79,8 +79,9 @@ int main(int argc, char* argv[]) {
     // options_tdbastar.delta = cfg["delta_0"].as<float>();
     options_tdbastar.fix_seed = 1;
     options_tdbastar.max_motions = cfg["num_primitives_0"].as<size_t>();
-    options_tdbastar.rewire = true;
-    bool save_expanded_trajs = false;
+    options_tdbastar.rewire = cfg["rewire"].as<bool>();
+    bool save_expanded_trajs = cfg["save_expanded_trajs"].as<bool>();
+    bool execute_optimization = cfg["execute_optimization"].as<bool>();
     // tdbastar problem
     dynobench::Problem problem(inputFile);
     dynobench::Problem problem_original(inputFile);
@@ -278,14 +279,19 @@ int main(int argc, char* argv[]) {
               }
             }
             bool sum_robot_cost = true;
+            
+            if(!execute_optimization){
+              std::ofstream fout(outputFile, std::ios::app); 
+              fout << "  nodes: " << id << std::endl;
+              return 0;
+            }
+
             bool feasible = execute_optimizationMultiRobot(inputFile,
                                           outputFile, 
                                           optimizationFile,
                                           DYNOBENCH_BASE,
                                           sum_robot_cost);
-            // debug
-            // std::string output_folder = output_path.parent_path().string();
-            // std::ofstream out2(output_folder + "/expanded_nodes.yaml");
+            
             std::ofstream fout(optimizationFile, std::ios::app); 
             fout << "  nodes: " << id << std::endl;
             if (feasible) {

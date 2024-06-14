@@ -46,6 +46,9 @@ db-cbs:
     filter_duplicates: True
     heuristic1: "reverse-search"
     heuristic1_delta: 1.0
+    rewire: True
+    execute_optimization: False
+    save_expanded_trajs: False
   '*_unicycle_sphere':
     delta_0: 0.9
   '*_hetero':
@@ -65,6 +68,8 @@ db-ecbs:
     suboptimality_factor: 3.3
     always_add_node: False
     rewire: True
+    execute_optimization: False
+    save_expanded_trajs: False
   '*_unicycle_sphere':
     delta_0: 0.9
   '*_hetero':

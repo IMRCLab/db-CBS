@@ -87,8 +87,8 @@ int main(int argc, char* argv[]) {
     options_tdbastar.w = cfg["suboptimality_factor"].as<float>(); 
     options_tdbastar.rewire = cfg["rewire"].as<bool>();
     options_tdbastar.always_add_node = cfg["always_add_node"].as<bool>();
-    // std::string focal_heuristic = "state"; // "volume_wise"; 
-    bool save_expanded_trajs = false;
+    bool save_expanded_trajs = cfg["save_expanded_trajs"].as<bool>();
+    bool execute_optimization = cfg["execute_optimization"].as<bool>();
     // tdbastar problem
     dynobench::Problem problem(inputFile);
     dynobench::Problem problem_original(inputFile);
@@ -361,6 +361,13 @@ int main(int argc, char* argv[]) {
               }
             }
             bool sum_robot_cost = true;
+
+            if(!execute_optimization){
+              std::ofstream fout(outputFile, std::ios::app); 
+              fout << "  nodes: " << id << std::endl;
+              return 0;
+            }
+
             bool feasible = execute_optimizationMultiRobot(inputFile,
                                           outputFile, 
                                           optimizationFile,
