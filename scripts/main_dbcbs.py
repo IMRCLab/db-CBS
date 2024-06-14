@@ -48,7 +48,8 @@ def run_dbcbs(filename_env, folder, timelimit, cfg):
                 else:
                     # shutil.copyfile(filename_result_dbcbs_opt, "{}/result_dbcbs_opt.yaml".format(folder))
                     cost = 0
-                    with open(filename_result_dbcbs_opt) as f:
+                    # with open(filename_result_dbcbs_opt) as f:
+                    with open(filename_result_dbcbs) as f:
                         result = yaml.safe_load(f)
                         for r in result["result"]:
                             cost += len(r["actions"]) * 0.1
