@@ -178,6 +178,22 @@ bool getEarliestConflict(
 #endif
             return true;
         } 
+        fcl::DefaultDistanceData<float> inter_robot_distance_data;
+        inter_robot_distance_data.request.enable_signed_distance = true;
+        col_mng_robots->distance(&inter_robot_distance_data,
+                              fcl::DefaultDistanceFunction<float>);
+        float inter_robot_distance = inter_robot_distance_data.result.min_distance;
+
+        if (inter_robot_distance > 0.6) { // assumed 2 robots
+            early_conflict.time = t * all_robots[0]->dt();
+            early_conflict.robot_idx_i = 0; // maybe use getUserData()
+            early_conflict.robot_idx_j = 1;
+            assert(early_conflict.robot_idx_i != early_conflict.robot_idx_j);
+            early_conflict.robot_state_i = node_states[early_conflict.robot_idx_i];
+            early_conflict.robot_state_j = node_states[early_conflict.robot_idx_j];
+            return true;
+        }
+
     }
     return false;
 }
@@ -532,15 +548,15 @@ int main(int argc, char* argv[]) {
                 std::cout << "warning: using new multirobot optimization" << std::endl;
             
                 const bool sum_robot_cost = true;
-                bool feasible = execute_optimizationMultiRobot(inputFile,
-                                                    outputFile, 
-                                                    optimizationFile,
-                                                    dynobench_base,
-                                                    sum_robot_cost);
-                if (feasible) {
-                    return 0;
-                }
-
+                // bool feasible = execute_optimizationMultiRobot(inputFile,
+                //                                     outputFile, 
+                //                                     optimizationFile,
+                //                                     dynobench_base,
+                //                                     sum_robot_cost);
+                // if (feasible) {
+                //     return 0;
+                // }
+                return 0;
                 break;
             }
 
