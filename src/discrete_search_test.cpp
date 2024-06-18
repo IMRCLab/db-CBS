@@ -268,55 +268,5 @@ int main(int argc, char* argv[]){
         std::cout << "both planners failed, quitting the run!" << std::endl;
         return 0;
     }
-    // tdbA*, run and get the solution
-    // while (true){
-    //     Conflict conflict_tdb;
-    //     out_tdb.solved = false;
-    //     if(!getEarliestConflict(start.solution, robots, col_mng_robots, robot_objs, conflict_tdb)){
-    //         for (size_t i=0; i < start.solution.size(); i++){
-    //             start.cost += start.solution[i].trajectory.cost;
-    //         }
-    //         std::string out_file_tdb = output_path.string() + "/tdb_solution.yaml";
-    //         create_dir_if_necessary(out_file_tdb);
-    //         std::ofstream out(out_file_tdb);
-    //         export_solutions(start.solution, &out);
-    //         out_tdb.solved=true;
-    //         break;
-    //     }
-
-    //     std::map<size_t, std::vector<Constraint>> constraints_tdb;
-    //     createConstraintsFromConflicts(conflict_tdb, constraints_tdb);
-    //     // grow constraints of the same robot, use the same high-level node
-    //     auto c = constraints_tdb[robot_id_to_check];
-    //     start.constraints[robot_id_to_check].insert(start.constraints[robot_id_to_check].end(), 
-    //                                 c.begin(), c.end());
-    //     expanded_trajs_tmp.clear();
-    //     options_tdbastar.motions_ptr = &robot_motions[problem.robotTypes[robot_id_to_check]]; 
-    //     tdbastar(problem, options_tdbastar, start.solution[robot_id_to_check].trajectory, 
-    //              start.constraints[robot_id_to_check], out_tdb, robot_id_to_check,/*reverse_search*/false, 
-    //               expanded_trajs_tmp, heuristics[robot_id_to_check]);
-    // }
-    // // run tdbA*-epsilon, get the solution
-    // while(true){
-    //     Conflict conflict_tdb_e;
-    //     out_tdb_e.solved = false;
-    //     if(!getEarliestConflict(start_e.solution, robots, col_mng_robots, robot_objs, conflict_tdb_e)){
-    //         for (size_t i=0; i < start_e.solution.size(); i++){
-    //             start_e.cost += start_e.solution[i].trajectory.cost;
-    //         }
-    //         std::string out_file_tdb_e = output_path.string() + "/tdb_epsilon_solution.yaml";
-    //         create_dir_if_necessary(out_file_tdb_e);
-    //         std::ofstream out(out_file_tdb_e);
-    //         export_solutions(start_e.solution, &out);
-    //         out_tdb_e.solved=true;
-    //         break;
-    //     } 
-    // }
-    // if (out_tdb.solved){
-    //     std::cout << "tdbA* final solution with cost: " << start.cost << std::endl; 
-    // }
-    // if (out_tdb_e.solved){
-    //     std::cout << "tdbA*-epsilon final solution with cost: " << start_e.cost << std::endl; 
-    // }
     return 0;
 }
