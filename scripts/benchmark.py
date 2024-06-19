@@ -117,9 +117,13 @@ def execute_task(task: ExecutionTask):
 			print("WARNING: CHECKER FAILED -> DELETING stats!")
 			(result_folder / "stats.yaml").unlink(missing_ok=True)
 
-	# vis_script = scripts_path / "visualize.py"
-	# for file in visualize_files:
-	# 	run_visualize(vis_script, env, result_folder / file)
+	if "drone" in task.instance:
+		vis_script = scripts_path / "mesh_visualizer.py"
+	else:
+		vis_script = scripts_path / "visualize.py"
+
+	for file in visualize_files:
+		run_visualize(vis_script, env, result_folder / file)
 	
 	# search_viz_script = scripts_path / "visualize_search.py"
 	# if(len(search_plot_files) > 0):
@@ -184,20 +188,21 @@ def main():
 		"drone2c",
 		"drone4c",
 		"drone8c",
+		"drone16c",
 	]
 
 	# add random cases
-	for kind in ["unicycle_sphere", "hetero"]:
-		for n in [2,4,8]:
-			for k in range(10):
-				instances.append("gen_p10_n{}_{}_{}".format(n,k, kind))
+	# for kind in ["unicycle_sphere", "hetero"]:
+	# 	for n in [2,4,8]:
+	# 		for k in range(10):
+	# 			instances.append("gen_p10_n{}_{}_{}".format(n,k, kind))
 
 
 	algs = [
 		# "sst",
 		# "s2m2",
 		# "k-cbs",
-		"db-cbs",
+		# "db-cbs",
 		"db-ecbs",
 	]
 	trials = 1

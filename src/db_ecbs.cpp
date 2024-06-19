@@ -76,6 +76,7 @@ int main(int argc, char* argv[]) {
     fs::path output_path(outputFile);
     std::string output_folder = output_path.parent_path().string();
     bool save_search_video = false;
+    bool save_expanded_trajs = cfg["save_expanded_trajs"].as<bool>();
     std::string conflicts_folder = output_folder + "/conflicts";
     // tdbstar options
     Options_tdbastar options_tdbastar;
@@ -87,8 +88,6 @@ int main(int argc, char* argv[]) {
     options_tdbastar.w = cfg["suboptimality_factor"].as<float>(); 
     options_tdbastar.rewire = cfg["rewire"].as<bool>();
     options_tdbastar.always_add_node = cfg["always_add_node"].as<bool>();
-    // std::string focal_heuristic = "state"; // "volume_wise"; 
-    bool save_expanded_trajs = false;
     // tdbastar problem
     dynobench::Problem problem(inputFile);
     dynobench::Problem problem_original(inputFile);
@@ -174,7 +173,7 @@ int main(int argc, char* argv[]) {
     size_t robot_id = 0;
     std::vector<ompl::NearestNeighbors<std::shared_ptr<AStarNode>>*> heuristics(robots.size(), nullptr);
     std::vector<dynobench::Trajectory> expanded_trajs_tmp;
-    std::vector<LowLevelPlan<dynobench::Trajectory>> tmp_solutions;
+    std::vector<LowLevelPlan<dynobench::Trajectory>> tmp_solutions(robots.size());
     if (cfg["heuristic1"].as<std::string>() == "reverse-search"){
       options_tdbastar.delta = cfg["heuristic1_delta"].as<float>();
       for (const auto &robot : robots){
@@ -250,6 +249,15 @@ int main(int argc, char* argv[]) {
                 heuristics[robot_id], nullptr, options_tdbastar.w);
         if(!out_tdb.solved){
           std::cout << "Couldn't find initial solution for robot " << robot_id << "." << std::endl;
+          if (save_expanded_trajs){
+            std::ofstream out2(output_folder + "/expanded_trajs_fail.yaml");
+            out2 << "trajs:" << std::endl;
+            for (auto i = 0; i < expanded_trajs_tmp.size(); i+=500){
+              auto traj = expanded_trajs_tmp.at(i);
+              out2 << "  - " << std::endl;
+              traj.to_yaml_format(out2, "    ");
+            }
+          }
           start_node_valid = false;
           break;
         }
@@ -355,11 +363,14 @@ int main(int argc, char* argv[]) {
             if (save_expanded_trajs){
               std::ofstream out2(output_folder + "/expanded_trajs.yaml");
               out2 << "trajs:" << std::endl;
-              for (auto traj : expanded_trajs_tmp){
+              // for (auto traj : expanded_trajs_tmp){
+              for (auto i = 0; i < expanded_trajs_tmp.size(); i+=100){
+                auto traj = expanded_trajs_tmp.at(i);
                 out2 << "  - " << std::endl;
                 traj.to_yaml_format(out2, "    ");
               }
             }
+            // return 0;
             bool sum_robot_cost = true;
             bool feasible = execute_optimizationMultiRobot(inputFile,
                                           outputFile, 
