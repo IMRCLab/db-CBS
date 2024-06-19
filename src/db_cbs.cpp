@@ -332,7 +332,7 @@ int main(int argc, char* argv[]) {
 
     // load config file
     YAML::Node cfg = YAML::LoadFile(cfgFile);
-    // cfg = cfg["db-cbs"]["default"];
+    cfg = cfg["db-cbs"]["default"];
     float alpha = cfg["alpha"].as<float>();
     bool filter_duplicates = cfg["filter_duplicates"].as<bool>();
 
@@ -548,14 +548,14 @@ int main(int argc, char* argv[]) {
                 std::cout << "warning: using new multirobot optimization" << std::endl;
             
                 const bool sum_robot_cost = true;
-                // bool feasible = execute_optimizationMultiRobot(inputFile,
-                //                                     outputFile, 
-                //                                     optimizationFile,
-                //                                     dynobench_base,
-                //                                     sum_robot_cost);
-                // if (feasible) {
-                //     return 0;
-                // }
+                bool feasible = execute_optimizationMultiRobot(inputFile,
+                                                    outputFile, 
+                                                    optimizationFile,
+                                                    dynobench_base,
+                                                    sum_robot_cost);
+                if (feasible) {
+                    return 0;
+                }
                 return 0;
                 break;
             }
