@@ -178,15 +178,14 @@ bool getEarliestConflict(
 #endif
             return true;
         } 
-        fcl::DefaultDistanceData<float> inter_robot_distance_data;
-        inter_robot_distance_data.request.enable_signed_distance = true;
-        col_mng_robots->distance(&inter_robot_distance_data,
-                              fcl::DefaultDistanceFunction<float>);
-        float inter_robot_distance = inter_robot_distance_data.result.min_distance;
-
-        if (inter_robot_distance > 0.6) { // assumed 2 robots
+        Eigen::Vector3f robot1_pos = col_mng_objs[0]->getTranslation();
+        Eigen::Vector3f robot2_pos = col_mng_objs[1]->getTranslation();
+        float distance = (robot1_pos - robot2_pos).norm();
+        float l = 0.5;
+        // std::cout << "dist, diff: " <<  distance << ", " << abs(distance - l) <<  std::endl;
+        if (abs(distance - l) >= 0.2) { // assumed 2 robots
             early_conflict.time = t * all_robots[0]->dt();
-            early_conflict.robot_idx_i = 0; // maybe use getUserData()
+            early_conflict.robot_idx_i = 0; 
             early_conflict.robot_idx_j = 1;
             assert(early_conflict.robot_idx_i != early_conflict.robot_idx_j);
             early_conflict.robot_state_i = node_states[early_conflict.robot_idx_i];
