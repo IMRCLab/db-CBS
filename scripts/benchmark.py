@@ -117,9 +117,9 @@ def execute_task(task: ExecutionTask):
 			print("WARNING: CHECKER FAILED -> DELETING stats!")
 			(result_folder / "stats.yaml").unlink(missing_ok=True)
 
-	# vis_script = scripts_path / "visualize.py"
-	# for file in visualize_files:
-	# 	run_visualize(vis_script, env, result_folder / file)
+	vis_script = scripts_path / "visualize.py"
+	for file in visualize_files:
+		run_visualize(vis_script, env, result_folder / file)
 	
 	# search_viz_script = scripts_path / "visualize_search.py"
 	# if(len(search_plot_files) > 0):
@@ -130,7 +130,7 @@ def execute_task(task: ExecutionTask):
 def main():
 	parallel = True
 	instances = [
-		# # 1 robot cases
+		# 1 robot cases
 		"swap1_unicycle",
 		"swap1_unicycle_sphere",
 		# "swap1_trailer",
