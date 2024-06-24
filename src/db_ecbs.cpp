@@ -370,6 +370,7 @@ int main(int argc, char* argv[]) {
             if (feasible) {
               std::ofstream fout(optimizationFile, std::ios::app); 
               fout << "  nodes: " << id << std::endl;
+              fout << "  delta: " << options_tdbastar.delta << std::endl;
               return 0;
             }
             break;
