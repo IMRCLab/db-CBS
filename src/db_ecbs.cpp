@@ -100,7 +100,6 @@ int main(int argc, char* argv[]) {
 
     // load problem description
     YAML::Node env = YAML::LoadFile(inputFile);
-    // std::vector<std::vector<fcl::Vector3f>> positions;
     std::vector<std::shared_ptr<fcl::CollisionGeometryd>> collision_geometries;
     const auto &env_min = env["environment"]["min"];
     const auto &env_max = env["environment"]["max"];
@@ -192,6 +191,15 @@ int main(int argc, char* argv[]) {
                 robots, col_mng_robots, robot_objs,
                 nullptr, &heuristics[robot_id], options_tdbastar.w);
         std::cout << "computed heuristic with " << heuristics[robot_id]->size() << " entries." << std::endl;
+        if (save_expanded_trajs){
+          std::ofstream out3(output_folder + "/expanded_trajs_reverse_" + std::to_string(robot_id) + ".yaml");
+          out3 << "trajs:" << std::endl;
+          for (auto i = 0; i < expanded_trajs_tmp.size(); i++){
+            auto traj = expanded_trajs_tmp.at(i);
+            out3 << "  - " << std::endl;
+            traj.to_yaml_format(out3, "    ");
+          }
+        }
         robot_id++;
       }
     }
@@ -252,7 +260,7 @@ int main(int argc, char* argv[]) {
           if (save_expanded_trajs){
             std::ofstream out2(output_folder + "/expanded_trajs_fail.yaml");
             out2 << "trajs:" << std::endl;
-            for (auto i = 0; i < expanded_trajs_tmp.size(); i+=500){
+            for (auto i = 0; i < expanded_trajs_tmp.size(); i++){
               auto traj = expanded_trajs_tmp.at(i);
               out2 << "  - " << std::endl;
               traj.to_yaml_format(out2, "    ");
@@ -363,7 +371,6 @@ int main(int argc, char* argv[]) {
             if (save_expanded_trajs){
               std::ofstream out2(output_folder + "/expanded_trajs.yaml");
               out2 << "trajs:" << std::endl;
-              // for (auto traj : expanded_trajs_tmp){
               for (auto i = 0; i < expanded_trajs_tmp.size(); i+=100){
                 auto traj = expanded_trajs_tmp.at(i);
                 out2 << "  - " << std::endl;

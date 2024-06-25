@@ -29,6 +29,9 @@ def visualize(env_file, trajs_file, result_file = None, show_cost = False):
     vis["/Cameras/default/rotated/<object>"].set_transform(
         tf.translation_matrix([1, 0, 0]))
 
+    # name of the saved file
+    file_name = "octomap_exp_" + os.path.basename(env_file).split('.')[0] + ".html"
+
     # get environment info
     with open(env_file) as f:
         data = yaml.load(f, Loader=yaml.FullLoader)
@@ -53,7 +56,8 @@ def visualize(env_file, trajs_file, result_file = None, show_cost = False):
     traj_idx = 0
     costs = []
     starts = []
-    for i in range(len(expanded_trajs["trajs"])): # each motion primitive/traj = several states
+    step = 1
+    for i in range(0, len(expanded_trajs["trajs"]), step): # each motion primitive/traj = several states
         traj = []
         position = [] 
         for s in expanded_trajs["trajs"][i]["states"]:
@@ -66,16 +70,18 @@ def visualize(env_file, trajs_file, result_file = None, show_cost = False):
         vis["expanded_trajs" + str(traj_idx)].set_object(g.Line(g.PointsGeometry(position), g.LineBasicMaterial(color=0x00ff00ff))) # magenta
         vis["sphere" + str(traj_idx)].set_object(g.Mesh(g.Sphere(0.01), g.MeshLambertMaterial(color=0x1000000))) # black
         vis["sphere" + str(traj_idx)].set_transform(tf.translation_matrix(start))
-        traj_idx += 1
-
-    if show_cost:
+        traj_idx += step # 1
+    if show_cost is True:
+       print("Visualize the cost")
        costs_norm = (costs-np.min(costs))/(np.max(costs)-np.min(costs))
        idx = 0
-       for i in range(len(expanded_trajs["trajs"])):
+       for i in range(0, len(expanded_trajs["trajs"]), step):
         vis["expanded_trajs" + str(idx)].set_property("visible", False)
-        vis["sphere" + str(idx)].set_object(g.Mesh(g.Sphere(0.04), g.MeshLambertMaterial(opacity=costs_norm[i], color=0x00330099))) 
+        vis["sphere" + str(idx)].set_object(g.Mesh(g.Sphere(0.04), g.MeshLambertMaterial(opacity=costs_norm[i], color=0x00FFFF00))) # 0x00330099 - dark blue
         vis["sphere" + str(idx)].set_transform(tf.translation_matrix(starts[i]))
-        idx += 1
+        idx += step # 1
+
+       file_name = "octomap_exp_with_cost_" + os.path.basename(env_file).split('.')[0] + ".html"
 
     # start, goal states
     robots = data["robots"]
@@ -120,15 +126,15 @@ def visualize(env_file, trajs_file, result_file = None, show_cost = False):
     result_folder = Path(trajs_file).resolve().parent
     vis.set_animation(anim)
     res = vis.static_html()
-    with open(result_folder / ("octomap_exp_" + os.path.basename(env_file).split('.')[0] + ".html"), "w") as f:
+    with open(result_folder / file_name, "w") as f:
         f.write(res)
             
 def main():
   parser = argparse.ArgumentParser()
-  parser.add_argument("env", help="input file containing map")
-  parser.add_argument("--trajs", help="file with expanded trajectories during the search")
-  parser.add_argument("--result", help="output file containing solution")
-  parser.add_argument("--show_cost", default=False, help="output file containing solution")
+  parser.add_argument('env', help="input file containing map")
+  parser.add_argument('--trajs', help="file with expanded trajectories during the search")
+  parser.add_argument('--result', help="output file containing solution")
+  parser.add_argument('--show_cost', action='store_true', help="indicate if cost vis is needed")
 
   args = parser.parse_args()
 
