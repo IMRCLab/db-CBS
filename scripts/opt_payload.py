@@ -17,6 +17,7 @@ def is_in_exclusion_zone(x,y):
 
 
 plot = True
+codegeneration_cvxpy = False
 # Define the exclusion square in the middle
 exclusion_xmin, exclusion_xmax = -0.5, 0.5
 exclusion_ymin, exclusion_ymax = -0.5, 0.5
@@ -35,12 +36,7 @@ li[2] = 0.7
 x_points = []
 y_points = []
 pi = []
-### EXAMPLE TO TRY #### uncomment this
-# pi = [
-#     [-0.707,  0.707], 
-#     [ 0.0, 0.0],
-#     [0.707,  -0.707],
-#     ]
+
 x_points = [p[0] for p in pi ]
 y_points = [p[1] for p in pi ]
 if len(pi) == 0:
@@ -60,11 +56,11 @@ constraints = []
 pi = np.array(pi)
 cost = 0 
 for k, l in enumerate(li):
-    cost += cp.QuadForm(np.array(pi[k]) - p0, np.eye(2,))#  + cp.norm(np.array(pi[k]) - p0, 2) - l
+    cost += cp.QuadForm(np.array(pi[k]) - p0, np.eye(2,)) - l#  + cp.norm(np.array(pi[k]) - p0, 2) - l
 
 print(cost)
 problem = cp.Problem(cp.Minimize(cost))
-problem.solve(solver=cp.SCS)
+problem.solve(solver=cp.OSQP)
 print(p0.value)
 
 
@@ -94,4 +90,5 @@ if plot and p0.value is not None:
     plt.gca().set_aspect('equal', adjustable='box')
     plt.show()
 
-cpg.generate_code(problem, code_dir='../codegen', solver='SCS')
+if codegeneration_cvxpy: 
+    cpg.generate_code(problem, code_dir='../codegen', solver='OSQP')
