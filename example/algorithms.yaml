@@ -56,12 +56,12 @@ db-ecbs:
   default:
     delta_0: 0.9 # 0.5
     delta_rate: 0.9
-    num_primitives_0: 300 # 300
+    num_primitives_0: 200 # 300
     num_primitives_rate: 1.5
     alpha: 0.5
     filter_duplicates: True
     heuristic1: "reverse-search"
-    heuristic1_delta: 1.5 # 1.0
+    heuristic1_delta: 2 # 1.0
     suboptimality_factor: 3.3
     always_add_node: False
     rewire: True
