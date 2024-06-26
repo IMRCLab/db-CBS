@@ -120,6 +120,14 @@ void export_solutions(const std::vector<LowLevelPlan<AStarNode*,ob::State*, oc::
 }
 
 
+inline Eigen::VectorXf create_vector(const std::vector<double> &v) {
+  Eigen::VectorXf out(v.size());
+  for (size_t i = 0; i < v.size(); ++i) {
+    out(i) = v[i];
+  }
+  return out;
+}
+
 inline std::vector<double> eigentoStd(const Eigen::VectorXf &eigenvec)
 {
     std::vector<double> stdvec;
@@ -192,8 +200,8 @@ Eigen::VectorXf optimizePayload(Eigen::VectorXf &p0_opt,
     double minf; // Variable to store the minimum value found
     try {
         nlopt::result result = opt.optimize(p0_vec, minf);
-        std::cout << "Found minimum at f(" << p0_vec[0] << ", " << p0_vec[1] << ") = "
-                  << minf << std::endl;
+        // std::cout << "Found minimum at f(" << p0_vec[0] << ", " << p0_vec[1] << ") = "
+                //   << minf << std::endl;
         p0_opt = stdtoEigen(p0_vec);
         return p0_opt;
     } catch (std::exception &e) {
@@ -260,12 +268,32 @@ bool getEarliestConflict(
             si_j->printState(early_conflict.robot_state_j);
 #endif
             return true;
-        } 
+        }
+
         Eigen::Vector3f robot1_pos = col_mng_objs[0]->getTranslation();
         Eigen::Vector3f robot2_pos = col_mng_objs[1]->getTranslation();
         float distance = (robot1_pos - robot2_pos).norm();
         float l = 0.5;
-        // std::cout << "dist, diff: " <<  distance << ", " << abs(distance - l) <<  std::endl;
+        
+        size_t dim = 2;
+        std::vector<double> li = {0.5, 0.5};
+        Eigen::VectorXf p0_init_guess = create_vector({0.0, 0.0});
+        double mu = 0.0;
+
+        std::vector<Eigen::VectorXf> pi = {
+            create_vector({robot1_pos(0), robot1_pos(1)}),
+            create_vector({robot2_pos(0), robot2_pos(1)})
+        };        
+        Eigen::VectorXf p0_opt;
+        cost_data data {pi, li, mu, p0_init_guess}; // prepare the data for the opt
+        optimizePayload(p0_opt, dim, p0_init_guess, data);
+        out  ="[" + std::to_string(p0_opt(0)) + "," + std::to_string(p0_opt(1)) + "]";
+
+        std::cout << "r1:" << robot1_pos(0) << "," << robot1_pos(1) << std::endl; 
+        std::cout << "r2:" << robot2_pos(0) << "," << robot2_pos(1) << std::endl; 
+        std::cout << "p0_opt:" << out <<  std::endl;
+        std::cout << "\n" << std::endl; 
+
         if (abs(distance - l) >= 0.2) { // assumed 2 robots
             early_conflict.time = t * all_robots[0]->dt();
             early_conflict.robot_idx_i = 0; 
