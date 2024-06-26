@@ -61,8 +61,8 @@ db-ecbs:
     alpha: 0.5
     filter_duplicates: True
     heuristic1: "reverse-search"
-    heuristic1_delta: 1.0 # 1.0
-    suboptimality_factor: 5 # 3.3
+    heuristic1_delta: 1.5 # 1.0
+    suboptimality_factor: 3.3
     always_add_node: False
     rewire: True
     save_expanded_trajs: False

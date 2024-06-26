@@ -187,9 +187,9 @@ def main():
 		# "drone1c",
 		# "drone2c",
 		# "drone4c",
-		# "drone8c",
+		"drone8c",
 		"drone12c",
-		"drone16c",
+		# "drone16c",
 		# "drone32c",
 	]
 
