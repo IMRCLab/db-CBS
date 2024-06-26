@@ -287,11 +287,10 @@ bool getEarliestConflict(
         Eigen::VectorXf p0_opt;
         cost_data data {pi, li, mu, p0_init_guess}; // prepare the data for the opt
         optimizePayload(p0_opt, dim, p0_init_guess, data);
-        out  ="[" + std::to_string(p0_opt(0)) + "," + std::to_string(p0_opt(1)) + "]";
 
         std::cout << "r1:" << robot1_pos(0) << "," << robot1_pos(1) << std::endl; 
         std::cout << "r2:" << robot2_pos(0) << "," << robot2_pos(1) << std::endl; 
-        std::cout << "p0_opt:" << out <<  std::endl;
+        std::cout << "p0_opt:" << p0_opt <<  std::endl;
         std::cout << "\n" << std::endl; 
 
         if (abs(distance - l) >= 0.2) { // assumed 2 robots
