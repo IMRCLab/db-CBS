@@ -7,3 +7,9 @@ demo/
 new_format_motions/
 meshes/
 .vscode/
+*_dbcbs.yaml
+*_dbcbs.mp4
+*.html
+*_joint.yaml
+*_opt.yaml
+log_dbcbs*.txt
