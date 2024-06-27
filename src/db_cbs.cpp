@@ -27,7 +27,7 @@
 #include <boost/program_options.hpp>
 #include <boost/heap/d_ary_heap.hpp>
 
-
+#include "nlopt.hpp"
 // #include "multirobot_trajectory.hpp"
 #include "dynoplan/optimization/multirobot_optimization.hpp"
 
@@ -119,6 +119,96 @@ void export_solutions(const std::vector<LowLevelPlan<AStarNode*,ob::State*, oc::
     }
 }
 
+
+inline Eigen::VectorXf create_vector(const std::vector<double> &v) {
+//   Eigen::VectorXf out(v.size());
+//   for (size_t i = 0; i < v.size(); ++i) {
+//     out(i) = v[i];
+//   }
+//   return out;
+    std::vector<float> vf(v.begin(), v.end());
+    return Eigen::Map<Eigen::VectorXf, Eigen::Unaligned>((vf.data()), vf.size());
+}
+
+inline std::vector<double> eigentoStd(const Eigen::VectorXf &eigenvec)
+{
+    // std::vector<double> stdvec;
+    // for (const auto& i : eigenvec)
+    // {
+    //     stdvec.push_back(i);
+    // }
+    Eigen::VectorXd eigenVecD = eigenvec.cast<double>();
+    std::vector<double> stdvec(&eigenVecD[0], eigenVecD.data()+eigenVecD.cols()*eigenVecD.rows());
+    return stdvec;
+}
+
+
+// inline Eigen::VectorXf stdtoEigen(const std::vector<double>& stdvec) {
+//     Eigen::VectorXf eigenvec(stdvec.size());
+//     for (size_t i = 0; i < stdvec.size(); ++i)
+//     {
+//         eigenvec(i) = stdvec[i];
+//     }
+//     // Eigen::VectorXd eigenvec = Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(stdvec.data(), stdvec.size());
+//     return eigenvec;
+// }
+
+
+typedef struct {
+    std::vector<Eigen::VectorXf> pi;   // positions of the robots 
+    std::vector<double> l; // cable lengths
+    double mu;  // regularization weight
+    Eigen::VectorXf p0_d; // Desired payload position (likely to be the previous solution)
+} cost_data;
+
+
+double cost(const std::vector<double> &p0, std::vector<double> &/*grad*/, void *data) {
+    
+    cost_data *d = (cost_data *) data; 
+    const auto& pi = d -> pi;
+    const auto& p0_d = d -> p0_d;
+    const auto& l = d -> l;
+    const auto& mu = d -> mu;
+
+    double cost = 0;
+    double dist  = 0;
+    Eigen::VectorXf p0_eigen = create_vector(p0);
+    int i = 0;
+    for(const auto& p : pi) {
+        double dist = (p0_eigen - p).norm() - l[i];
+        cost += dist*dist;
+        ++i;
+    }
+    cost += mu*(p0_d - p0_eigen).norm();
+    return cost;
+}
+
+Eigen::VectorXf optimizePayload(Eigen::VectorXf &p0_opt,
+                                       size_t dim, 
+                                       const Eigen::VectorXf &p0_guess, // initial guess
+                                       cost_data &data
+                                ) {
+
+    // create the optimization problem
+    nlopt::opt opt(nlopt::LN_COBYLA, dim);
+    std::vector<double> p0_vec = eigentoStd(p0_guess);
+    // set the initial guess
+    opt.set_min_objective(cost, &data);
+    opt.set_xtol_rel(1e-4); // Tolerance
+
+    double minf; // Variable to store the minimum value found
+    try {
+        nlopt::result result = opt.optimize(p0_vec, minf);
+        // std::cout << "Found minimum at f(" << p0_vec[0] << ", " << p0_vec[1] << ") = "
+                //   << minf << std::endl;
+        p0_opt = create_vector(p0_vec);
+        return p0_opt;
+    } catch (std::exception &e) {
+        std::cout << "nlopt failed: " << e.what() << std::endl;
+    }
+
+}
+
 bool getEarliestConflict(
     const std::vector<LowLevelPlan<AStarNode*,ob::State*, oc::Control*>>& solution,
     const std::vector<std::shared_ptr<Robot>>& all_robots,
@@ -177,12 +267,31 @@ bool getEarliestConflict(
             si_j->printState(early_conflict.robot_state_j);
 #endif
             return true;
-        } 
+        }
+
         Eigen::Vector3f robot1_pos = col_mng_objs[0]->getTranslation();
         Eigen::Vector3f robot2_pos = col_mng_objs[1]->getTranslation();
         float distance = (robot1_pos - robot2_pos).norm();
         float l = 0.5;
-        // std::cout << "dist, diff: " <<  distance << ", " << abs(distance - l) <<  std::endl;
+        
+        size_t dim = 2;
+        std::vector<double> li = {0.5, 0.5};
+        Eigen::VectorXf p0_init_guess = create_vector({0.0, 0.0});
+        double mu = 0.0;
+
+        std::vector<Eigen::VectorXf> pi = {
+            create_vector({robot1_pos(0), robot1_pos(1)}),
+            create_vector({robot2_pos(0), robot2_pos(1)})
+        };        
+        Eigen::VectorXf p0_opt;
+        cost_data data {pi, li, mu, p0_init_guess}; // prepare the data for the opt
+        optimizePayload(p0_opt, dim, p0_init_guess, data);
+
+        std::cout << "r1:" << robot1_pos(0) << "," << robot1_pos(1) << std::endl; 
+        std::cout << "r2:" << robot2_pos(0) << "," << robot2_pos(1) << std::endl; 
+        std::cout << "p0_opt:" << p0_opt <<  std::endl;
+        std::cout << "\n" << std::endl; 
+
         if (abs(distance - l) >= 0.2) { // assumed 2 robots
             early_conflict.time = t * all_robots[0]->dt();
             early_conflict.robot_idx_i = 0; 
