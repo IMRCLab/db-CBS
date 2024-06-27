@@ -121,33 +121,37 @@ void export_solutions(const std::vector<LowLevelPlan<AStarNode*,ob::State*, oc::
 
 
 inline Eigen::VectorXf create_vector(const std::vector<double> &v) {
-  Eigen::VectorXf out(v.size());
-  for (size_t i = 0; i < v.size(); ++i) {
-    out(i) = v[i];
-  }
-  return out;
+//   Eigen::VectorXf out(v.size());
+//   for (size_t i = 0; i < v.size(); ++i) {
+//     out(i) = v[i];
+//   }
+//   return out;
+    std::vector<float> vf(v.begin(), v.end());
+    return Eigen::Map<Eigen::VectorXf, Eigen::Unaligned>((vf.data()), vf.size());
 }
 
 inline std::vector<double> eigentoStd(const Eigen::VectorXf &eigenvec)
 {
-    std::vector<double> stdvec;
-    for (const auto& i : eigenvec)
-    {
-        stdvec.push_back(i);
-    }
+    // std::vector<double> stdvec;
+    // for (const auto& i : eigenvec)
+    // {
+    //     stdvec.push_back(i);
+    // }
+    Eigen::VectorXd eigenVecD = eigenvec.cast<double>();
+    std::vector<double> stdvec(&eigenVecD[0], eigenVecD.data()+eigenVecD.cols()*eigenVecD.rows());
     return stdvec;
 }
 
 
-inline Eigen::VectorXf stdtoEigen(const std::vector<double>& stdvec) {
-    Eigen::VectorXf eigenvec(stdvec.size());
-    for (size_t i = 0; i < stdvec.size(); ++i)
-    {
-        eigenvec(i) = stdvec[i];
-    }
-    // Eigen::VectorXd eigenvec = Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(stdvec.data(), stdvec.size());
-    return eigenvec;
-}
+// inline Eigen::VectorXf stdtoEigen(const std::vector<double>& stdvec) {
+//     Eigen::VectorXf eigenvec(stdvec.size());
+//     for (size_t i = 0; i < stdvec.size(); ++i)
+//     {
+//         eigenvec(i) = stdvec[i];
+//     }
+//     // Eigen::VectorXd eigenvec = Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(stdvec.data(), stdvec.size());
+//     return eigenvec;
+// }
 
 
 typedef struct {
@@ -161,26 +165,21 @@ typedef struct {
 double cost(const std::vector<double> &p0, std::vector<double> &/*grad*/, void *data) {
     
     cost_data *d = (cost_data *) data; 
-    std::vector<Eigen::VectorXf> pi = d -> pi;
-    Eigen::VectorXf p0_d = d -> p0_d;
-    std::vector<double> l = d -> l;
-    double mu = d -> mu;
+    const auto& pi = d -> pi;
+    const auto& p0_d = d -> p0_d;
+    const auto& l = d -> l;
+    const auto& mu = d -> mu;
 
-    double cost1 = 0;
+    double cost = 0;
     double dist  = 0;
-    double cost2 = 0;
-    double reg   = 0;
-    double cost  = 0;
-    Eigen::VectorXf p0_eigen = stdtoEigen(p0);
+    Eigen::VectorXf p0_eigen = create_vector(p0);
     int i = 0;
     for(const auto& p : pi) {
         double dist = (p0_eigen - p).norm() - l[i];
-        cost1 += dist*dist;
+        cost += dist*dist;
         ++i;
     }
-    reg = mu*(p0_d - p0_eigen).norm();
-    cost2 = reg*reg;
-    cost = cost1 + cost2;
+    cost += mu*(p0_d - p0_eigen).norm();
     return cost;
 }
 
@@ -202,7 +201,7 @@ Eigen::VectorXf optimizePayload(Eigen::VectorXf &p0_opt,
         nlopt::result result = opt.optimize(p0_vec, minf);
         // std::cout << "Found minimum at f(" << p0_vec[0] << ", " << p0_vec[1] << ") = "
                 //   << minf << std::endl;
-        p0_opt = stdtoEigen(p0_vec);
+        p0_opt = create_vector(p0_vec);
         return p0_opt;
     } catch (std::exception &e) {
         std::cout << "nlopt failed: " << e.what() << std::endl;
