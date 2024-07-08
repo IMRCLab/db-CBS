@@ -260,7 +260,7 @@ int main(int argc, char* argv[]) {
                 out_tdb, robot_id,/*reverse_search*/false, 
                 expanded_trajs_tmp, start.solution, robot_motions,
                 robots, col_mng_robots, robot_objs,
-                heuristics[robot_id], nullptr, options_tdbastar.w, /*root_node*/true);
+                heuristics[robot_id], nullptr, options_tdbastar.w);
         if(!out_tdb.solved){
           std::cout << "Couldn't find initial solution for robot " << robot_id << "." << std::endl;
           if (save_expanded_trajs){
@@ -289,6 +289,8 @@ int main(int argc, char* argv[]) {
         robot_id++;
       }
       start.focalHeuristic = highLevelfocalHeuristicState(start.solution, robots, col_mng_robots, robot_objs); 
+      // std::ofstream out(outputFile);
+      // export_solutions(start.solution, &out);
       // return 0;
       if (!start_node_valid) {
             continue;
@@ -438,7 +440,7 @@ int main(int argc, char* argv[]) {
                 tmp_out_tdb, tmp_robot_id, /*reverse_search*/false, 
                 expanded_trajs_tmp, newNode.solution, robot_motions,
                 robots, col_mng_robots, robot_objs,
-                heuristics[tmp_robot_id], nullptr, options_tdbastar.w, /*root_node*/false);
+                heuristics[tmp_robot_id], nullptr, options_tdbastar.w);
           if (tmp_out_tdb.solved){
               if (save_expanded_trajs){
                 size_t step = 1;
