@@ -70,7 +70,7 @@ int main(int argc, char* argv[]) {
       return 1;
     }
     YAML::Node cfg = YAML::LoadFile(cfgFile);
-    // cfg = cfg["db-ecbs"]["default"];
+    cfg = cfg["db-ecbs"]["default"];
     float alpha = cfg["alpha"].as<float>();
     bool filter_duplicates = cfg["filter_duplicates"].as<bool>();
     fs::path output_path(outputFile);
@@ -193,16 +193,16 @@ int main(int argc, char* argv[]) {
                 robots, col_mng_robots, robot_objs,
                 nullptr, &heuristics[robot_id], options_tdbastar.w);
         std::cout << "computed heuristic with " << heuristics[robot_id]->size() << " entries." << std::endl;
-        if (save_expanded_trajs){
-          std::ofstream out3(output_folder + "/expanded_trajs_reverse_" + std::to_string(robot_id) + ".yaml");
-          std::cout << "expanded trajs reverse size: " << expanded_trajs_tmp.size() << std::endl;
-          out3 << "trajs:" << std::endl;
-          for (auto i = 0; i < expanded_trajs_tmp.size(); i += 100){
-            auto traj = expanded_trajs_tmp.at(i);
-            out3 << "  - " << std::endl;
-            traj.to_yaml_format(out3, "    ");
-          }
-        }
+        // if (save_expanded_trajs){
+        //   std::ofstream out3(output_folder + "/expanded_trajs_reverse_" + std::to_string(robot_id) + ".yaml");
+        //   std::cout << "expanded trajs reverse size: " << expanded_trajs_tmp.size() << std::endl;
+        //   out3 << "trajs:" << std::endl;
+        //   for (auto i = 0; i < expanded_trajs_tmp.size(); i += 100){
+        //     auto traj = expanded_trajs_tmp.at(i);
+        //     out3 << "  - " << std::endl;
+        //     traj.to_yaml_format(out3, "    ");
+        //   }
+        // }
         robot_id++;
       }
     }
@@ -263,27 +263,27 @@ int main(int argc, char* argv[]) {
                 heuristics[robot_id], nullptr, options_tdbastar.w);
         if(!out_tdb.solved){
           std::cout << "Couldn't find initial solution for robot " << robot_id << "." << std::endl;
-          if (save_expanded_trajs){
-            std::ofstream out2(output_folder + "/expanded_trajs_fail.yaml");
-            out2 << "trajs:" << std::endl;
-            for (auto i = 0; i < 200; i++){
-              auto traj = expanded_trajs_tmp.at(i);
-              out2 << "  - " << std::endl;
-              traj.to_yaml_format(out2, "    ");
-            }
-          }
+          // if (save_expanded_trajs){
+          //   std::ofstream out2(output_folder + "/expanded_trajs_fail.yaml");
+          //   out2 << "trajs:" << std::endl;
+          //   for (auto i = 0; i < 200; i++){
+          //     auto traj = expanded_trajs_tmp.at(i);
+          //     out2 << "  - " << std::endl;
+          //     traj.to_yaml_format(out2, "    ");
+          //   }
+          // }
           start_node_valid = false;
           break;
         }
-        if (save_expanded_trajs){
-          std::ofstream out2(output_folder + "/root_" + std::to_string(robot_id) + ".yaml");
-          out2 << "trajs:" << std::endl;
-          for (auto i = 0; i < expanded_trajs_tmp.size(); i++){
-            auto traj = expanded_trajs_tmp.at(i);
-            out2 << "  - " << std::endl;
-            traj.to_yaml_format(out2, "    ");
-          }
-        }
+        // if (save_expanded_trajs){
+        //   std::ofstream out2(output_folder + "/root_" + std::to_string(robot_id) + ".yaml");
+        //   out2 << "trajs:" << std::endl;
+        //   for (auto i = 0; i < expanded_trajs_tmp.size(); i++){
+        //     auto traj = expanded_trajs_tmp.at(i);
+        //     out2 << "  - " << std::endl;
+        //     traj.to_yaml_format(out2, "    ");
+        //   }
+        // }
         start.cost += start.solution[robot_id].trajectory.cost;
         start.LB += start.solution[robot_id].trajectory.fmin;
         robot_id++;
@@ -440,16 +440,12 @@ int main(int argc, char* argv[]) {
                 tmp_out_tdb, tmp_robot_id, /*reverse_search*/false, 
                 expanded_trajs_tmp, newNode.solution, robot_motions,
                 robots, col_mng_robots, robot_objs,
-                heuristics[tmp_robot_id], nullptr, options_tdbastar.w);
+                heuristics[tmp_robot_id], nullptr, options_tdbastar.w, /*run_focal_heuristic*/true);
           if (tmp_out_tdb.solved){
               if (save_expanded_trajs){
-                size_t step = 1;
                 std::ofstream out2(output_folder + "/inter_" + std::to_string(tmp_robot_id) + ".yaml");
                 out2 << "trajs:" << std::endl;
-                if (expanded_trajs_tmp.size() > 1500){
-                  step = 100;
-                }
-                for (auto i = 0; i < expanded_trajs_tmp.size(); i+=step){
+                for (auto i = 0; i < 200; i++){
                   auto traj = expanded_trajs_tmp.at(i);
                   out2 << "  - " << std::endl;
                   traj.to_yaml_format(out2, "    ");
