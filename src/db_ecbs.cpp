@@ -88,6 +88,7 @@ int main(int argc, char* argv[]) {
     options_tdbastar.w = cfg["suboptimality_factor"].as<float>(); 
     options_tdbastar.rewire = cfg["rewire"].as<bool>();
     options_tdbastar.always_add_node = cfg["always_add_node"].as<bool>();
+    bool execute_optimization = cfg["execute_optimization"].as<bool>();
     // options_tdbastar.max_expands = 200;
     // tdbastar problem
     dynobench::Problem problem(inputFile);
@@ -394,7 +395,11 @@ int main(int argc, char* argv[]) {
             //     traj.to_yaml_format(out2, "    ");
             //   }
             // }
-            return 0;
+            if(!execute_optimization){
+              std::ofstream fout(outputFile, std::ios::app); 
+              fout << "  nodes: " << id << std::endl;
+              return 0;
+            }
             bool sum_robot_cost = true;
             bool feasible = execute_optimizationMultiRobot(inputFile,
                                           outputFile, 

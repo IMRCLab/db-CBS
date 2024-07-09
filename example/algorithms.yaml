@@ -65,13 +65,16 @@ db-ecbs:
     suboptimality_factor: 1.4
     always_add_node: False
     rewire: True
+    execute_optimization: False
     save_expanded_trajs: False
   '*_unicycle_sphere':
     delta_0: 0.9
+    suboptimality_factor: 3.3
   '*_hetero':
     delta_0: 0.75
   '*_trailer':
     delta_0: 0.9
+    suboptimality_factor: 3.3
   '*_unicycle2':
     num_primitives_0: 100
 
