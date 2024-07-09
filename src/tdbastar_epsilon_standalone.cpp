@@ -186,12 +186,12 @@ int main(int argc, char* argv[]){
             out_tdb, robot_id_to_check,/*reverse_search*/true, 
             expanded_trajs_tmp, tmp_solutions, robot_motions,
             robots, col_mng_robots, robot_objs,
-            nullptr, &heuristics[robot_id_to_check], options_tdbastar.w);
+            nullptr, &heuristics[robot_id_to_check], options_tdbastar.w, /*run_focal_heuristic*/false);
       std::cout << "computed heuristic_epsilon with " << heuristics[robot_id_to_check]->size() << " entries." << std::endl;
       if (save_expanded_trajs){
         std::ofstream out3(output_path.string() + "reverse.yaml");
         out3 << "trajs:" << std::endl;
-        for (auto i = 0; i < expanded_trajs_tmp.size(); i += 100){
+        for (auto i = 0; i < expanded_trajs_tmp.size(); i += 200){
             auto traj = expanded_trajs_tmp.at(i);
             out3 << "  - " << std::endl;
             traj.to_yaml_format(out3, "    ");
@@ -209,16 +209,14 @@ int main(int argc, char* argv[]){
     start.LB = 0;
     // read the provided trajectory of the neighbor
     size_t j = 0; // keep track of robot_idx
-    // for(size_t i = 0; i < 1; i++){ // robots.size()
-    //     if (i == robot_id_to_check){
-    //         continue;
-    //     }
-    //     read_input_yaml(inputFile, start.solution.at(i).trajectory, j); 
-    //     start.solution[i].trajectory.cost = start.solution[i].trajectory.actions.size() * robots.at(i)->ref_dt; 
-    //     j++;
-    // }
-    read_input_yaml(inputFile, start.solution.at(0).trajectory, 0); 
-    // read_input_yaml(inputFile, start.solution.at(1).trajectory, 1); 
+    for(size_t i = 0; i < robots.size(); i++){ 
+        if (i == robot_id_to_check){
+            continue;
+        }
+        read_input_yaml(inputFile, start.solution.at(i).trajectory, j); 
+        start.solution[i].trajectory.cost = start.solution[i].trajectory.actions.size() * robots.at(i)->ref_dt; 
+        j++;
+    }
     // common parameters
     options_tdbastar.motions_ptr = &robot_motions[problem.robotTypes[robot_id_to_check]]; 
     problem.starts = problem_original.starts;
@@ -232,14 +230,14 @@ int main(int argc, char* argv[]){
         out_tdb, robot_id_to_check,/*reverse_search*/false, 
         expanded_trajs_tmp, start.solution, robot_motions,
         robots, col_mng_robots, robot_objs,
-        heuristics[robot_id_to_check], nullptr, options_tdbastar.w);
+        heuristics[robot_id_to_check], nullptr, options_tdbastar.w, /*run_focal_heuristic*/true);
         
     if(!out_tdb.solved){
         std::cout << "tdbA*-epsilon couldn't find initial solution."<< std::endl;
         if (save_expanded_trajs){
             std::ofstream out3(output_path.string() + "failed.yaml");
             out3 << "trajs:" << std::endl;
-            for (auto i = 0; i < expanded_trajs_tmp.size(); i += 100){
+            for (auto i = 0; i < expanded_trajs_tmp.size(); i++){
                 auto traj = expanded_trajs_tmp.at(i);
                 out3 << "  - " << std::endl;
                 traj.to_yaml_format(out3, "    ");
@@ -249,7 +247,6 @@ int main(int argc, char* argv[]){
     }
     else {
         std::cout << "tdbA*-epsilon final solution with cost: " << start.solution[robot_id_to_check].trajectory.cost << std::endl; 
-        std::cout << output_path.string() << std::endl;
         std::string out_file_tdb = output_path.string() + "tdb_epsilon_solution.yaml";
         create_dir_if_necessary(out_file_tdb);
         std::ofstream out(out_file_tdb);
