@@ -368,11 +368,12 @@ int main(int argc, char* argv[]) {
           }
           assert(!mismatch);
 #endif
-        std::cout << "focal set size: " << focal.size() << std::endl;
+        std::cout << "high-level Open set size: " << open.size() << std::endl;
+        std::cout << "high-level Focal set size: " << focal.size() << std::endl;
         std::cout << "cost bound: " << LB * options_tdbastar.w << std::endl;
         auto current_handle = focal.top();
         HighLevelNodeFocal P = *current_handle;
-        std::cout << "high-level node focalHeuristic: " << P.focalHeuristic << std::endl;
+        std::cout << "high-level best node focalHeuristic: " << P.focalHeuristic << std::endl;
         focal.pop();
         open.erase(current_handle);
 
