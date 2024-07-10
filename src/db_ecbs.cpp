@@ -268,14 +268,13 @@ int main(int argc, char* argv[]) {
         start.LB += start.solution[robot_id].trajectory.fmin;
         robot_id++;
       }
+      if (!start_node_valid) {
+          continue;
+      }
       start.focalHeuristic = highLevelfocalHeuristicState(start.solution, robots, col_mng_robots, robot_objs); 
       // std::ofstream out(outputFile);
       // export_solutions(start.solution, &out);
       // return 0;
-      if (!start_node_valid) {
-            continue;
-      }
-      
       openset_t open;
       focalset_t focal;
 
