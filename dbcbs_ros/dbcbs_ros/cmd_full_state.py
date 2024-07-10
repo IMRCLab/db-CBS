@@ -56,7 +56,7 @@ def main():
     timeHelper.sleep(Z+2.0)
 
     # parse data
-    yaml_path = Path(__file__).parent / "data/13_09.yaml"
+    yaml_path = Path(__file__).parent / "data/forest_4.yaml"
     num_traj,num_waypoints,states_list,velocity_list,acceleration_list = parse_data(yaml_path,Z)
 
     # check the num of UAV <= states_list
@@ -64,10 +64,12 @@ def main():
         print(f'not enough trajectory for {len(allcfs.crazyflies)} crazyfile')
         quit()
 
+    cfnames=["cf17", "cf16", "cf15", "cf14"]
+
     # execute trajectory
     for state_id in range(num_waypoints):
         for drone_id in range(len(allcfs.crazyflies)):
-            cf = allcfs.crazyflies[drone_id]   
+            cf = allcfs.crazyfliesByName[cfnames[drone_id]]   
             pos = states_list[drone_id][state_id]
             vel = velocity_list[drone_id][state_id]
             acc = acceleration_list[drone_id][state_id]

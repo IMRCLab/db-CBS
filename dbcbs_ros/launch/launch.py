@@ -62,6 +62,7 @@ def generate_launch_description():
     return LaunchDescription([
         DeclareLaunchArgument('backend', default_value='cpp'),
         DeclareLaunchArgument('debug', default_value='False'),
+        DeclareLaunchArgument('gui', default_value='True'),
         Node(
             package='motion_capture_tracking',
             executable='motion_capture_tracking_node',
@@ -78,9 +79,9 @@ def generate_launch_description():
                 ('emergency', 'all/emergency'),
                 ('takeoff', 'all/takeoff'),
                 ('land', 'all/land'),
-                ('cmd_vel_legacy', 'all/cmd_vel_legacy'),
-                ('cmd_full_state', 'all/cmd_full_state'),
-                ('notify_setpoints_stop', 'all/notify_setpoints_stop'),
+                # ('cmd_vel_legacy', 'all/cmd_vel_legacy'),
+                # ('cmd_full_state', 'all/cmd_full_state'),
+                # ('notify_setpoints_stop', 'all/notify_setpoints_stop'),
             ],
             parameters=[teleop_params]
         ),
@@ -115,14 +116,21 @@ def generate_launch_description():
             emulate_tty=True,
             parameters=server_params
         ),
+        # Node(
+        #     package='rviz2',
+        #     namespace='',
+        #     executable='rviz2',
+        #     name='rviz2',
+        #     arguments=['-d' + os.path.join(get_package_share_directory('dbcbs_ros'), 'config', 'config.rviz')],
+        #     parameters=[{
+        #         "use_sim_time": True,
+        #     }]
+        # ),
         Node(
-            package='rviz2',
+            condition=LaunchConfigurationEquals('gui', 'True'),
+            package='crazyflie',
             namespace='',
-            executable='rviz2',
-            name='rviz2',
-            arguments=['-d' + os.path.join(get_package_share_directory('dbcbs_ros'), 'config', 'config.rviz')],
-            parameters=[{
-                "use_sim_time": True,
-            }]
+            executable='gui.py',
+            name='gui',
         ),
     ])

@@ -11,7 +11,6 @@ ament_python_install_package(${PROJECT_NAME} SCRIPTS_DESTINATION lib/${PROJECT_N
 # Install launch and config files.
 install(DIRECTORY
   config
-  data
   launch
   DESTINATION share/${PROJECT_NAME}/
 )
