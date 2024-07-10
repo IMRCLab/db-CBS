@@ -49,6 +49,7 @@ def run_dbecbs(filename_env, folder, timelimit, cfg):
                         for r in result["result"]:
                             cost += len(r["actions"]) * 0.1
                         nodes = result["result"][-1]["nodes"]
+                        delta = result["result"][-1]["delta"]
 
                     now = time.time()
                     t = now - start
@@ -57,6 +58,7 @@ def run_dbecbs(filename_env, folder, timelimit, cfg):
                     stats.write("    cost: {}\n".format(cost))
                     stats.write("    duration_dbecbs: {}\n".format(duration_dbcbs))
                     stats.write("    hl_expanded_nodes: {}\n".format(nodes))
+                    stats.write("    delta: {}\n".format(delta))
                     stats.flush()
             except:
                 print("Failure!")

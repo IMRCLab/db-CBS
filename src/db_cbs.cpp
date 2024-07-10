@@ -70,17 +70,20 @@ int main(int argc, char* argv[]) {
     // cfg = cfg["db-cbs"]["default"];
     float alpha = cfg["alpha"].as<float>();
     bool filter_duplicates = cfg["filter_duplicates"].as<bool>();
+    double cost_bound = DBL_MAX;
     fs::path output_path(outputFile);
+    create_dir_if_necessary(outputFile);
+    std::ofstream out(outputFile);
+    std::string indent = "  ";
     // tdbstar options
     Options_tdbastar options_tdbastar;
     options_tdbastar.outFile = outputFile;
     options_tdbastar.search_timelimit = timeLimit;
     options_tdbastar.cost_delta_factor = 0;
-    // options_tdbastar.delta = cfg["delta_0"].as<float>();
     options_tdbastar.fix_seed = 1;
     options_tdbastar.max_motions = cfg["num_primitives_0"].as<size_t>();
-    options_tdbastar.rewire = true;
-    bool save_expanded_trajs = false;
+    options_tdbastar.rewire = cfg["rewire"].as<bool>();;
+    bool save_expanded_trajs = cfg["save_expanded_trajs"].as<bool>();;
     // tdbastar problem
     dynobench::Problem problem(inputFile);
     dynobench::Problem problem_original(inputFile);
@@ -206,7 +209,7 @@ int main(int argc, char* argv[]) {
     problem.starts = problem_original.starts;
     problem.goals = problem_original.goals;
     options_tdbastar.delta = cfg["delta_0"].as<float>();
-    for (size_t iteration = 0; ; ++iteration) {
+    for (size_t iteration = 0; iteration < 3; ++iteration) {
       if (iteration > 0) {
         if (solved_db) {
             options_tdbastar.delta *= cfg["delta_0"].as<float>();
@@ -216,6 +219,8 @@ int main(int argc, char* argv[]) {
         options_tdbastar.max_motions *= cfg["num_primitives_rate"].as<float>();
         options_tdbastar.max_motions = std::min<size_t>(options_tdbastar.max_motions, 1e6);
       }
+      std::cout << "iteration: " << iteration << ", delta: " << options_tdbastar.delta << std::endl;
+
       // disable/enable motions 
       for (auto& iter : robot_motions) {
           for (size_t i = 0; i < problem.robotTypes.size(); ++i) {
@@ -234,6 +239,8 @@ int main(int argc, char* argv[]) {
       start.id = 0;
       bool start_node_valid = true;
       robot_id = 0;
+      int id = 1;
+      std::cout << "Node ID is " << id << ", root" << std::endl;
       for (const auto &robot : robots){
         expanded_trajs_tmp.clear();
         options_tdbastar.motions_ptr = &robot_motions[problem.robotTypes[robot_id]]; 
@@ -255,7 +262,6 @@ int main(int argc, char* argv[]) {
                                         boost::heap::mutable_<true> > open;
       auto handle = open.push(start);
       (*handle).handle = handle;
-      int id = 1;
       size_t expands = 0;
       while (!open.empty()){
         HighLevelNode P = open.top();
@@ -264,9 +270,13 @@ int main(int argc, char* argv[]) {
         if (!getEarliestConflict(P.solution, robots, col_mng_robots, robot_objs, inter_robot_conflict)){
             solved_db = true;
             std::cout << "Final solution!" << std::endl; 
-            create_dir_if_necessary(outputFile);
-            std::ofstream out(outputFile);
-            export_solutions(P.solution, &out);
+            if(P.cost < cost_bound){
+              export_solutions(P.solution, &out);
+              std::ofstream fout(outputFile, std::ios::app); 
+              fout << indent << "nodes: " << id << std::endl;
+              fout << indent << "delta: " << options_tdbastar.delta;
+              cost_bound = P.cost;
+            }
             // get motion_primitives_plot
             if (save_expanded_trajs){
               std::string output_folder = output_path.parent_path().string();
@@ -277,21 +287,20 @@ int main(int argc, char* argv[]) {
                 traj.to_yaml_format(out2, "    ");
               }
             }
-            bool sum_robot_cost = true;
-            bool feasible = execute_optimizationMultiRobot(inputFile,
-                                          outputFile, 
-                                          optimizationFile,
-                                          DYNOBENCH_BASE,
-                                          sum_robot_cost);
-            // debug
-            // std::string output_folder = output_path.parent_path().string();
-            // std::ofstream out2(output_folder + "/expanded_nodes.yaml");
-            std::ofstream fout(optimizationFile, std::ios::app); 
-            fout << "  nodes: " << id << std::endl;
-            if (feasible) {
-              return 0;
-            }
-            break;
+            // bool sum_robot_cost = true;
+            // bool feasible = execute_optimizationMultiRobot(inputFile,
+            //                               outputFile, 
+            //                               optimizationFile,
+            //                               DYNOBENCH_BASE,
+            //                               sum_robot_cost);
+            
+            // std::ofstream fout(optimizationFile, std::ios::app); 
+            // fout << "  nodes: " << id << std::endl;
+            // if (feasible) {
+            //   return 0;
+            // }
+            // break;
+            continue;
         }
         ++expands;
         if (expands % 100 == 0) {
@@ -304,6 +313,7 @@ int main(int argc, char* argv[]) {
           HighLevelNode newNode = P;
           size_t tmp_robot_id = c.first;
           newNode.id = id;
+          id++;
           std::cout << "Node ID is " << id << std::endl;
           newNode.constraints[tmp_robot_id].insert(newNode.constraints[tmp_robot_id].end(), c.second.begin(), c.second.end());
           newNode.cost -= newNode.solution[tmp_robot_id].trajectory.cost;
@@ -323,9 +333,7 @@ int main(int argc, char* argv[]) {
 #endif
               auto handle = open.push(newNode);
               (*handle).handle = handle;
-              // id++;
           }
-          id++;
         } 
 
       } 

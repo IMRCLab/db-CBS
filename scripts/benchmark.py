@@ -194,7 +194,7 @@ def main():
 		# "drone32c",
 	]
 
-	# # add random cases
+	# add random cases
 	for kind in ["unicycle_sphere", "hetero"]:
 		for n in [2,4,8]:
 			for k in range(10):
@@ -205,7 +205,7 @@ def main():
 		# "sst",
 		# "s2m2",
 		# "k-cbs",
-		# "db-cbs",
+		"db-cbs",
 		"db-ecbs",
 	]
 	trials = 1

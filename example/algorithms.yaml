@@ -46,6 +46,8 @@ db-cbs:
     filter_duplicates: True
     heuristic1: "reverse-search"
     heuristic1_delta: 1.0
+    rewire: True
+    save_expanded_trajs: False
   '*_unicycle_sphere':
     delta_0: 0.9
   '*_hetero':

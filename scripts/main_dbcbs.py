@@ -46,13 +46,14 @@ def run_dbcbs(filename_env, folder, timelimit, cfg):
                 if result.returncode != 0:
                     print("db-cbs failed ", result.returncode)
                 else:
-                    # shutil.copyfile(filename_result_dbcbs_opt, "{}/result_dbcbs_opt.yaml".format(folder))
                     cost = 0
-                    with open(filename_result_dbcbs_opt) as f:
+                    # with open(filename_result_dbcbs_opt) as f:
+                    with open(filename_result_dbcbs) as f: # for now, no optimization
                         result = yaml.safe_load(f)
                         for r in result["result"]:
                             cost += len(r["actions"]) * 0.1
                         nodes = result["result"][-1]["nodes"]
+                        delta = result["result"][-1]["delta"]
         
                     now = time.time()
                     t = now - start
@@ -61,6 +62,7 @@ def run_dbcbs(filename_env, folder, timelimit, cfg):
                     stats.write("    cost: {}\n".format(cost))
                     stats.write("    duration_dbcbs: {}\n".format(duration_dbcbs))
                     stats.write("    hl_expanded_nodes: {}\n".format(nodes))
+                    stats.write("    delta: {}\n".format(delta))
                     stats.flush()
             except:
                 print("Failure!")

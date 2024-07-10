@@ -6,6 +6,7 @@
 #include <iterator>
 #include <yaml-cpp/yaml.h>
 #include <filesystem>
+#include <cfloat> 
 // BOOST
 #include <boost/program_options.hpp>
 #include <boost/program_options.hpp>
@@ -78,6 +79,10 @@ int main(int argc, char* argv[]) {
     bool save_search_video = false;
     bool save_expanded_trajs = cfg["save_expanded_trajs"].as<bool>();
     std::string conflicts_folder = output_folder + "/conflicts";
+    double cost_bound = DBL_MAX;
+    create_dir_if_necessary(outputFile);
+    std::ofstream out(outputFile);
+    std::string indent = "  ";
     // tdbstar options
     Options_tdbastar options_tdbastar;
     options_tdbastar.outFile = outputFile;
@@ -89,7 +94,6 @@ int main(int argc, char* argv[]) {
     options_tdbastar.rewire = cfg["rewire"].as<bool>();
     options_tdbastar.always_add_node = cfg["always_add_node"].as<bool>();
     bool execute_optimization = cfg["execute_optimization"].as<bool>();
-    // options_tdbastar.max_expands = 200;
     // tdbastar problem
     dynobench::Problem problem(inputFile);
     dynobench::Problem problem_original(inputFile);
@@ -194,16 +198,7 @@ int main(int argc, char* argv[]) {
                 robots, col_mng_robots, robot_objs,
                 nullptr, &heuristics[robot_id], options_tdbastar.w);
         std::cout << "computed heuristic with " << heuristics[robot_id]->size() << " entries." << std::endl;
-        // if (save_expanded_trajs){
-        //   std::ofstream out3(output_folder + "/expanded_trajs_reverse_" + std::to_string(robot_id) + ".yaml");
-        //   std::cout << "expanded trajs reverse size: " << expanded_trajs_tmp.size() << std::endl;
-        //   out3 << "trajs:" << std::endl;
-        //   for (auto i = 0; i < expanded_trajs_tmp.size(); i += 100){
-        //     auto traj = expanded_trajs_tmp.at(i);
-        //     out3 << "  - " << std::endl;
-        //     traj.to_yaml_format(out3, "    ");
-        //   }
-        // }
+        
         robot_id++;
       }
     }
@@ -220,8 +215,7 @@ int main(int argc, char* argv[]) {
     problem.starts = problem_original.starts;
     problem.goals = problem_original.goals;
     options_tdbastar.delta = cfg["delta_0"].as<float>();
-    for (size_t iteration = 0; ; ++iteration) {
-      std::cout << "iteration: " << iteration << std::endl;
+    for (size_t iteration = 0; iteration < 3; ++iteration) {
       if (iteration > 0) {
         if (solved_db) {
             options_tdbastar.delta *= cfg["delta_0"].as<float>();
@@ -231,6 +225,8 @@ int main(int argc, char* argv[]) {
         options_tdbastar.max_motions *= cfg["num_primitives_rate"].as<float>();
         options_tdbastar.max_motions = std::min<size_t>(options_tdbastar.max_motions, 1e6);
       }
+      std::cout << "iteration: " << iteration << ", delta: " << options_tdbastar.delta << std::endl;
+
       // disable/enable motions 
       for (auto& iter : robot_motions) {
           for (size_t i = 0; i < problem.robotTypes.size(); ++i) {
@@ -264,27 +260,10 @@ int main(int argc, char* argv[]) {
                 heuristics[robot_id], nullptr, options_tdbastar.w);
         if(!out_tdb.solved){
           std::cout << "Couldn't find initial solution for robot " << robot_id << "." << std::endl;
-          // if (save_expanded_trajs){
-          //   std::ofstream out2(output_folder + "/expanded_trajs_fail.yaml");
-          //   out2 << "trajs:" << std::endl;
-          //   for (auto i = 0; i < 200; i++){
-          //     auto traj = expanded_trajs_tmp.at(i);
-          //     out2 << "  - " << std::endl;
-          //     traj.to_yaml_format(out2, "    ");
-          //   }
-          // }
           start_node_valid = false;
           break;
         }
-        // if (save_expanded_trajs){
-        //   std::ofstream out2(output_folder + "/root_" + std::to_string(robot_id) + ".yaml");
-        //   out2 << "trajs:" << std::endl;
-        //   for (auto i = 0; i < expanded_trajs_tmp.size(); i++){
-        //     auto traj = expanded_trajs_tmp.at(i);
-        //     out2 << "  - " << std::endl;
-        //     traj.to_yaml_format(out2, "    ");
-        //   }
-        // }
+  
         start.cost += start.solution[robot_id].trajectory.cost;
         start.LB += start.solution[robot_id].trajectory.fmin;
         robot_id++;
@@ -372,6 +351,7 @@ int main(int argc, char* argv[]) {
         std::cout << "high-level Open set size: " << open.size() << std::endl;
         std::cout << "high-level Focal set size: " << focal.size() << std::endl;
         std::cout << "cost bound: " << LB * options_tdbastar.w << std::endl;
+        // pick the best node
         auto current_handle = focal.top();
         HighLevelNodeFocal P = *current_handle;
         std::cout << "high-level best node focalHeuristic: " << P.focalHeuristic << std::endl;
@@ -382,37 +362,27 @@ int main(int argc, char* argv[]) {
         if (!getEarliestConflict(P.solution, robots, col_mng_robots, robot_objs, inter_robot_conflict)){
             solved_db = true;
             std::cout << "Final solution!" << std::endl; 
-            create_dir_if_necessary(outputFile);
-            std::ofstream out(outputFile);
-            export_solutions(P.solution, &out);
-            // get motion_primitives_plot
-            // if (save_expanded_trajs){
-            //   std::ofstream out2(output_folder + "/expanded_trajs.yaml");
-            //   out2 << "trajs:" << std::endl;
-            //   for (auto i = 0; i < expanded_trajs_tmp.size(); i+=50){
-            //     auto traj = expanded_trajs_tmp.at(i);
-            //     out2 << "  - " << std::endl;
-            //     traj.to_yaml_format(out2, "    ");
-            //   }
-            // }
-            if(!execute_optimization){
+            if(P.cost < cost_bound){
+              export_solutions(P.solution, &out);
               std::ofstream fout(outputFile, std::ios::app); 
-              fout << "  nodes: " << id << std::endl;
-              return 0;
+              fout << indent << "nodes: " << id << std::endl;
+              fout << indent << "delta: " << options_tdbastar.delta;
+              cost_bound = P.cost;
             }
-            bool sum_robot_cost = true;
-            bool feasible = execute_optimizationMultiRobot(inputFile,
-                                          outputFile, 
-                                          optimizationFile,
-                                          DYNOBENCH_BASE,
-                                          sum_robot_cost);
+            // bool sum_robot_cost = true;
+            // bool feasible = execute_optimizationMultiRobot(inputFile,
+            //                               outputFile, 
+            //                               optimizationFile,
+            //                               DYNOBENCH_BASE,
+            //                               sum_robot_cost);
 
-            if (feasible) {
-              std::ofstream fout(optimizationFile, std::ios::app); 
-              fout << "  nodes: " << id << std::endl;
-              return 0;
-            }
-            break;
+            // if (feasible) {
+            //   std::ofstream fout(optimizationFile, std::ios::app); 
+            //   fout << "  nodes: " << id << std::endl;
+            //   return 0;
+            // }
+            // break;
+            continue;
         }
         ++expands;
         if (expands % 100 == 0) {
@@ -470,7 +440,6 @@ int main(int argc, char* argv[]) {
                 focal.push(handle);
               }
           }
-          // id++;
 
         } 
 
