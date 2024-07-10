@@ -185,9 +185,9 @@ def main():
 
 		# 3D scenarios with octomap
 		# "drone1c",
-		"drone2c",
-		"drone4c",
-		"drone8c",
+		# "drone2c",
+		# "drone4c",
+		# "drone8c",
 		# "drone10c",
 		# "drone12c",
 		# "drone16c",
