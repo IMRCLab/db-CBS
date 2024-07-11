@@ -43,8 +43,8 @@ def run_dbecbs(filename_env, folder, timelimit, cfg):
                     print("db-ecbs failed ", result.returncode)
                 else:
                     cost = 0
-                    # with open(filename_result_dbcbs_opt) as f:
-                    with open(filename_result_dbcbs) as f: # for now no optimization
+                    with open(filename_result_dbcbs_opt) as f:
+                    # with open(filename_result_dbcbs) as f: # for now no optimization
                         result = yaml.safe_load(f)
                         for r in result["result"]:
                             cost += len(r["actions"]) * 0.1

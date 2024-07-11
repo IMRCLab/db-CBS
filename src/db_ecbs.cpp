@@ -388,16 +388,6 @@ int main(int argc, char* argv[]) {
             create_dir_if_necessary(outputFile);
             std::ofstream out(outputFile);
             export_solutions(P.solution, &out);
-            // get motion_primitives_plot
-            // if (save_expanded_trajs){
-            //   std::ofstream out2(output_folder + "/expanded_trajs.yaml");
-            //   out2 << "trajs:" << std::endl;
-            //   for (auto i = 0; i < expanded_trajs_tmp.size(); i+=50){
-            //     auto traj = expanded_trajs_tmp.at(i);
-            //     out2 << "  - " << std::endl;
-            //     traj.to_yaml_format(out2, "    ");
-            //   }
-            // }
             if(!execute_optimization){
               std::ofstream fout(outputFile, std::ios::app); 
               fout << "  nodes: " << id << std::endl;
