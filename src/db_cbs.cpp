@@ -271,7 +271,7 @@ int main(int argc, char* argv[]) {
         if (!getEarliestConflict(P.solution, robots, col_mng_robots, robot_objs, inter_robot_conflict)){
             solved_db = true;
             std::cout << "Final solution!" << std::endl; 
-            if(P.cost < cost_bound && id > 1){
+            if(P.cost < cost_bound){
               export_solutions(P.solution, &out);
               std::ofstream fout(outputFile, std::ios::app); 
               fout << indent << "nodes: " << id << std::endl;
