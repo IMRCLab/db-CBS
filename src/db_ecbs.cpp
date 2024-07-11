@@ -178,6 +178,7 @@ int main(int argc, char* argv[]) {
     if (cfg["heuristic1"].as<std::string>() == "reverse-search"){
       std::cout << "Running the reverse search" << std::endl;
       options_tdbastar.delta = cfg["heuristic1_delta"].as<float>();
+      auto reverse_start = std::chrono::high_resolution_clock::now();
       for (const auto &robot : robots){
         // start to inf for the reverse search
         LowLevelPlan<dynobench::Trajectory> tmp_solution;
@@ -206,8 +207,10 @@ int main(int argc, char* argv[]) {
         // }
         robot_id++;
       }
+      auto reverse_end = std::chrono::high_resolution_clock::now();
+      std::chrono::duration<double> duration = reverse_end - reverse_start;
+      std::cout << "Time taken for the reverse search: " << duration.count() << " seconds" << std::endl;
     }
-    // return 0;
     if (save_search_video){
       std::cout << "***Going to save all intermediate solutions with conflicts!***" << std::endl;
       if (!fs::exists(conflicts_folder)) {
