@@ -48,6 +48,7 @@ db-cbs:
     heuristic1_delta: 1.0
     rewire: True
     save_expanded_trajs: False
+    iterations: 5
   '*_unicycle_sphere':
     delta_0: 0.9
   '*_hetero':
@@ -69,6 +70,7 @@ db-ecbs:
     rewire: True
     execute_optimization: False
     save_expanded_trajs: False
+    iterations: 5
   '*_unicycle_sphere':
     delta_0: 0.9
     # suboptimality_factor: 3.3

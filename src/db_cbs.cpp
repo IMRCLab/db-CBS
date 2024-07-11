@@ -75,6 +75,7 @@ int main(int argc, char* argv[]) {
     create_dir_if_necessary(outputFile);
     std::ofstream out(outputFile);
     std::string indent = "  ";
+    size_t iterations = cfg["iterations"].as<size_t>();
     // tdbstar options
     Options_tdbastar options_tdbastar;
     options_tdbastar.outFile = outputFile;
@@ -209,7 +210,7 @@ int main(int argc, char* argv[]) {
     problem.starts = problem_original.starts;
     problem.goals = problem_original.goals;
     options_tdbastar.delta = cfg["delta_0"].as<float>();
-    for (size_t iteration = 0; iteration < 3; ++iteration) {
+    for (size_t iteration = 0; iteration < iterations; ++iteration) {
       if (iteration > 0) {
         if (solved_db) {
             options_tdbastar.delta *= cfg["delta_0"].as<float>();
@@ -270,7 +271,7 @@ int main(int argc, char* argv[]) {
         if (!getEarliestConflict(P.solution, robots, col_mng_robots, robot_objs, inter_robot_conflict)){
             solved_db = true;
             std::cout << "Final solution!" << std::endl; 
-            if(P.cost < cost_bound){
+            if(P.cost < cost_bound && id > 1){
               export_solutions(P.solution, &out);
               std::ofstream fout(outputFile, std::ios::app); 
               fout << indent << "nodes: " << id << std::endl;
@@ -299,8 +300,7 @@ int main(int argc, char* argv[]) {
             // if (feasible) {
             //   return 0;
             // }
-            // break;
-            continue;
+            break;
         }
         ++expands;
         if (expands % 100 == 0) {
