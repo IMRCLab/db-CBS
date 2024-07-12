@@ -48,7 +48,7 @@ def run_dbcbs(filename_env, folder, timelimit, cfg):
             except:
                 print("Failure!")
             finally:
-                if os.path.isfile(filename_result_dbcbs):
+                if os.path.isfile(filename_result_dbcbs) and os.path.getsize(filename_result_dbcbs) != 0:
                     cost = 0
                     with open(filename_result_dbcbs) as f: # no optimization
                         result = yaml.safe_load(f)
