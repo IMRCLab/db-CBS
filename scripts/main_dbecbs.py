@@ -40,11 +40,13 @@ def run_dbecbs(filename_env, folder, timelimit, cfg):
                 t_dbcbs_stop = time.time()
                 duration_dbcbs += t_dbcbs_stop - t_dbcbs_start
                 if result.returncode != 0:
-                    print("db-ecbs failed ", result.returncode)
-                else:
+                    print("run failed ", result.returncode)
+            except:
+                print("Subprocess run out of time!")
+            finally:
+                if os.path.isfile(filename_result_dbcbs):
                     cost = 0
-                    # with open(filename_result_dbcbs_opt) as f:
-                    with open(filename_result_dbcbs) as f: # for now no optimization
+                    with open(filename_result_dbcbs) as f: # no optimization
                         result = yaml.safe_load(f)
                         for r in result["result"]:
                             cost += len(r["actions"]) * 0.1
@@ -60,8 +62,8 @@ def run_dbecbs(filename_env, folder, timelimit, cfg):
                     stats.write("    hl_expanded_nodes: {}\n".format(nodes))
                     stats.write("    delta: {}\n".format(delta))
                     stats.flush()
-            except:
-                print("Failure!")
+                else: 
+                    print("db-ecbs failed!")
 
 
 
