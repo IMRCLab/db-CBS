@@ -122,8 +122,8 @@ def execute_task(task: ExecutionTask):
 	else:
 		vis_script = scripts_path / "visualize.py"
 
-	for file in visualize_files:
-		run_visualize(vis_script, env, result_folder / file)
+	# for file in visualize_files:
+		# run_visualize(vis_script, env, result_folder / file)
 	
 	# search_viz_script = scripts_path / "visualize_search.py"
 	# if(len(search_plot_files) > 0):
@@ -191,8 +191,8 @@ def main():
 		"drone10c",
 		"drone12c",
 		"drone16c",
-		"drone24c",
-		"drone32c",
+		# "drone24c",
+		# "drone32c",
 	]
 
 	# # add random cases
