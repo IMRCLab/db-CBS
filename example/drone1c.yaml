@@ -1,0 +1,31 @@
+environment:
+  max:
+  - 2
+  - 3.5
+  - 2.5
+  min:
+  - -5.5
+  - -3
+  - 0
+  obstacles:
+  - center: []
+    octomap_file: ../octomaps/drone32c.bt
+    octomap_stl: ../meshes/drone32c.stl
+    size: []
+    type: octomap
+robots:
+- goal:
+  - -4.0
+  - 3.0
+  - 2.1
+  - 0
+  - 0
+  - 0
+  start:
+  - 1.5
+  - 1.5
+  - 0.5
+  - 0
+  - 0
+  - 0
+  type: integrator2_3d_v0

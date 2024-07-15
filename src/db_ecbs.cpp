@@ -76,6 +76,7 @@ int main(int argc, char* argv[]) {
     fs::path output_path(outputFile);
     std::string output_folder = output_path.parent_path().string();
     bool save_search_video = false;
+    bool save_expanded_trajs = cfg["save_expanded_trajs"].as<bool>();
     std::string conflicts_folder = output_folder + "/conflicts";
     // tdbstar options
     Options_tdbastar options_tdbastar;
@@ -87,8 +88,8 @@ int main(int argc, char* argv[]) {
     options_tdbastar.w = cfg["suboptimality_factor"].as<float>(); 
     options_tdbastar.rewire = cfg["rewire"].as<bool>();
     options_tdbastar.always_add_node = cfg["always_add_node"].as<bool>();
-    // std::string focal_heuristic = "state"; // "volume_wise"; 
-    bool save_expanded_trajs = false;
+    bool execute_optimization = cfg["execute_optimization"].as<bool>();
+    // options_tdbastar.max_expands = 200;
     // tdbastar problem
     dynobench::Problem problem(inputFile);
     dynobench::Problem problem_original(inputFile);
@@ -101,7 +102,6 @@ int main(int argc, char* argv[]) {
 
     // load problem description
     YAML::Node env = YAML::LoadFile(inputFile);
-    // std::vector<std::vector<fcl::Vector3f>> positions;
     std::vector<std::shared_ptr<fcl::CollisionGeometryd>> collision_geometries;
     const auto &env_min = env["environment"]["min"];
     const auto &env_max = env["environment"]["max"];
@@ -133,7 +133,7 @@ int main(int argc, char* argv[]) {
         } else if (robotType == "integrator2_2d_v0"){
             motionsFile = "../new_format_motions/integrator2_2d_v0/integrator2_2d_v0.msgpack";
         } else if (robotType == "integrator2_3d_v0"){
-            motionsFile = "../new_format_motions/integrator2_3d_v0/integrator2_3d_v0.bin.im.bin.sp.bin";
+            motionsFile = "../new_format_motions/integrator2_3d_v0/long_50/integrator2_3d_v0.bin.im.bin.sp.bin";
         } else{
             throw std::runtime_error("Unknown motion filename for this robottype!");
         }
@@ -174,9 +174,11 @@ int main(int argc, char* argv[]) {
     size_t robot_id = 0;
     std::vector<ompl::NearestNeighbors<std::shared_ptr<AStarNode>>*> heuristics(robots.size(), nullptr);
     std::vector<dynobench::Trajectory> expanded_trajs_tmp;
-    std::vector<LowLevelPlan<dynobench::Trajectory>> tmp_solutions;
+    std::vector<LowLevelPlan<dynobench::Trajectory>> tmp_solutions(robots.size());
     if (cfg["heuristic1"].as<std::string>() == "reverse-search"){
+      std::cout << "Running the reverse search" << std::endl;
       options_tdbastar.delta = cfg["heuristic1_delta"].as<float>();
+      auto reverse_start = std::chrono::high_resolution_clock::now();
       for (const auto &robot : robots){
         // start to inf for the reverse search
         LowLevelPlan<dynobench::Trajectory> tmp_solution;
@@ -193,8 +195,21 @@ int main(int argc, char* argv[]) {
                 robots, col_mng_robots, robot_objs,
                 nullptr, &heuristics[robot_id], options_tdbastar.w);
         std::cout << "computed heuristic with " << heuristics[robot_id]->size() << " entries." << std::endl;
+        // if (save_expanded_trajs){
+        //   std::ofstream out3(output_folder + "/expanded_trajs_reverse_" + std::to_string(robot_id) + ".yaml");
+        //   std::cout << "expanded trajs reverse size: " << expanded_trajs_tmp.size() << std::endl;
+        //   out3 << "trajs:" << std::endl;
+        //   for (auto i = 0; i < expanded_trajs_tmp.size(); i += 100){
+        //     auto traj = expanded_trajs_tmp.at(i);
+        //     out3 << "  - " << std::endl;
+        //     traj.to_yaml_format(out3, "    ");
+        //   }
+        // }
         robot_id++;
       }
+      auto reverse_end = std::chrono::high_resolution_clock::now();
+      std::chrono::duration<double> duration = reverse_end - reverse_start;
+      std::cout << "Time taken for the reverse search: " << duration.count() << " seconds" << std::endl;
     }
     if (save_search_video){
       std::cout << "***Going to save all intermediate solutions with conflicts!***" << std::endl;
@@ -203,7 +218,7 @@ int main(int argc, char* argv[]) {
       }
     }
     bool solved_db = false;
-    
+    std::cout << "Running the main loop" << std::endl;
     // main loop
     problem.starts = problem_original.starts;
     problem.goals = problem_original.goals;
@@ -239,27 +254,48 @@ int main(int argc, char* argv[]) {
       start.LB = 0;
       bool start_node_valid = true;
       robot_id = 0;
+      int id = 1;
+      std::cout << "Node ID is " << id << ", root" << std::endl;
       for (const auto &robot : robots){
         expanded_trajs_tmp.clear();
         options_tdbastar.motions_ptr = &robot_motions[problem.robotTypes[robot_id]]; 
         tdbastar_epsilon(problem, options_tdbastar, 
-                start.solution[robot_id].trajectory,start.constraints[robot_id],
+                start.solution[robot_id].trajectory, start.constraints[robot_id],
                 out_tdb, robot_id,/*reverse_search*/false, 
                 expanded_trajs_tmp, start.solution, robot_motions,
                 robots, col_mng_robots, robot_objs,
                 heuristics[robot_id], nullptr, options_tdbastar.w);
         if(!out_tdb.solved){
           std::cout << "Couldn't find initial solution for robot " << robot_id << "." << std::endl;
+          // if (save_expanded_trajs){
+          //   std::ofstream out2(output_folder + "/expanded_trajs_fail.yaml");
+          //   out2 << "trajs:" << std::endl;
+          //   for (auto i = 0; i < 200; i++){
+          //     auto traj = expanded_trajs_tmp.at(i);
+          //     out2 << "  - " << std::endl;
+          //     traj.to_yaml_format(out2, "    ");
+          //   }
+          // }
           start_node_valid = false;
           break;
         }
-
+        // if (save_expanded_trajs){
+        //   std::ofstream out2(output_folder + "/root_" + std::to_string(robot_id) + ".yaml");
+        //   out2 << "trajs:" << std::endl;
+        //   for (auto i = 0; i < expanded_trajs_tmp.size(); i++){
+        //     auto traj = expanded_trajs_tmp.at(i);
+        //     out2 << "  - " << std::endl;
+        //     traj.to_yaml_format(out2, "    ");
+        //   }
+        // }
         start.cost += start.solution[robot_id].trajectory.cost;
         start.LB += start.solution[robot_id].trajectory.fmin;
         robot_id++;
       }
       start.focalHeuristic = highLevelfocalHeuristicState(start.solution, robots, col_mng_robots, robot_objs); 
-
+      // std::ofstream out(outputFile);
+      // export_solutions(start.solution, &out);
+      // return 0;
       if (!start_node_valid) {
             continue;
       }
@@ -271,7 +307,7 @@ int main(int argc, char* argv[]) {
       (*handle).handle = handle;
       focal.push(handle);
       
-      int id = 1;
+      
       size_t expands = 0;
       double best_cost = (*handle).cost;
       
@@ -336,11 +372,12 @@ int main(int argc, char* argv[]) {
           }
           assert(!mismatch);
 #endif
-        std::cout << "focal set size: " << focal.size() << std::endl;
+        std::cout << "high-level Open set size: " << open.size() << std::endl;
+        std::cout << "high-level Focal set size: " << focal.size() << std::endl;
         std::cout << "cost bound: " << LB * options_tdbastar.w << std::endl;
         auto current_handle = focal.top();
         HighLevelNodeFocal P = *current_handle;
-        std::cout << "high-level node focalHeuristic: " << P.focalHeuristic << std::endl;
+        std::cout << "high-level best node focalHeuristic: " << P.focalHeuristic << std::endl;
         focal.pop();
         open.erase(current_handle);
 
@@ -351,14 +388,10 @@ int main(int argc, char* argv[]) {
             create_dir_if_necessary(outputFile);
             std::ofstream out(outputFile);
             export_solutions(P.solution, &out);
-            // get motion_primitives_plot
-            if (save_expanded_trajs){
-              std::ofstream out2(output_folder + "/expanded_trajs.yaml");
-              out2 << "trajs:" << std::endl;
-              for (auto traj : expanded_trajs_tmp){
-                out2 << "  - " << std::endl;
-                traj.to_yaml_format(out2, "    ");
-              }
+            if(!execute_optimization){
+              std::ofstream fout(outputFile, std::ios::app); 
+              fout << "  nodes: " << id << std::endl;
+              return 0;
             }
             bool sum_robot_cost = true;
             bool feasible = execute_optimizationMultiRobot(inputFile,
@@ -390,6 +423,7 @@ int main(int argc, char* argv[]) {
         }
         
         for (const auto& c : constraints){
+          id++;
           HighLevelNodeFocal newNode = P;
           size_t tmp_robot_id = c.first;
           newNode.id = id;
@@ -405,15 +439,23 @@ int main(int argc, char* argv[]) {
                 tmp_out_tdb, tmp_robot_id, /*reverse_search*/false, 
                 expanded_trajs_tmp, newNode.solution, robot_motions,
                 robots, col_mng_robots, robot_objs,
-                heuristics[tmp_robot_id], nullptr, options_tdbastar.w);
+                heuristics[tmp_robot_id], nullptr, options_tdbastar.w, /*run_focal_heuristic*/true);
           if (tmp_out_tdb.solved){
+              if (save_expanded_trajs){
+                std::ofstream out2(output_folder + "/inter_" + std::to_string(tmp_robot_id) + ".yaml");
+                out2 << "trajs:" << std::endl;
+                for (auto i = 0; i < 200; i++){
+                  auto traj = expanded_trajs_tmp.at(i);
+                  out2 << "  - " << std::endl;
+                  traj.to_yaml_format(out2, "    ");
+                }
+              }
               newNode.cost += newNode.solution[tmp_robot_id].trajectory.cost;
               newNode.LB += newNode.solution[tmp_robot_id].trajectory.fmin;
               newNode.focalHeuristic = highLevelfocalHeuristicState(newNode.solution, robots, col_mng_robots, robot_objs); 
               std::cout << "New node solution cost:  " << newNode.solution[tmp_robot_id].trajectory.cost << std::endl;
               std::cout << "New node cost: " << newNode.cost << " New node LB: " << newNode.LB << std::endl;
               std::cout << "New node focal heuristic: " << newNode.focalHeuristic << std::endl;
-              
               auto handle = open.push(newNode);
               (*handle).handle = handle;
               // if (newNode.cost <= best_cost * options_tdbastar.w)
@@ -421,7 +463,7 @@ int main(int argc, char* argv[]) {
                 focal.push(handle);
               }
           }
-          id++;
+          // id++;
 
         } 
 
