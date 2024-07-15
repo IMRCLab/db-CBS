@@ -10,7 +10,7 @@ environment:
   obstacles:
   - center: []
     octomap_file: ../octomaps/drone32c.bt
-    octomap_stl: ../meshes/drone32c.bt
+    octomap_stl: ../meshes/drone32c.stl
     size: []
     type: octomap
 robots:

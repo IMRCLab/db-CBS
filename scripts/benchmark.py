@@ -184,16 +184,18 @@ def main():
 		# "window4_demo",
 
 		# 3D scenarios with octomap
-		# "drone1c",
-		# "drone2c",
-		# "drone4c",
+		"drone1c",
+		"drone2c",
+		"drone4c",
 		"drone8c",
+		"drone10c",
 		"drone12c",
-		# "drone16c",
-		# "drone32c",
+		"drone16c",
+		"drone24c",
+		"drone32c",
 	]
 
-	# add random cases
+	# # add random cases
 	# for kind in ["unicycle_sphere", "hetero"]:
 	# 	for n in [2,4,8]:
 	# 		for k in range(10):
@@ -208,7 +210,7 @@ def main():
 		"db-ecbs",
 	]
 	trials = 1
-	timelimit = 30*60
+	timelimit = 50*60
 
 	tasks = []
 	for instance in instances:

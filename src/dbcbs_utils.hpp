@@ -162,6 +162,7 @@ void createConstraintsFromConflicts(const Conflict& early_conflict, std::map<siz
 void export_solutions(const std::vector<LowLevelPlan<dynobench::Trajectory>>& solution, 
                       std::ofstream *out){
     float cost = 0;
+    std::string indent = "  ";
     for (auto& n : solution)
       cost += n.trajectory.cost;
     *out << "cost: " << cost << std::endl; 
@@ -169,16 +170,14 @@ void export_solutions(const std::vector<LowLevelPlan<dynobench::Trajectory>>& so
     for (size_t i = 0; i < solution.size(); ++i){ 
         std::vector<Eigen::VectorXd> tmp_states = solution[i].trajectory.states;
         std::vector<Eigen::VectorXd> tmp_actions = solution[i].trajectory.actions;
-        *out << "  - states:" << std::endl;
+        *out << "-" << std::endl;
+        *out << indent << "states:" << std::endl;
         for (size_t j = 0; j < tmp_states.size(); ++j){
-            *out << "      - ";
-            *out << tmp_states.at(j).format(dynobench::FMT)<< std::endl;
+            *out << indent << "  - " << tmp_states.at(j).format(dynobench::FMT)<< std::endl;
         }
-        *out << "    actions:" << std::endl;
+        *out << indent << "actions:" << std::endl;
         for (size_t j = 0; j < tmp_actions.size(); ++j){
-            *out << "      - ";
-            *out << tmp_actions.at(j).format(dynobench::FMT)<< std::endl;
-            
+            *out << indent << "  - " << tmp_actions.at(j).format(dynobench::FMT)<< std::endl;
         }
     }
 }
