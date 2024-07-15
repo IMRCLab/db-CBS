@@ -209,26 +209,26 @@ target_include_directories(main_ompl PUBLIC
   ${FCL_INCLUDE_DIRS}
 )
 
-## standalone tdbA*
+# standalone tdbA*-epsilon
 
-# add_executable(tdbastar_standalone
-#   src/tdbastar_standalone.cpp
-# )
+add_executable(tdbastar_epsilon_standalone
+  src/tdbastar_epsilon_standalone.cpp
+)
 
-# target_include_directories(tdbastar_standalone PRIVATE
-#   ${CMAKE_CURRENT_SOURCE_DIR}/dynoplan/include
-# )
+target_include_directories(tdbastar_epsilon_standalone PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}/dynoplan/include
+)
 
-# target_link_libraries(tdbastar_standalone PRIVATE 
-#   idbastar::optimization
-#   idbastar::tdbastar
-#   motion_planning_common
-#   ${Boost_LIBRARIES}
-#   ${YAML_LIBRARIES}
-#   ompl
-#   ${FCL_LIBRARIES}
-# )
-# target_include_directories(main_ompl PUBLIC 
-#   ${YAML_INCLUDE_DIRS}
-#   ${FCL_INCLUDE_DIRS}
-# )
+target_link_libraries(tdbastar_epsilon_standalone PRIVATE 
+  idbastar::optimization
+  idbastar::tdbastar_epsilon
+  motion_planning_common
+  ${Boost_LIBRARIES}
+  ${YAML_LIBRARIES}
+  ompl
+  ${FCL_LIBRARIES}
+)
+target_include_directories(main_ompl PUBLIC 
+  ${YAML_INCLUDE_DIRS}
+  ${FCL_INCLUDE_DIRS}
+)
