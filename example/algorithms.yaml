@@ -62,10 +62,11 @@ db-ecbs:
     filter_duplicates: True
     heuristic1: "reverse-search"
     heuristic1_delta: 1.0
+    heuristic1_num_primitives_0: 100
     suboptimality_factor: 1.4 # 3.3
     always_add_node: False
     rewire: True
-    execute_optimization: False # True
+    execute_optimization: False # False
     save_expanded_trajs: False
   '*_unicycle_sphere':
     delta_0: 0.9
