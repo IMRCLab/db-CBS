@@ -182,10 +182,20 @@ int main(int argc, char* argv[]) {
     std::vector<dynobench::Trajectory> expanded_trajs_tmp;
     std::vector<LowLevelPlan<dynobench::Trajectory>> tmp_solutions(robots.size());
     if (cfg["heuristic1"].as<std::string>() == "reverse-search"){
-      std::cout << "Running the reverse search" << std::endl;
+      std::map<std::string, std::vector<Motion>> robot_motions_reverse;
       options_tdbastar.delta = cfg["heuristic1_delta"].as<float>();
+      options_tdbastar.max_motions = cfg["heuristic1_num_primitives_0"].as<size_t>();
+      
+      std::cout << "Running the reverse search" << std::endl;
       auto reverse_start = std::chrono::high_resolution_clock::now();
       for (const auto &robot : robots){
+        // load motions
+        if (robot_motions_reverse.find(problem.robotTypes[robot_id]) == robot_motions_reverse.end()){
+            options_tdbastar.motionsFile = all_motionsFile[robot_id];
+            load_motion_primitives_new(options_tdbastar.motionsFile, *robot, robot_motions_reverse[problem.robotTypes[robot_id]], 
+                                        options_tdbastar.max_motions,
+                                        options_tdbastar.cut_actions, false, options_tdbastar.check_cols);
+        }
         // start to inf for the reverse search
         LowLevelPlan<dynobench::Trajectory> tmp_solution;
         problem.starts[robot_id].head(robot->translation_invariance).setConstant(std::sqrt(std::numeric_limits<double>::max()));
@@ -193,7 +203,7 @@ int main(int argc, char* argv[]) {
         problem.starts[robot_id] = problem.goals[robot_id];
         problem.goals[robot_id] = tmp_state;
         expanded_trajs_tmp.clear();
-        options_tdbastar.motions_ptr = &robot_motions[problem.robotTypes[robot_id]]; 
+        options_tdbastar.motions_ptr = &robot_motions_reverse[problem.robotTypes[robot_id]]; 
         tdbastar_epsilon(problem, options_tdbastar, 
                 tmp_solution.trajectory,/*constraints*/{},
                 out_tdb, robot_id,/*reverse_search*/true, 
@@ -219,6 +229,7 @@ int main(int argc, char* argv[]) {
     problem.starts = problem_original.starts;
     problem.goals = problem_original.goals;
     options_tdbastar.delta = cfg["delta_0"].as<float>();
+    options_tdbastar.max_motions = cfg["num_primitives_0"].as<size_t>();
     for (size_t iteration = 0; ; ++iteration) {
       std::cout << "iteration: " << iteration << std::endl;
       if (iteration > 0) {
