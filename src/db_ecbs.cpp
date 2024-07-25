@@ -6,6 +6,7 @@
 #include <iterator>
 #include <yaml-cpp/yaml.h>
 #include <filesystem>
+#include <bits/stdc++.h>
 // BOOST
 #include <boost/program_options.hpp>
 #include <boost/program_options.hpp>
@@ -70,7 +71,7 @@ int main(int argc, char* argv[]) {
       return 1;
     }
     YAML::Node cfg = YAML::LoadFile(cfgFile);
-    // cfg = cfg["db-ecbs"]["default"];
+    cfg = cfg["db-ecbs"]["default"];
     float alpha = cfg["alpha"].as<float>();
     bool filter_duplicates = cfg["filter_duplicates"].as<bool>();
     fs::path output_path(outputFile);
@@ -205,16 +206,6 @@ int main(int argc, char* argv[]) {
                 robots, col_mng_robots, robot_objs,
                 nullptr, &heuristics[robot_id], options_tdbastar.w);
         std::cout << "computed heuristic with " << heuristics[robot_id]->size() << " entries." << std::endl;
-        // if (save_expanded_trajs){
-        //   std::ofstream out3(output_folder + "/expanded_trajs_reverse_" + std::to_string(robot_id) + ".yaml");
-        //   std::cout << "expanded trajs reverse size: " << expanded_trajs_tmp.size() << std::endl;
-        //   out3 << "trajs:" << std::endl;
-        //   for (auto i = 0; i < expanded_trajs_tmp.size(); i += 100){
-        //     auto traj = expanded_trajs_tmp.at(i);
-        //     out3 << "  - " << std::endl;
-        //     traj.to_yaml_format(out3, "    ");
-        //   }
-        // }
         robot_id++;
       }
       auto reverse_end = std::chrono::high_resolution_clock::now();
@@ -278,35 +269,14 @@ int main(int argc, char* argv[]) {
                 heuristics[robot_id], nullptr, options_tdbastar.w);
         if(!out_tdb.solved){
           std::cout << "Couldn't find initial solution for robot " << robot_id << "." << std::endl;
-          // if (save_expanded_trajs){
-          //   std::ofstream out2(output_folder + "/expanded_trajs_fail.yaml");
-          //   out2 << "trajs:" << std::endl;
-          //   for (auto i = 0; i < 200; i++){
-          //     auto traj = expanded_trajs_tmp.at(i);
-          //     out2 << "  - " << std::endl;
-          //     traj.to_yaml_format(out2, "    ");
-          //   }
-          // }
           start_node_valid = false;
           break;
         }
-        // if (save_expanded_trajs){
-        //   std::ofstream out2(output_folder + "/root_" + std::to_string(robot_id) + ".yaml");
-        //   out2 << "trajs:" << std::endl;
-        //   for (auto i = 0; i < expanded_trajs_tmp.size(); i++){
-        //     auto traj = expanded_trajs_tmp.at(i);
-        //     out2 << "  - " << std::endl;
-        //     traj.to_yaml_format(out2, "    ");
-        //   }
-        // }
         start.cost += start.solution[robot_id].trajectory.cost;
         start.LB += start.solution[robot_id].trajectory.fmin;
         robot_id++;
       }
       start.focalHeuristic = highLevelfocalHeuristicState(start.solution, robots, col_mng_robots, robot_objs); 
-      // std::ofstream out(outputFile);
-      // export_solutions(start.solution, &out);
-      // return 0;
       if (!start_node_valid) {
             continue;
       }
@@ -395,28 +365,61 @@ int main(int argc, char* argv[]) {
         Conflict inter_robot_conflict;
         if (!getEarliestConflict(P.solution, robots, col_mng_robots, robot_objs, inter_robot_conflict)){
             solved_db = true;
-            std::cout << "Final solution!" << std::endl; 
+            std::cout << "Final solution from db-ecbs!" << std::endl; 
+            // I. sequential optimization
+            std::vector<double> min_ = env["environment"]["min"].as<std::vector<double>>();
+            std::vector<double> max_ = env["environment"]["max"].as<std::vector<double>>();
+            Options_trajopt options_trajopt;
+            options_trajopt.solver_id = 0; // for moving obstacles later
+            options_trajopt.control_bounds = 1;
+            options_trajopt.use_warmstart = 1;
+            options_trajopt.weight_goal = 80;
+            options_trajopt.max_iter = 50;
+            options_trajopt.soft_control_bounds = true; 
+            // for optimized output
+            HighLevelNodeFocal tmpNode;
+            tmpNode.solution.resize(robots.size());
+            for (size_t i = 0; i < robots.size(); i++){
+              Result_opti opti_out;
+              dynobench::Problem tmp_problem;
+              tmp_problem.models_base_path = DYNOBENCH_BASE "models/";
+              tmp_problem.robotType = problem.robotTypes.at(i);
+              tmp_problem.robotTypes.push_back(tmp_problem.robotType); 
+              tmp_problem.goal = problem.goals[i];
+              tmp_problem.start = problem.starts[i];
+              tmp_problem.p_lb = Eigen::Map<Eigen::VectorXd>(&min_.at(0), min_.size());
+              tmp_problem.p_ub = Eigen::Map<Eigen::VectorXd>(&max_.at(0), max_.size());
+              trajectory_optimization(tmp_problem, P.solution.at(i).trajectory, options_trajopt, tmpNode.solution.at(i).trajectory,
+                          opti_out);
+              if(opti_out.success)
+                std::cout << "Sequential optimization for robot " << i << " is successful!" << std::endl;
+              else  
+                std::cout << "failure of sequential optimization" << std::endl;
+            }
             create_dir_if_necessary(outputFile);
             std::ofstream out(outputFile);
-            export_solutions(P.solution, &out);
-            if(!execute_optimization){
-              std::ofstream fout(outputFile, std::ios::app); 
-              fout << "  nodes: " << id << std::endl;
-              return 0;
-            }
+            export_solutions(tmpNode.solution, &out);
+            // II. check for collision - create subgroups
+            // III. moving obstacles-based optimization
             bool sum_robot_cost = true;
-            bool feasible = execute_optimizationMultiRobot(inputFile,
-                                          outputFile, 
-                                          optimizationFile,
-                                          DYNOBENCH_BASE,
-                                          sum_robot_cost);
+            // A. cluster 1
+            std::unordered_set<size_t> cluster1 = {0,1};
+            std::string cluster1_out = "cluster1_env.yaml";
 
-            if (feasible) {
-              std::ofstream fout(optimizationFile, std::ios::app); 
-              fout << "  nodes: " << id << std::endl;
-              return 0;
-            }
-            break;
+            get_artificial_env(inputFile, /*inputFile*/outputFile, /*outputFile*/cluster1_out, cluster1);
+
+            bool feasible = execute_optimizationMetaRobot(/*envFile*/cluster1_out,
+                                          /*initialGuessFile*/outputFile, 
+                                          /*outputFile*/optimizationFile,
+                                          DYNOBENCH_BASE,
+                                          cluster1,
+                                          sum_robot_cost);
+            // B. cluster 2
+            std::unordered_set<size_t> cluster2 = {2,3};
+            std::string cluster2_out = "cluster2_env.yaml";
+            get_artificial_env(inputFile, /*inputFile*/outputFile, /*outputFile*/cluster2_out, cluster2);
+            
+            return 0;
         }
         ++expands;
         if (expands % 100 == 0) {
