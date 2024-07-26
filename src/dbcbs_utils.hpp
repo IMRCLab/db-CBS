@@ -289,14 +289,14 @@ void get_artificial_env(const std::string &env_file,
   size_t num_robots = initial_guess["result"].size();
 
   for (size_t i = 0; i < num_robots; i++){
-    if (cluster.find(i) != cluster.end()){ // skip robots that are within cluster
-      continue;
+    if (cluster.find(i) != cluster.end()){ // robots that are within cluster
+      YAML::Node robot_node;
+      robot_node["start"] = env["robots"][i]["start"];;
+      robot_node["goal"] = env["robots"][i]["goal"];
+      robot_node["type"] = env["robots"][i]["type"];
+      data["robots"].push_back(robot_node);
     }
-    YAML::Node robot_node;
-    robot_node["start"] = env["robots"][i]["start"];;
-    robot_node["goal"] = env["robots"][i]["goal"];
-    robot_node["type"] = env["robots"][i]["type"];
-    data["robots"].push_back(robot_node);
+    
   }
 
   MultiRobotTrajectory init_guess_multi_robot;
