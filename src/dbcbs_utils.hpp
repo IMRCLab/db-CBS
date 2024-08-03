@@ -304,7 +304,7 @@ void get_artificial_env(const std::string &env_file,
   size_t max_t = 0;
   size_t index = 0;
   for (const auto& traj : init_guess_multi_robot.trajectories){
-      if (cluster.find(index) == cluster.end()){
+      if (cluster.find(index) == cluster.end()){ // to get moving obstacles
           max_t = std::max(max_t, traj.states.size() - 1);
       }
       ++index;
