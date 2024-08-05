@@ -275,7 +275,7 @@ void get_artificial_env(const std::string &env_file,
                         const std::string &out_file,
                         std::unordered_set<size_t> &cluster){
   // custom params for the obstacle
-  double size = 0.5;
+  double size = 0.5; // maybe change to the robot's radius ?
   std::string type = "sphere";
   YAML::Node env = YAML::LoadFile(env_file);
   const auto &env_min = env["environment"]["min"];
@@ -304,15 +304,14 @@ void get_artificial_env(const std::string &env_file,
   size_t max_t = 0;
   size_t index = 0;
   for (const auto& traj : init_guess_multi_robot.trajectories){
-      if (cluster.find(index) == cluster.end()){ // to get moving obstacles
-          max_t = std::max(max_t, traj.states.size() - 1);
-      }
+      max_t = std::max(max_t, traj.states.size() - 1); // among all paths, optimization needs the longest traj
       ++index;
   }
   YAML::Node moving_obstacles_node; // for all robots
   Eigen::VectorXd state;
   std::vector<Obstacle> moving_obs_per_time;
   std::vector<std::vector<Obstacle>> moving_obs;
+  std::cout << "MAXT: " << max_t << std::endl;
   for (size_t t = 0; t <= max_t; ++t){ 
     moving_obs_per_time.clear();
     for (size_t i = 0; i < num_robots; i++){

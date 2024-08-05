@@ -17,7 +17,7 @@
 #include "dynoplan/tdbastar/tdbastar.hpp"
 #include "dynoplan/tdbastar/tdbastar_epsilon.hpp"
 #include "dynoplan/tdbastar/planresult.hpp"
-
+#include <dynobench/multirobot_trajectory.hpp>
 
 // DYNOBENCH
 #include "dynobench/general_utils.hpp"
@@ -366,6 +366,9 @@ int main(int argc, char* argv[]) {
         if (!getEarliestConflict(P.solution, robots, col_mng_robots, robot_objs, inter_robot_conflict)){
             solved_db = true;
             std::cout << "Final solution from db-ecbs!" << std::endl; 
+            create_dir_if_necessary(outputFile);
+            std::ofstream out_db(outputFile);
+            export_solutions(P.solution, &out_db);
             // I. sequential optimization
             std::vector<double> min_ = env["environment"]["min"].as<std::vector<double>>();
             std::vector<double> max_ = env["environment"]["max"].as<std::vector<double>>();
@@ -376,7 +379,7 @@ int main(int argc, char* argv[]) {
             options_trajopt.weight_goal = 80;
             options_trajopt.max_iter = 50;
             options_trajopt.soft_control_bounds = true; 
-            // for optimized output
+            // for the sequential optimized output
             HighLevelNodeFocal tmpNode;
             tmpNode.solution.resize(robots.size());
             for (size_t i = 0; i < robots.size(); i++){
@@ -396,30 +399,36 @@ int main(int argc, char* argv[]) {
               else  
                 std::cout << "failure of sequential optimization" << std::endl;
             }
-            create_dir_if_necessary(outputFile);
-            std::ofstream out(outputFile);
+            // std::string seq_outputFile = "/home/akmarak-laptop/IMRC/db-CBS/results/meta-robot/seq_test.yaml";
+            std::string seq_outputFile = "/tmp/dynoplan/seq_optimization.yaml";
+            create_dir_if_necessary(seq_outputFile);
+            std::ofstream out(seq_outputFile);
             export_solutions(tmpNode.solution, &out);
             // II. check for collision - create subgroups
             // III. moving obstacles-based optimization
             bool sum_robot_cost = true;
-            // A. cluster 1
-            std::unordered_set<size_t> cluster1 = {0,1};
-            std::string cluster1_out = "cluster1_env.yaml";
-
-            get_artificial_env(inputFile, /*inputFile*/outputFile, /*outputFile*/cluster1_out, cluster1);
-
-            bool feasible = execute_optimizationMetaRobot(/*envFile*/cluster1_out,
-                                          /*initialGuessFile*/outputFile, 
-                                          /*outputFile*/optimizationFile,
+            bool feasible = false;
+            MultiRobotTrajectory multi_robot_sol;
+            multi_robot_sol.trajectories.resize(robots.size());
+            std::vector<std::unordered_set<size_t>> clusters{{0,1}, {2,3}};
+            for (size_t i = 0; i < clusters.size(); i++){
+              std::cout << "cluster " << i << std::endl;
+              std::string env_file_id = "/tmp/dynoplan/env_file_" + gen_random(5) + ".yaml";
+              get_artificial_env(inputFile, /*inputFile*/seq_outputFile, /*outputFile*/env_file_id, clusters.at(i));
+              feasible = execute_optimizationMetaRobot(/*envFile*/env_file_id,
+                                          /*initialGuessFile*/seq_outputFile, 
+                                          /*solution*/multi_robot_sol,
                                           DYNOBENCH_BASE,
-                                          cluster1,
+                                          clusters.at(i),
                                           sum_robot_cost);
-            // B. cluster 2
-            std::unordered_set<size_t> cluster2 = {2,3};
-            std::string cluster2_out = "cluster2_env.yaml";
-            get_artificial_env(inputFile, /*inputFile*/outputFile, /*outputFile*/cluster2_out, cluster2);
-            
-            return 0;
+              if(!feasible){
+                std::cout << "cluster " << i << " failed with optimization" << std::endl;
+              }
+            }
+            if(feasible){
+              multi_robot_sol.to_yaml_format(optimizationFile.c_str());
+              return 0;
+            }
         }
         ++expands;
         if (expands % 100 == 0) {

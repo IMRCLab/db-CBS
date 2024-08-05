@@ -137,15 +137,16 @@ void get_artificial_env(const std::string &env_file,
   size_t max_t = 0;
   size_t robot_idx = 0;
   for (const auto& traj : init_guess_multi_robot.trajectories){
-      if(cluster.find(robot_idx) == cluster.end()){
-          max_t = std::max(max_t, traj.states.size() - 1);
-      }
+      // if(cluster.find(robot_idx) == cluster.end()){
+        max_t = std::max(max_t, traj.states.size() - 1);
+      // }
       ++robot_idx;
   }
   YAML::Node moving_obstacles_node; // for all robots
   Eigen::VectorXd state;
   std::vector<Obstacle> moving_obs_per_time;
   std::vector<std::vector<Obstacle>> moving_obs;
+  std::cout << "MAXT: " << max_t << std::endl;
   for (size_t t = 0; t <= max_t; ++t){ 
     moving_obs_per_time.clear();
     for (size_t i = 0; i < num_robots; i++){
@@ -207,7 +208,7 @@ int main(int argc, char* argv[]){
     }
     std::cout << envFile << std::endl;
     // output_to_moving_obs(envFile, inputFile);
-    std::unordered_set<size_t> cluster_test = {0,1};
+    std::unordered_set<size_t> cluster_test = {2,3};
     get_artificial_env(envFile, inputFile, outputFile, cluster_test);
 
     return 0;
