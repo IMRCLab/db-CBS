@@ -77,7 +77,9 @@ int main(int argc, char* argv[]) {
     std::string output_folder = output_path.parent_path().string();
     bool save_search_video = false;
     bool save_expanded_trajs = cfg["save_expanded_trajs"].as<bool>();
+    bool external_force = cfg["external_force"].as<bool>();
     std::string conflicts_folder = output_folder + "/conflicts";
+    Eigen::Vector3d radii = Eigen::Vector3d(.12, .12, .3); // from tro paper
     // tdbstar options
     Options_tdbastar options_tdbastar;
     options_tdbastar.outFile = outputFile;
@@ -89,7 +91,6 @@ int main(int argc, char* argv[]) {
     options_tdbastar.rewire = cfg["rewire"].as<bool>();
     options_tdbastar.always_add_node = cfg["always_add_node"].as<bool>();
     bool execute_optimization = cfg["execute_optimization"].as<bool>();
-    // options_tdbastar.max_expands = 200;
     // tdbastar problem
     dynobench::Problem problem(inputFile);
     dynobench::Problem problem_original(inputFile);
@@ -117,7 +118,6 @@ int main(int argc, char* argv[]) {
         fcl::Vector3f(env_max[0].as<double>(), env_max[1].as<double>(), 1));
 
     std::vector<std::shared_ptr<dynobench::Model_robot>> robots;
-    // std::vector<dynobench::Trajectory> ll_trajs;
     std::string motionsFile;
     std::vector<std::string> all_motionsFile;
     for (const auto &robotType : problem.robotTypes){
@@ -148,11 +148,17 @@ int main(int argc, char* argv[]) {
     col_mng_robots->setup();
     size_t i = 0;
     for (const auto &robot : robots){
-        collision_geometries.insert(collision_geometries.end(), 
+        if(external_force && robot->name == "Integrator2_3d"){
+          collision_geometries.push_back(std::make_shared<fcl::Ellipsoidd>(radii));
+        }
+        else{ 
+          collision_geometries.insert(collision_geometries.end(), 
                               robot->collision_geometries.begin(), robot->collision_geometries.end());
+        }
         auto robot_obj = new fcl::CollisionObject(collision_geometries[col_geom_id]);
         collision_geometries[col_geom_id]->setUserData((void*)i);
         robot_objs.push_back(robot_obj);
+
         if (robot_motions.find(problem.robotTypes[i]) == robot_motions.end()){
             options_tdbastar.motionsFile = all_motionsFile[i];
             load_motion_primitives_new(options_tdbastar.motionsFile, *robot, robot_motions[problem.robotTypes[i]], 
@@ -195,16 +201,6 @@ int main(int argc, char* argv[]) {
                 robots, col_mng_robots, robot_objs,
                 nullptr, &heuristics[robot_id], options_tdbastar.w);
         std::cout << "computed heuristic with " << heuristics[robot_id]->size() << " entries." << std::endl;
-        // if (save_expanded_trajs){
-        //   std::ofstream out3(output_folder + "/expanded_trajs_reverse_" + std::to_string(robot_id) + ".yaml");
-        //   std::cout << "expanded trajs reverse size: " << expanded_trajs_tmp.size() << std::endl;
-        //   out3 << "trajs:" << std::endl;
-        //   for (auto i = 0; i < expanded_trajs_tmp.size(); i += 100){
-        //     auto traj = expanded_trajs_tmp.at(i);
-        //     out3 << "  - " << std::endl;
-        //     traj.to_yaml_format(out3, "    ");
-        //   }
-        // }
         robot_id++;
       }
       auto reverse_end = std::chrono::high_resolution_clock::now();
@@ -267,35 +263,23 @@ int main(int argc, char* argv[]) {
                 heuristics[robot_id], nullptr, options_tdbastar.w);
         if(!out_tdb.solved){
           std::cout << "Couldn't find initial solution for robot " << robot_id << "." << std::endl;
-          // if (save_expanded_trajs){
-          //   std::ofstream out2(output_folder + "/expanded_trajs_fail.yaml");
-          //   out2 << "trajs:" << std::endl;
-          //   for (auto i = 0; i < 200; i++){
-          //     auto traj = expanded_trajs_tmp.at(i);
-          //     out2 << "  - " << std::endl;
-          //     traj.to_yaml_format(out2, "    ");
-          //   }
-          // }
           start_node_valid = false;
           break;
         }
-        // if (save_expanded_trajs){
-        //   std::ofstream out2(output_folder + "/root_" + std::to_string(robot_id) + ".yaml");
-        //   out2 << "trajs:" << std::endl;
-        //   for (auto i = 0; i < expanded_trajs_tmp.size(); i++){
-        //     auto traj = expanded_trajs_tmp.at(i);
-        //     out2 << "  - " << std::endl;
-        //     traj.to_yaml_format(out2, "    ");
-        //   }
-        // }
+        if (save_expanded_trajs){
+          std::ofstream out2(output_folder + "/root_" + std::to_string(robot_id) + ".yaml");
+          out2 << "trajs:" << std::endl;
+          for (auto i = 0; i < expanded_trajs_tmp.size(); i++){
+            auto traj = expanded_trajs_tmp.at(i);
+            out2 << "  - " << std::endl;
+            traj.to_yaml_format(out2, "    ");
+          }
+        }
         start.cost += start.solution[robot_id].trajectory.cost;
         start.LB += start.solution[robot_id].trajectory.fmin;
         robot_id++;
       }
       start.focalHeuristic = highLevelfocalHeuristicState(start.solution, robots, col_mng_robots, robot_objs); 
-      // std::ofstream out(outputFile);
-      // export_solutions(start.solution, &out);
-      // return 0;
       if (!start_node_valid) {
             continue;
       }
@@ -463,8 +447,6 @@ int main(int argc, char* argv[]) {
                 focal.push(handle);
               }
           }
-          // id++;
-
         } 
 
       } 
