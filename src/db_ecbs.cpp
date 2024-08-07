@@ -436,15 +436,6 @@ int main(int argc, char* argv[]) {
                 robots, col_mng_robots, robot_objs,
                 heuristics[tmp_robot_id], nullptr, options_tdbastar.w, /*run_focal_heuristic*/true);
           if (tmp_out_tdb.solved){
-              if (save_expanded_trajs){
-                std::ofstream out2(output_folder + "/inter_" + std::to_string(tmp_robot_id) + ".yaml");
-                out2 << "trajs:" << std::endl;
-                for (auto i = 0; i < 200; i++){
-                  auto traj = expanded_trajs_tmp.at(i);
-                  out2 << "  - " << std::endl;
-                  traj.to_yaml_format(out2, "    ");
-                }
-              }
               newNode.cost += newNode.solution[tmp_robot_id].trajectory.cost;
               newNode.LB += newNode.solution[tmp_robot_id].trajectory.fmin;
               newNode.focalHeuristic = highLevelfocalHeuristicState(newNode.solution, robots, col_mng_robots, robot_objs); 
