@@ -68,7 +68,7 @@ db-ecbs:
     rewire: True
     execute_optimization: False # True
     save_expanded_trajs: False
-    external_force: True
+    external_force: False
   '*_unicycle_sphere':
     delta_0: 0.9
     # suboptimality_factor: 3.3
