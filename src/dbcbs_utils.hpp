@@ -5,6 +5,7 @@
 #include <chrono>
 #include <iterator>
 #include <yaml-cpp/yaml.h>
+#include <bits/stdc++.h>
 // BOOST
 #include <boost/program_options.hpp>
 #include <boost/heap/d_ary_heap.hpp>
@@ -17,6 +18,10 @@
 // #include "planresult.hpp"
 #include "dynoplan/tdbastar/planresult.hpp"
 #include "dynoplan/tdbastar/tdbastar.hpp"
+#include <dynobench/multirobot_trajectory.hpp>
+#include <dynoplan/optimization/multirobot_optimization.hpp>
+#include "dynobench/motions.hpp"
+
 
 // Conflicts 
 struct Conflict {
@@ -248,6 +253,98 @@ void export_constraints(const std::vector<std::vector<dynoplan::Constraint>> &fi
     }
   }
 }
+
+// meta-robot related additions
+struct Obstacle {
+    std::vector<double> center;
+    std::vector<double> size;
+    std::string type;
+};
+
+// Convert Obstacle struct to YAML node
+YAML::Node obstacle_to_yaml(const Obstacle& obs) {
+    YAML::Node node;
+    node["center"] = obs.center;
+    node["size"] = obs.size;
+    node["type"] = obs.type;
+    return node;
+}
+
+void get_artificial_env(const std::string &env_file,
+                        const std::string &initial_guess_file,
+                        const std::string &out_file,
+                        std::unordered_set<size_t> &cluster){
+  // custom params for the obstacle
+  double size = 0.5; // maybe change to the robot's radius ?
+  std::string type = "sphere";
+  YAML::Node env = YAML::LoadFile(env_file);
+  const auto &env_min = env["environment"]["min"];
+  const auto &env_max = env["environment"]["max"];
+  // data
+  YAML::Node data;
+  data["environment"]["max"] = env_max;
+  data["environment"]["min"] = env_min;
+  // read the result
+  YAML::Node initial_guess = YAML::LoadFile(initial_guess_file);
+  size_t num_robots = initial_guess["result"].size();
+
+  for (size_t i = 0; i < num_robots; i++){
+    if (cluster.find(i) != cluster.end()){ // robots that are within cluster
+      YAML::Node robot_node;
+      robot_node["start"] = env["robots"][i]["start"];;
+      robot_node["goal"] = env["robots"][i]["goal"];
+      robot_node["type"] = env["robots"][i]["type"];
+      data["robots"].push_back(robot_node);
+    }
+    
+  }
+
+  MultiRobotTrajectory init_guess_multi_robot;
+  init_guess_multi_robot.read_from_yaml(initial_guess_file.c_str());
+  size_t max_t = 0;
+  size_t index = 0;
+  for (const auto& traj : init_guess_multi_robot.trajectories){
+      max_t = std::max(max_t, traj.states.size() - 1); // among all paths, optimization needs the longest traj
+      ++index;
+  }
+  YAML::Node moving_obstacles_node; // for all robots
+  Eigen::VectorXd state;
+  std::vector<Obstacle> moving_obs_per_time;
+  std::vector<std::vector<Obstacle>> moving_obs;
+  std::cout << "MAXT: " << max_t << std::endl;
+  for (size_t t = 0; t <= max_t; ++t){ 
+    moving_obs_per_time.clear();
+    for (size_t i = 0; i < num_robots; i++){
+        if (cluster.find(i) == cluster.end()){
+          if (t >= init_guess_multi_robot.trajectories.at(i).states.size()){
+              state = init_guess_multi_robot.trajectories.at(i).states.back();    
+          }
+          else {
+              state = init_guess_multi_robot.trajectories.at(i).states[t];
+          }
+        // into vector
+        Obstacle obs;
+        obs.center = {state(0), state(1), state(2)};
+        obs.size = {size};
+        obs.type = "sphere";
+        moving_obs_per_time.push_back({obs});
+      }
+    }
+    moving_obs.push_back(moving_obs_per_time);
+  }
+  for (const auto &obs_list : moving_obs) {
+      YAML::Node yaml_obs_list;
+      for (const auto &obs : obs_list) {
+          yaml_obs_list.push_back(obstacle_to_yaml(obs));
+      }
+      data["environment"]["moving_obstacles"].push_back(yaml_obs_list);
+  }
+  // Write YAML node to file
+  std::ofstream fout(out_file);
+  fout << data;
+  fout.close();
+}
+
 // #include <boost/heap/d_ary_heap.hpp>
 
 // // Define your element type (e.g., HighLevelNode)
