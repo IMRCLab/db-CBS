@@ -270,7 +270,7 @@ YAML::Node obstacle_to_yaml(const Obstacle& obs) {
     return node;
 }
 
-void get_artificial_env(const std::string &env_file,
+void get_moving_obstacles(const std::string &env_file,
                         const std::string &initial_guess_file,
                         const std::string &out_file,
                         std::unordered_set<size_t> &cluster){
@@ -321,6 +321,87 @@ void get_artificial_env(const std::string &env_file,
           }
           else {
               state = init_guess_multi_robot.trajectories.at(i).states[t];
+          }
+        // into vector
+        Obstacle obs;
+        obs.center = {state(0), state(1), state(2)};
+        obs.size = {size};
+        obs.type = "sphere";
+        moving_obs_per_time.push_back({obs});
+      }
+    }
+    moving_obs.push_back(moving_obs_per_time);
+  }
+  for (const auto &obs_list : moving_obs) {
+      YAML::Node yaml_obs_list;
+      for (const auto &obs : obs_list) {
+          yaml_obs_list.push_back(obstacle_to_yaml(obs));
+      }
+      data["environment"]["moving_obstacles"].push_back(yaml_obs_list);
+  }
+  // Write YAML node to file
+  std::ofstream fout(out_file);
+  fout << data;
+  fout.close();
+}
+
+// get moving obstacles given the id of robots of interest apart from the cluster
+// assumes we are considering a single robot with single/many neighbors
+void get_desired_moving_obstacles(const std::string &env_file,
+                        const std::string &out_file,
+                        dynobench::Trajectory init_guess,
+                        std::vector<LowLevelPlan<dynobench::Trajectory>>& tmp_sol,
+                        size_t robot_idx,
+                        std::unordered_set<size_t> &other_cluster){
+  // custom params for the obstacle
+  double size = 0.5; // maybe change to the robot's radius ?
+  std::string type = "sphere";
+  YAML::Node env = YAML::LoadFile(env_file);
+  const auto &env_min = env["environment"]["min"];
+  const auto &env_max = env["environment"]["max"];
+  // data
+  YAML::Node data;
+  data["environment"]["max"] = env_max;
+  data["environment"]["min"] = env_min;
+  size_t num_robots = other_cluster.size();
+
+  YAML::Node robot_node;
+  robot_node["start"] = env["robots"][robot_idx]["start"];;
+  robot_node["goal"] = env["robots"][robot_idx]["goal"];
+  robot_node["type"] = env["robots"][robot_idx]["type"];
+  data["robots"].push_back(robot_node);
+ 
+  size_t max_t = 0;
+  size_t index = 0;
+  if (num_robots < 1){
+    data["environment"]["moving_obstacles"] = YAML::Node(YAML::NodeType::Sequence);
+    std::ofstream fout(out_file);
+    fout << data;
+    fout.close();
+    return;
+  }
+
+  for (const auto& sol : tmp_sol){
+    if(other_cluster.find(index) != other_cluster.end()) // only those within other_cluster = moving obstacles
+      max_t = std::max(max_t, sol.trajectory.states.size() - 1);
+    ++index;
+  }
+  max_t = std::max(max_t, init_guess.states.size() - 1); // for the considered robot, otherwise
+  // optimization breaks
+  YAML::Node moving_obstacles_node; // for all robots
+  Eigen::VectorXd state;
+  std::vector<Obstacle> moving_obs_per_time;
+  std::vector<std::vector<Obstacle>> moving_obs;
+  std::cout << "MAXT: " << max_t << std::endl;
+  for (size_t t = 0; t <= max_t; ++t){ 
+    moving_obs_per_time.clear();
+    for (size_t i = 0; i < num_robots; i++){
+        if (other_cluster.find(i) != other_cluster.end()){ // only those in other_cluster = moving obstacles
+          if (t >= tmp_sol.at(i).trajectory.states.size()){
+              state = tmp_sol.at(i).trajectory.states.back();    
+          }
+          else {
+              state = tmp_sol.at(i).trajectory.states[t];
           }
         // into vector
         Obstacle obs;
