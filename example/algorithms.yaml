@@ -56,7 +56,7 @@ db-ecbs:
   default:
     delta_0: 0.5
     delta_rate: 0.9
-    num_primitives_0: 200 # 300
+    num_primitives_0: 100 # 200
     num_primitives_rate: 1.5
     alpha: 0.5
     filter_duplicates: True
@@ -66,8 +66,9 @@ db-ecbs:
     suboptimality_factor: 1.4 # 3.3
     always_add_node: False
     rewire: True
-    execute_optimization: True # False
     save_expanded_trajs: False
+    execute_optimization: True # False
+    priority_based_optimization: True
   '*_unicycle_sphere':
     delta_0: 0.9
     # suboptimality_factor: 3.3
