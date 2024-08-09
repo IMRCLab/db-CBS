@@ -79,6 +79,9 @@ int main(int argc, char* argv[]) {
     bool save_search_video = false;
     bool save_expanded_trajs = cfg["save_expanded_trajs"].as<bool>();
     std::string conflicts_folder = output_folder + "/conflicts";
+    // optimization-related params
+    bool sum_robot_cost = true;
+    bool feasible = false;
     // tdbstar options
     Options_tdbastar options_tdbastar;
     options_tdbastar.outFile = outputFile;
@@ -173,9 +176,10 @@ int main(int argc, char* argv[]) {
     col_mng_robots->registerObjects(robot_objs);
     // Heuristic computation
     size_t robot_id = 0;
-    std::vector<ompl::NearestNeighbors<std::shared_ptr<AStarNode>>*> heuristics(robots.size(), nullptr);
+    size_t num_robots = robots.size();
+    std::vector<ompl::NearestNeighbors<std::shared_ptr<AStarNode>>*> heuristics(num_robots, nullptr);
     std::vector<dynobench::Trajectory> expanded_trajs_tmp;
-    std::vector<LowLevelPlan<dynobench::Trajectory>> tmp_solutions(robots.size());
+    std::vector<LowLevelPlan<dynobench::Trajectory>> tmp_solutions(num_robots);
     if (cfg["heuristic1"].as<std::string>() == "reverse-search"){
       std::map<std::string, std::vector<Motion>> robot_motions_reverse;
       options_tdbastar.delta = cfg["heuristic1_delta"].as<float>();
@@ -369,7 +373,8 @@ int main(int argc, char* argv[]) {
             create_dir_if_necessary(outputFile);
             std::ofstream out_db(outputFile);
             export_solutions(P.solution, &out_db);
-            // I. sequential optimization
+
+            // I. Parallel/Independent optimization
             std::vector<double> min_ = env["environment"]["min"].as<std::vector<double>>();
             std::vector<double> max_ = env["environment"]["max"].as<std::vector<double>>();
             Options_trajopt options_trajopt;
@@ -379,10 +384,9 @@ int main(int argc, char* argv[]) {
             options_trajopt.weight_goal = 80;
             options_trajopt.max_iter = 50;
             options_trajopt.soft_control_bounds = true; 
-            // for the sequential optimized output
-            HighLevelNodeFocal tmpNode;
-            tmpNode.solution.resize(robots.size());
-            for (size_t i = 0; i < robots.size(); i++){
+            HighLevelNodeFocal tmpNode_parallel; // save the output of independent optimization
+            tmpNode_parallel.solution.resize(num_robots);
+            for (size_t i = 0; i < num_robots; i++){
               Result_opti opti_out;
               dynobench::Problem tmp_problem;
               tmp_problem.models_base_path = DYNOBENCH_BASE "models/";
@@ -392,41 +396,59 @@ int main(int argc, char* argv[]) {
               tmp_problem.start = problem.starts[i];
               tmp_problem.p_lb = Eigen::Map<Eigen::VectorXd>(&min_.at(0), min_.size());
               tmp_problem.p_ub = Eigen::Map<Eigen::VectorXd>(&max_.at(0), max_.size());
-              trajectory_optimization(tmp_problem, P.solution.at(i).trajectory, options_trajopt, tmpNode.solution.at(i).trajectory,
+              trajectory_optimization(tmp_problem, P.solution.at(i).trajectory, options_trajopt, tmpNode_parallel.solution.at(i).trajectory,
                           opti_out);
-              if(opti_out.success)
-                std::cout << "Sequential optimization for robot " << i << " is successful!" << std::endl;
-              else  
-                std::cout << "failure of sequential optimization" << std::endl;
+              if(!opti_out.success) 
+                std::cout << "failure of parallel/independent optimization for robot " << i << std::endl;
             }
-            // std::string seq_outputFile = "/home/akmarak-laptop/IMRC/db-CBS/results/meta-robot/seq_test.yaml";
-            std::string seq_outputFile = "/tmp/dynoplan/seq_optimization.yaml";
-            create_dir_if_necessary(seq_outputFile);
-            std::ofstream out(seq_outputFile);
-            export_solutions(tmpNode.solution, &out);
-            // II. check for collision - create subgroups
-            // III. moving obstacles-based optimization
-            bool sum_robot_cost = true;
-            bool feasible = false;
-            MultiRobotTrajectory multi_robot_sol;
-            multi_robot_sol.trajectories.resize(robots.size());
-            std::vector<std::unordered_set<size_t>> clusters{{0,1}, {2,3}};
-            for (size_t i = 0; i < clusters.size(); i++){
-              std::cout << "cluster " << i << std::endl;
-              std::string env_file_id = "/tmp/dynoplan/env_file_" + gen_random(5) + ".yaml";
-              get_artificial_env(inputFile, /*inputFile*/seq_outputFile, /*outputFile*/env_file_id, clusters.at(i));
-              feasible = execute_optimizationMetaRobot(/*envFile*/env_file_id,
-                                          /*initialGuessFile*/seq_outputFile, 
-                                          /*solution*/multi_robot_sol,
-                                          DYNOBENCH_BASE,
-                                          clusters.at(i),
-                                          sum_robot_cost);
-              if(!feasible){
-                std::cout << "cluster " << i << " failed with optimization" << std::endl;
+            // save it, needed for moving obstacles
+            std::string tmp_optFile = "/tmp/dynoplan/parallel_opt.yaml";
+            create_dir_if_necessary(tmp_optFile);
+            std::ofstream out(tmp_optFile);
+            export_solutions(tmpNode_parallel.solution, &out);
+            // II. check for collision 
+            std::vector<std::vector<int>> conflict_mtx(num_robots, std::vector<int>(num_robots, 0));
+            countConflicts(tmpNode_parallel.solution, robots, col_mng_robots, robot_objs, conflict_mtx);
+            // get the maximum conflict pair
+            MaxCollidingRobots coll_pairs;
+            int max_element = std::numeric_limits<int>::min();
+            for (size_t i = 0; i < num_robots; i++) {
+                const std::vector<int>& row = conflict_mtx[i];
+                auto max_iter = std::max_element(row.begin(), row.end());
+                if (*max_iter > max_element && max_iter != row.end()) {
+                  size_t max_index = std::distance(row.begin(), max_iter);
+                  coll_pairs.idx_i = i; // row
+                  coll_pairs.idx_j = max_index; // column
+                  coll_pairs.collisions = *max_iter;
+                  max_element = *max_iter; 
+                }
+            }
+            std::cout << "checking the conflict_mtx: " << std::endl;
+            for (size_t i = 0; i < num_robots; i++){
+              for (size_t j = 0; j < num_robots; j++){
+                std::cout << conflict_mtx[i][j] << ", ";
               }
+              std::cout << "\n";
             }
+            std::cout << "checking the maximum colliding pair: " << std::endl;
+            std::cout << coll_pairs.idx_i << " " << coll_pairs.idx_j << " " << coll_pairs.collisions << std::endl;
+            // III. moving obstacles-based optimization
+            MultiRobotTrajectory tmp_multirobot_sol;
+            tmp_multirobot_sol.trajectories.resize(robots.size());
+            std::unordered_set<size_t> cluster {coll_pairs.idx_i, coll_pairs.idx_j};
+            feasible = false;
+            std::string tmp_envFile = "/tmp/dynoplan/tmp_envFile_" + gen_random(6) + ".yaml";
+            get_moving_obstacle(inputFile, /*inputFile*/tmp_optFile, /*outputFile*/tmp_envFile, cluster);
+            feasible = execute_optimizationMetaRobot(/*envFile*/tmp_envFile,
+                                          /*initialGuessFile*/tmp_optFile, 
+                                          /*solution*/tmp_multirobot_sol,
+                                          DYNOBENCH_BASE,
+                                          cluster,
+                                          sum_robot_cost);
+             
             if(feasible){
-              multi_robot_sol.to_yaml_format(optimizationFile.c_str());
+              std::cout << "optimization complete!" << std::endl;
+              tmp_multirobot_sol.to_yaml_format(optimizationFile.c_str());
               return 0;
             }
         }

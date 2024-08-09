@@ -269,8 +269,8 @@ YAML::Node obstacle_to_yaml(const Obstacle& obs) {
     node["type"] = obs.type;
     return node;
 }
-
-void get_artificial_env(const std::string &env_file,
+/// for moving obstacles META-robot
+void get_moving_obstacle(const std::string &env_file,
                         const std::string &initial_guess_file,
                         const std::string &out_file,
                         std::unordered_set<size_t> &cluster){
@@ -344,6 +344,72 @@ void get_artificial_env(const std::string &env_file,
   fout << data;
   fout.close();
 }
+
+// for meta-robot clustering, it counts how many times each robot collide with other members
+void countConflicts(
+    const std::vector<LowLevelPlan<dynobench::Trajectory>>& solution,
+    const std::vector<std::shared_ptr<dynobench::Model_robot>>& all_robots,
+    std::shared_ptr<fcl::BroadPhaseCollisionManagerd> col_mng_robots,
+    std::vector<fcl::CollisionObjectd*>& robot_objs,
+    std::vector<std::vector<int>>& conflict_matrix){
+    size_t max_t = 0;
+    for (const auto& sol : solution){
+      max_t = std::max(max_t, sol.trajectory.states.size() - 1);
+    }
+    Eigen::VectorXd node_state;
+    std::vector<Eigen::VectorXd> node_states;
+    
+    for (size_t t = 0; t <= max_t; ++t){
+        node_states.clear();
+        size_t robot_idx = 0;
+        size_t obj_idx = 0;
+        std::vector<fcl::Transform3d> ts_data;
+        for (auto &robot : all_robots){
+          if (t >= solution[robot_idx].trajectory.states.size()){
+              node_state = solution[robot_idx].trajectory.states.back();    
+          }
+          else {
+              node_state = solution[robot_idx].trajectory.states[t];
+          }
+          node_states.push_back(node_state);
+          std::vector<fcl::Transform3d> tmp_ts(1);
+          if (robot->name == "car_with_trailers") {
+            tmp_ts.resize(2);
+          }
+          robot->transformation_collision_geometries(node_state, tmp_ts);
+          ts_data.insert(ts_data.end(), tmp_ts.begin(), tmp_ts.end());
+          ++robot_idx;
+        }
+        for (size_t i = 0; i < ts_data.size(); i++) {
+          fcl::Transform3d &transform = ts_data[i];
+          robot_objs[obj_idx]->setTranslation(transform.translation());
+          robot_objs[obj_idx]->setRotation(transform.rotation());
+          robot_objs[obj_idx]->computeAABB();
+          ++obj_idx;
+        }
+        col_mng_robots->update(robot_objs);
+        fcl::DefaultCollisionData<double> collision_data;
+        col_mng_robots->collide(&collision_data, fcl::DefaultCollisionFunction<double>);
+        if (collision_data.result.isCollision()) {
+            assert(collision_data.result.numContacts() > 0);
+            for(size_t k = 0; k < collision_data.result.numContacts(); k++){
+              const auto& contact = collision_data.result.getContact(k);
+              auto idx_i = (size_t)contact.o1->getUserData();
+              auto idx_j = (size_t)contact.o2->getUserData();
+              assert(idx_i != idx_j);
+              conflict_matrix[idx_i][idx_j] += 1;
+              conflict_matrix[idx_j][idx_i] += 1;
+              std::cout << "CONFLICT at time " << t << " " << idx_i << " " << idx_j << std::endl;
+            }
+        } 
+    }
+}
+
+struct MaxCollidingRobots {
+  size_t idx_i;
+  size_t idx_j;
+  int collisions;
+};
 
 // #include <boost/heap/d_ary_heap.hpp>
 
