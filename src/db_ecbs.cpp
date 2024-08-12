@@ -71,7 +71,7 @@ int main(int argc, char* argv[]) {
       return 1;
     }
     YAML::Node cfg = YAML::LoadFile(cfgFile);
-    // cfg = cfg["db-ecbs"]["default"];
+    cfg = cfg["db-ecbs"]["default"];
     float alpha = cfg["alpha"].as<float>();
     bool filter_duplicates = cfg["filter_duplicates"].as<bool>();
     fs::path output_path(outputFile);
@@ -452,10 +452,9 @@ int main(int argc, char* argv[]) {
                                               DYNOBENCH_BASE,
                                               cluster,
                                               sum_robot_cost);
-                if(feasible){
-                  std::cout << "optimization complete, counting conflicts" << std::endl;
-                  multirobot_sol.to_yaml_format(optimizationFile.c_str());
-                  return 0;
+                if(!feasible){
+                  std::cout << "meta-robot optimization failed" << std::endl;
+                  // multirobot_sol.to_yaml_format(optimizationFile.c_str());
                 }
               }
             }
