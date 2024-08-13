@@ -464,6 +464,7 @@ int main(int argc, char* argv[]) {
                 }
                 if(!feasible){
                   std::cout << "meta-robot optimization failed" << std::endl;
+                  return 0;
                   // multirobot_sol.to_yaml_format(optimizationFile.c_str());
                 }
               }
