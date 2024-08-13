@@ -409,6 +409,11 @@ int main(int argc, char* argv[]) {
             int max_element; // std::numeric_limits<int>::min();
             MultiRobotTrajectory multirobot_sol = parallel_multirobot_sol;
             while(true){
+              std::cout << "new iteration for opt" << std::endl;
+              std::cout << "checking the size of the multirobot_sol" << std::endl;
+              for (size_t i = 0; i < multirobot_sol.trajectories.size(); i++){
+                  std::cout << "robot " << i << ": " << multirobot_sol.trajectories.at(i).states.size() << std::endl;
+              }
               countConflicts(multirobot_sol.trajectories, robots, col_mng_robots, robot_objs, conflict_mtx);
               // get the maximum conflict pair
               max_element = std::numeric_limits<int>::min();
@@ -428,7 +433,7 @@ int main(int argc, char* argv[]) {
                 multirobot_sol.to_yaml_format(optimizationFile.c_str());
                 return 0;
               }
-              else{ // inter-robot collision exists
+              else { // inter-robot collision exists
                 std::cout << "checking the conflict_mtx: " << std::endl;
                 for (size_t i = 0; i < num_robots; i++){
                   for (size_t j = 0; j < num_robots; j++){
@@ -452,6 +457,11 @@ int main(int argc, char* argv[]) {
                                               DYNOBENCH_BASE,
                                               cluster,
                                               sum_robot_cost);
+
+                std::cout << "checking the size of the multirobot_sol" << std::endl;
+                for (size_t i = 0; i < multirobot_sol.trajectories.size(); i++){
+                    std::cout << "robot " << i << ": " << multirobot_sol.trajectories.at(i).states.size() << std::endl;
+                }
                 if(!feasible){
                   std::cout << "meta-robot optimization failed" << std::endl;
                   // multirobot_sol.to_yaml_format(optimizationFile.c_str());
