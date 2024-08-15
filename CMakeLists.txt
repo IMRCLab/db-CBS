@@ -62,21 +62,21 @@ target_include_directories(main_ompl PUBLIC
 
 ## kcbs
 
-add_executable(main_kcbs
-  src/main_kcbs.cpp
-  # src/robots.cpp
-)
-target_link_libraries(main_kcbs
-  motion_planning_common
-  ${Boost_LIBRARIES}
-  ${YAML_LIBRARIES}
-  ompl
-  ${FCL_LIBRARIES}
-)
-target_include_directories(main_kcbs PUBLIC 
-  ${YAML_INCLUDE_DIRS}
-  ${FCL_INCLUDE_DIRS}
-)
+# add_executable(main_kcbs
+#   src/main_kcbs.cpp
+#   # src/robots.cpp
+# )
+# target_link_libraries(main_kcbs
+#   motion_planning_common
+#   ${Boost_LIBRARIES}
+#   ${YAML_LIBRARIES}
+#   ompl
+#   ${FCL_LIBRARIES}
+# )
+# target_include_directories(main_kcbs PUBLIC 
+#   ${YAML_INCLUDE_DIRS}
+#   ${FCL_INCLUDE_DIRS}
+# )
 
 # ## dbastar
 
@@ -98,21 +98,21 @@ target_include_directories(main_kcbs PUBLIC
 
 ## main_ompl_geometric
 
-add_executable(main_ompl_geometric
-  src/main_ompl_geometric.cpp
+# add_executable(main_ompl_geometric
+#   src/main_ompl_geometric.cpp
  
-)
-target_link_libraries(main_ompl_geometric
-  motion_planning_common
-  ${Boost_LIBRARIES}
-  ${YAML_LIBRARIES}
-  ompl
-  ${FCL_LIBRARIES}
-)
-target_include_directories(main_ompl_geometric PUBLIC 
-  ${YAML_INCLUDE_DIRS}
-  ${FCL_INCLUDE_DIRS}
-)
+# )
+# target_link_libraries(main_ompl_geometric
+#   motion_planning_common
+#   ${Boost_LIBRARIES}
+#   ${YAML_LIBRARIES}
+#   ompl
+#   ${FCL_LIBRARIES}
+# )
+# target_include_directories(main_ompl_geometric PUBLIC 
+#   ${YAML_INCLUDE_DIRS}
+#   ${FCL_INCLUDE_DIRS}
+# )
 ## db_cbs
 
 add_executable(db_cbs
