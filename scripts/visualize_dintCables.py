@@ -58,7 +58,7 @@ class Robot:
         s = np.sin(th1)
         c = np.cos(th1)
         q = np.array([c, s, 0])
-        cableQuat = axis_angle_to_quaternion([0,0,1], th1)
+        cableQuat = tf.quaternion_from_euler(0,0,th1,axes="sxyz")
         c1 = p0 +  0.5*self.l1*q
         return c1, cableQuat
 
@@ -69,7 +69,7 @@ class Robot:
         s = np.sin(th2)
         c = np.cos(th2)
         q = np.array([c, s, 0])
-        cableQuat = axis_angle_to_quaternion([0,0,1], th2)
+        cableQuat = tf.quaternion_from_euler(0,0,th2,axes="sxyz")
         c2 = p0 +  0.5*self.l2*q
         return c2, cableQuat
 
@@ -103,18 +103,18 @@ class Visualizer:
         self.obstacles = env["environment"]["obstacles"]
         self.collisionPoints = collisionPoints
         # self._setObjects()
-        # self.updateVis(0 ,"start")
+        self.updateVis(0 ,"start")
         self.updateVis(0 ,"state")
-        # self.updateVis(-1 ,"goal")
+        self.updateVis(self.robot.states.shape[0]-1 ,"goal")
 
     def updateVis(self, state_id, prefix: str = "state", frame=None):
         quat_id = np.array([1,0,0,0])
         if frame is None:
             frame = self.vis
             frame[prefix+'_robot1'].set_object(g.Mesh(
-                g.Sphere(self.robot.ri), g.MeshLambertMaterial(DnametoColor.get('red', 0xff11dd), opacity=0.1)))        
+                g.Sphere(self.robot.ri), g.MeshLambertMaterial(DnametoColor.get('red', 0xff11dd), opacity=0.5)))        
             self.vis[prefix+'_robot2'].set_object(g.Mesh(
-                g.Sphere(self.robot.ri), g.MeshLambertMaterial(DnametoColor.get('green', 0xff11dd), opacity=0.1)))        
+                g.Sphere(self.robot.ri), g.MeshLambertMaterial(DnametoColor.get('green', 0xff11dd), opacity=0.5)))        
             self.vis[prefix+'_cable1'].set_object(
                 g.Box([self.robot.l1, self.robot.rp, self.robot.rp]), g.MeshLambertMaterial(DnametoColor.get('red', 0xff11dd)))        
             self.vis[prefix+'_cable2'].set_object(
@@ -126,7 +126,7 @@ class Visualizer:
             if len(self.collisionPoints) > 0:
                 for k,collisionPoint in enumerate(self.collisionPoints):
                     frame[str(k)+"_point"].set_object(g.Mesh(
-                        g.Sphere(0.01), g.MeshLambertMaterial(point_colors[k])))        
+                        g.Sphere(0.05), g.MeshLambertMaterial(point_colors[k])))        
 
 
             if self.obstacles is not None: 
@@ -175,7 +175,6 @@ class Visualizer:
         
 
         if len(self.collisionPoints) > 0:
-            print("not zero")
             for k,collisionPoint in enumerate(self.collisionPoints):
                 frame[str(k)+"_point"].set_transform(
             tf.translation_matrix(collisionPoint).dot(
@@ -238,5 +237,8 @@ def dintegratorCables_meschatViewer(collisionPoints=[]):
     else:
         print('no results')
 
-if __name__ == "__main__":
+def main():
   dintegratorCables_meschatViewer()  
+
+if __name__ == "__main__":
+    main()
