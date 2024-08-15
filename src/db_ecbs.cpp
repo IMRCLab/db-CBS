@@ -400,7 +400,10 @@ int main(int argc, char* argv[]) {
                 if(!tmp_opti_out.success)
                   std::cout << "Priority-based Optimization failed for robot: " << i << std::endl;
               }
-              return 0;
+              std::cout << "Priority-based optimization is done." << std::endl;
+              create_dir_if_necessary(optimizationFile);
+              std::ofstream out_opt(optimizationFile);
+              export_solutions(tmpNode.solution, &out_opt);
             }
         }
         ++expands;
