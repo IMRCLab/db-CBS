@@ -208,7 +208,7 @@ int main(int argc, char* argv[]){
     }
     std::cout << envFile << std::endl;
     // output_to_moving_obs(envFile, inputFile);
-    std::unordered_set<size_t> cluster_test = {2,3};
+    std::unordered_set<size_t> cluster_test = {23,25};
     get_artificial_env(envFile, inputFile, outputFile, cluster_test);
 
     return 0;

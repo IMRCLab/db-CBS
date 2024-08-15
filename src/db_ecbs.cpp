@@ -376,7 +376,7 @@ int main(int argc, char* argv[]) {
               pr_opt_traj.solver_id = 0;
               pr_opt_traj.control_bounds = 1;
               pr_opt_traj.use_warmstart = 1;
-              pr_opt_traj.weight_goal = 80;
+              pr_opt_traj.weight_goal = 400;
               pr_opt_traj.max_iter = 50;
               pr_opt_traj.soft_control_bounds = true; 
               std::unordered_set<size_t> other_robots; 

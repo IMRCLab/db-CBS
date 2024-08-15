@@ -350,7 +350,7 @@ void get_moving_obstacles(const std::string &env_file,
 void get_desired_moving_obstacles(const std::string &env_file,
                         const std::string &out_file,
                         dynobench::Trajectory init_guess,
-                        std::vector<LowLevelPlan<dynobench::Trajectory>>& tmp_sol,
+                        std::vector<LowLevelPlan<dynobench::Trajectory>>& tmp_sol, // optimized solution of neighbors = moving obstacles
                         size_t robot_idx,
                         std::unordered_set<size_t> &other_cluster){
   // custom params for the obstacle
@@ -373,7 +373,7 @@ void get_desired_moving_obstacles(const std::string &env_file,
  
   size_t max_t = 0;
   size_t index = 0;
-  if (num_robots < 1){
+  if (num_robots < 1){ // when there is no neighbors
     data["environment"]["moving_obstacles"] = YAML::Node(YAML::NodeType::Sequence);
     std::ofstream fout(out_file);
     fout << data;
