@@ -88,7 +88,16 @@ void print_solution(const std::vector<LowLevelPlan<AStarNode*,ob::State*, oc::Co
         }
     }
 }
-
+void export_solution_p0(const std::vector<Eigen::VectorXf> &p0_opt, std::string outputFile_payload) { 
+    
+    std::ofstream out(outputFile_payload);
+    out << "payload:" << std::endl;
+    for (const auto& p0 : p0_opt){ 
+        out << "    - [";
+        out << p0(0) << ", " << p0(1) << "]";      
+        out << std::endl;
+        }
+}
 // export path to .yaml file
 void export_solutions(const std::vector<LowLevelPlan<AStarNode*,ob::State*, oc::Control*>>& solution, 
                         const std::vector<std::shared_ptr<Robot>>& robots, std::string outputFile){
@@ -214,7 +223,8 @@ bool getEarliestConflict(
     const std::vector<std::shared_ptr<Robot>>& all_robots,
     std::shared_ptr<fcl::BroadPhaseCollisionManagerf> col_mng_robots,
     const std::vector<fcl::CollisionObjectf*>& col_mng_objs,
-    Conflict& early_conflict)
+    Conflict& early_conflict,
+    std::vector<Eigen::VectorXf> & p0_sol)
 {
     size_t max_t = 0;
     for (const auto& sol : solution){
@@ -223,7 +233,9 @@ bool getEarliestConflict(
 
     ob::State* node_state;
     std::vector<ob::State*> node_states;
-    
+    Eigen::VectorXf p0_opt;
+    std::vector<Eigen::VectorXf> p0_tmp;
+    Eigen::VectorXf p0_init_guess = create_vector({-1.0, 0.0});
     for (size_t t = 0; t <= max_t; ++t){
         // std::cout << "TIMESTAMP: " << t << std::endl;
         node_states.clear();
@@ -271,37 +283,40 @@ bool getEarliestConflict(
 
         Eigen::Vector3f robot1_pos = col_mng_objs[0]->getTranslation();
         Eigen::Vector3f robot2_pos = col_mng_objs[1]->getTranslation();
-        float distance = (robot1_pos - robot2_pos).norm();
         float l = 0.5;
         
         size_t dim = 2;
         std::vector<double> li = {0.5, 0.5};
-        Eigen::VectorXf p0_init_guess = create_vector({0.0, 0.0});
-        double mu = 0.0;
+        double mu = 0.1;
 
         std::vector<Eigen::VectorXf> pi = {
             create_vector({robot1_pos(0), robot1_pos(1)}),
             create_vector({robot2_pos(0), robot2_pos(1)})
         };        
-        Eigen::VectorXf p0_opt;
         cost_data data {pi, li, mu, p0_init_guess}; // prepare the data for the opt
         optimizePayload(p0_opt, dim, p0_init_guess, data);
+        p0_init_guess << p0_opt(0), p0_opt(1);
 
-        std::cout << "r1:" << robot1_pos(0) << "," << robot1_pos(1) << std::endl; 
-        std::cout << "r2:" << robot2_pos(0) << "," << robot2_pos(1) << std::endl; 
-        std::cout << "p0_opt:" << p0_opt <<  std::endl;
-        std::cout << "\n" << std::endl; 
+        for (const auto& p : pi) {
+            float distance = (p - p0_opt).norm();
+            // std::cout<< "distance between: [" << p(0)<<","  << p(1) << "] and "<< "[" << p0_opt(0)<<","  << p0_opt(1) << "] = " << distance << std::endl;
+            if (abs(distance - l) >= 0.1) { // assumed 2 robots
+                // std::cout<< "less than 0.15: " << distance<<std::endl;
 
-        if (abs(distance - l) >= 0.2) { // assumed 2 robots
-            early_conflict.time = t * all_robots[0]->dt();
-            early_conflict.robot_idx_i = 0; 
-            early_conflict.robot_idx_j = 1;
-            assert(early_conflict.robot_idx_i != early_conflict.robot_idx_j);
-            early_conflict.robot_state_i = node_states[early_conflict.robot_idx_i];
-            early_conflict.robot_state_j = node_states[early_conflict.robot_idx_j];
-            return true;
+                early_conflict.time = t * all_robots[0]->dt();
+                early_conflict.robot_idx_i = 0; 
+                early_conflict.robot_idx_j = 1;
+                assert(early_conflict.robot_idx_i != early_conflict.robot_idx_j);
+                early_conflict.robot_state_i = node_states[early_conflict.robot_idx_i];
+                early_conflict.robot_state_j = node_states[early_conflict.robot_idx_j];
+                return true;
+            }
         }
-
+    
+    p0_tmp.push_back(p0_opt);
+    }
+    for (const auto& p0i : p0_tmp) {
+        p0_sol.push_back(p0i);
     }
     return false;
 }
@@ -448,6 +463,7 @@ int main(int argc, char* argv[]) {
     YAML::Node env = YAML::LoadFile(inputFile);
     std::vector<fcl::CollisionObjectf *> obstacles;
     std::vector<std::vector<fcl::Vector3f>> positions;
+    std::vector<Eigen::VectorXf> p0_sol;
     for (const auto &obs : env["environment"]["obstacles"])
     {
         if (obs["type"].as<std::string>() == "box"){
@@ -647,12 +663,14 @@ int main(int argc, char* argv[]) {
             HighLevelNode P = open.top();
             open.pop();
             Conflict inter_robot_conflict;
-            if (!getEarliestConflict(P.solution, robots, col_mng_robots, col_mng_objs, inter_robot_conflict)) {
+            if (!getEarliestConflict(P.solution, robots, col_mng_robots, col_mng_objs, inter_robot_conflict, p0_sol)) {
                 solved_db = true;
                 std::cout << "Final solution! cost: " << P.cost << std::endl;
                 export_solutions(P.solution, robots, outputFile);
+                std::string outputFile_payload =  + "../window_payload.yaml";
+                export_solution_p0(p0_sol, outputFile_payload);
                 export_joint_solutions(P.solution, robots, jointFile);
-
+            
                 std::cout << "warning: using new multirobot optimization" << std::endl;
             
                 const bool sum_robot_cost = true;
