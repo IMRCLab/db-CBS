@@ -380,11 +380,12 @@ int main(int argc, char* argv[]) {
             std::vector<double> min_ = env["environment"]["min"].as<std::vector<double>>();
             std::vector<double> max_ = env["environment"]["max"].as<std::vector<double>>();
             Options_trajopt options_trajopt;
-            options_trajopt.solver_id = 0; // for moving obstacles later
+            options_trajopt.solver_id = 0; 
             options_trajopt.control_bounds = 1;
             options_trajopt.use_warmstart = 1;
-            options_trajopt.weight_goal = 80;
+            options_trajopt.weight_goal = 100;
             options_trajopt.max_iter = 50;
+            // options_trajopt.collision_weight = 0; 
             options_trajopt.soft_control_bounds = true; 
             MultiRobotTrajectory parallel_multirobot_sol;
             parallel_multirobot_sol.trajectories.resize(num_robots);
@@ -403,11 +404,18 @@ int main(int argc, char* argv[]) {
               if(!opti_out.success) 
                 std::cout << "failure of parallel/independent optimization for robot " << i << std::endl;
             }
+            // parallel_multirobot_sol.to_yaml_format("/tmp/dynoplan/parallel_multirobot_sol.yaml");
             // II. check for collision 
             std::vector<std::vector<int>> conflict_mtx(num_robots, std::vector<int>(num_robots, 0));
             MaxCollidingRobots coll_pairs;
             int max_element; // std::numeric_limits<int>::min();
             MultiRobotTrajectory multirobot_sol = parallel_multirobot_sol;
+            // initial cluster for each robot
+            // std::vector<std::shared_ptr<int>> robot_cluster_idx(num_robots, nullptr); // shows the cluster for each robot
+            std::vector<int> robot_cluster_idx(num_robots, -1); // shows the cluster for each robot
+            std::vector<std::unordered_set<size_t>> clusters; // keep updated with each iteration
+            std::unordered_set<size_t> cluster; // current cluster that has been updated based on collision
+            size_t clusters_index; // point to the current/updated clusters element to pass to the optimization
             while(true){
               std::cout << "new iteration for opt" << std::endl;
               std::cout << "checking the size of the multirobot_sol" << std::endl;
@@ -444,8 +452,39 @@ int main(int argc, char* argv[]) {
                 }
                 std::cout << "checking the maximum colliding pair: " << std::endl;
                 std::cout << coll_pairs.idx_i << " " << coll_pairs.idx_j << " " << coll_pairs.collisions << std::endl;
-                // III. moving obstacles-based optimization
-                std::unordered_set<size_t> cluster {coll_pairs.idx_i, coll_pairs.idx_j};
+                // III. check/update robot's cluster idx
+                // pair both doesn't belong to any cluster
+                if(robot_cluster_idx.at(coll_pairs.idx_i) < 0 && robot_cluster_idx.at(coll_pairs.idx_j) < 0){
+                  clusters.push_back({coll_pairs.idx_i, coll_pairs.idx_j});
+                  clusters_index = clusters.size() - 1;
+                  cluster = clusters.at(clusters_index);
+                }
+                // only one of them doesn't belong to any cluster
+                else if (robot_cluster_idx.at(coll_pairs.idx_i) < 0 || robot_cluster_idx.at(coll_pairs.idx_j) < 0){
+                  // figure out which cluster belongs the one with !nullptr, because the one with nullptr will get merged here
+                  clusters_index = robot_cluster_idx.at(coll_pairs.idx_i) >= 0 ? robot_cluster_idx.at(coll_pairs.idx_i) : robot_cluster_idx.at(coll_pairs.idx_j); 
+                  // add the one with nullptr to the existing cluster
+                  clusters.at(clusters_index).insert(robot_cluster_idx.at(coll_pairs.idx_i) < 0 ? robot_cluster_idx.at(coll_pairs.idx_i) : robot_cluster_idx.at(coll_pairs.idx_j));
+                  cluster = clusters.at(clusters_index);
+                }
+                // both robots belong to some cluster, updating the first one/idx (randomly chosen)
+                else {
+                  clusters.at(robot_cluster_idx.at(coll_pairs.idx_i)).insert(clusters.at(robot_cluster_idx.at(coll_pairs.idx_j)).begin(), 
+                                                    clusters.at(robot_cluster_idx.at(coll_pairs.idx_j)).end());
+                  clusters_index = robot_cluster_idx.at(coll_pairs.idx_i); // merged into this
+                  cluster = clusters.at(clusters_index);
+                }
+                // update robot's cluster idx
+                robot_cluster_idx.at(coll_pairs.idx_i) = clusters_index;
+                robot_cluster_idx.at(coll_pairs.idx_j) = clusters_index;
+                std::cout << "Clusters: " << std::endl;
+                for (auto &c : clusters){
+                  std::cout << "cluster: " << std::endl;
+                  for (auto & cc : c){
+                    std::cout << cc << std::endl;
+                  }
+                }
+                // std::unordered_set<size_t> cluster {coll_pairs.idx_i, coll_pairs.idx_j};
                 feasible = false;
                 std::string tmp_envFile = "/tmp/dynoplan/tmp_envFile_" + gen_random(6) + ".yaml";
                 // moving obstacles = non-cluster robots with optimized solution
@@ -463,6 +502,7 @@ int main(int argc, char* argv[]) {
                     std::cout << "robot " << i << ": " << multirobot_sol.trajectories.at(i).states.size() << std::endl;
                 }
                 if(!feasible){
+                  // multirobot_sol.to_yaml_format("/tmp/dynoplan/failed_multirobot_sol.yaml");
                   std::cout << "meta-robot optimization failed" << std::endl;
                   return 0;
                   // multirobot_sol.to_yaml_format(optimizationFile.c_str());
