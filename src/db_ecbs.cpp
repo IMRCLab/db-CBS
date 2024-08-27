@@ -421,6 +421,7 @@ int main(int argc, char* argv[]) {
                 std::cout << "conflict: " << f.conflict << std::endl;
               }
               HighLevelNodeOptimization N = open_opt.top();
+              std::cout << "best (Opt) node N.id: " << N.id << " N.conflicts: " << N.conflict << std::endl;
               open_opt.pop();
               if(N.conflict == 0){
                 std::cout << "No inter-robot conflict" << std::endl;
@@ -436,7 +437,10 @@ int main(int argc, char* argv[]) {
                     HighLevelNodeOptimization newNode = N;
                     newNode.id = opt_id;
                     std::cout << "(Opt) Node ID is " << opt_id << std::endl;
-                    newNode.conflict_matrix.clear();
+                    // Zeroing out all elements
+                    std::for_each(newNode.conflict_matrix.begin(), newNode.conflict_matrix.end(), [](std::vector<int>& row) {
+                        std::fill(row.begin(), row.end(), 0);
+                    });
                     // check if collision between new pair of robots
                     if(newNode.cluster.find(i) == newNode.cluster.end() && newNode.cluster.find(j) == newNode.cluster.end()){
                       newNode.cluster = {i, j};
@@ -445,6 +449,10 @@ int main(int argc, char* argv[]) {
                     else if(newNode.cluster.find(i) != newNode.cluster.end() || newNode.cluster.find(j) != newNode.cluster.end()){
                       size_t c = newNode.cluster.find(i) == newNode.cluster.end() ? i : j;
                       newNode.cluster.insert(c); // add new element
+                    }
+                    std::cout << "(Opt) new Node cluster: " << std::endl;
+                    for(auto &a : newNode.cluster){
+                      std::cout << a << std::endl;
                     }
                     // get the environment, moving obstacles = non-cluster robots with soft-constrained optimized
                     std::string tmp_envFile = "/tmp/dynoplan/tmp_envFile_" + gen_random(6) + ".yaml";
@@ -461,6 +469,14 @@ int main(int argc, char* argv[]) {
                       // update the cost, max conflict in these trajectories
                       newNode.cost = newNode.multirobot_trajectory.get_cost();
                       newNode.conflict = getConflicts(newNode.multirobot_trajectory.trajectories, robots, col_mng_robots, robot_objs, newNode.conflict_matrix);
+                      // std::cout << "checking the conflict_mtx of (Opt) newNode: " << std::endl;
+                      // for (size_t i = 0; i < num_robots; i++){
+                      //   for (size_t j = 0; j < num_robots; j++){
+                      //     std::cout << newNode.conflict_matrix[i][j] << ", ";
+                      //   }
+                      //   std::cout << "\n";
+                      // }
+                      std::cout << "(Opt) new Node conflict: " << newNode.conflict << std::endl;
                       auto handle = open_opt.push(newNode);
                       (*handle).handle = handle;
                     }

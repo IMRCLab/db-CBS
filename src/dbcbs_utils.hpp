@@ -111,7 +111,7 @@ struct HighLevelNodeOptimization {
         handle;
 
     bool operator<(const HighLevelNodeOptimization& n) const {
-      return conflict > n.conflict;
+      return conflict > n.conflict; // min
     }
 };
 
@@ -387,7 +387,6 @@ int getConflicts(
     }
     Eigen::VectorXd node_state;
     std::vector<Eigen::VectorXd> node_states;
-    int max_collision = 0;
     for (size_t t = 0; t <= max_t; ++t){
         node_states.clear();
         size_t robot_idx = 0;
@@ -427,17 +426,21 @@ int getConflicts(
               auto idx_j = (size_t)contact.o2->getUserData();
               assert(idx_i != idx_j);
               // get lower-triangle matrix
-              if(idx_i >= idx_j){
+              if(idx_i >= idx_j)
                 conflict_matrix[idx_i][idx_j] += 1;
-                max_collision = std::max(max_collision, conflict_matrix[idx_i][idx_j]);
-              }
-              else {
+              else
                 conflict_matrix[idx_j][idx_i] += 1;
-                max_collision = std::max(max_collision, conflict_matrix[idx_j][idx_i]);
-              }
-              std::cout << "(Opt) CONFLICT at time " << t << " " << idx_i << " " << idx_j << std::endl;
+              // std::cout << "(Opt) CONFLICT at time " << t << " " << idx_i << " " << idx_j << std::endl;
             }
         } 
+    }
+    // get the max element
+    int max_collision = 0;
+    for (const auto& cft : conflict_matrix) {
+        int localMax = *std::max_element(cft.begin(), cft.end());
+        if (localMax > max_collision) {
+            max_collision = localMax;
+        }
     }
     return max_collision;
 }
