@@ -89,6 +89,32 @@ typedef boost::heap::d_ary_heap<
       boost::heap::compare<compareFocalHeuristic>, boost::heap::mutable_<true>>
       focalset_t;
 
+// for cbs-style optimization
+struct HighLevelNodeOptimization {
+    // std::vector<dynobench::Trajectory> trajectories;
+    MultiRobotTrajectory multirobot_trajectory;
+    std::unordered_set<size_t> cluster; // robot idx for the joint optimization
+    std::vector<std::vector<int>> conflict_matrix;
+    double cost; // tie-break if conflicts are equal
+    int conflict;
+    int id;
+
+    HighLevelNodeOptimization(int rows, int cols)
+        : conflict_matrix(rows, std::vector<int>(cols, 0)),
+          cost(0.0),
+          conflict(0),
+          id(0) {
+    }
+
+    typename boost::heap::d_ary_heap<HighLevelNodeOptimization, boost::heap::arity<2>,
+                                     boost::heap::mutable_<true> >::handle_type
+        handle;
+
+    bool operator<(const HighLevelNodeOptimization& n) const {
+      return conflict > n.conflict;
+    }
+};
+
 bool getEarliestConflict(
     const std::vector<LowLevelPlan<dynobench::Trajectory>>& solution,
     const std::vector<std::shared_ptr<dynobench::Model_robot>>& all_robots,
@@ -347,7 +373,8 @@ void get_moving_obstacle(const std::string &env_file,
 }
 
 // for meta-robot clustering, it counts how many times each robot collide with other members
-void countConflicts(
+// returns the maximum collision
+int getConflicts(
     // const std::vector<LowLevelPlan<dynobench::Trajectory>>& solution,
     const std::vector<dynobench::Trajectory>& multi_robot_trajectories,
     const std::vector<std::shared_ptr<dynobench::Model_robot>>& all_robots,
@@ -360,7 +387,7 @@ void countConflicts(
     }
     Eigen::VectorXd node_state;
     std::vector<Eigen::VectorXd> node_states;
-    
+    int max_collision = 0;
     for (size_t t = 0; t <= max_t; ++t){
         node_states.clear();
         size_t robot_idx = 0;
@@ -399,12 +426,20 @@ void countConflicts(
               auto idx_i = (size_t)contact.o1->getUserData();
               auto idx_j = (size_t)contact.o2->getUserData();
               assert(idx_i != idx_j);
-              conflict_matrix[idx_i][idx_j] += 1;
-              conflict_matrix[idx_j][idx_i] += 1;
+              // get lower-triangle matrix
+              if(idx_i >= idx_j){
+                conflict_matrix[idx_i][idx_j] += 1;
+                max_collision = std::max(max_collision, conflict_matrix[idx_i][idx_j]);
+              }
+              else {
+                conflict_matrix[idx_j][idx_i] += 1;
+                max_collision = std::max(max_collision, conflict_matrix[idx_j][idx_i]);
+              }
               std::cout << "(Opt) CONFLICT at time " << t << " " << idx_i << " " << idx_j << std::endl;
             }
         } 
     }
+    return max_collision;
 }
 
 struct MaxCollidingRobots {
