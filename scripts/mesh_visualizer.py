@@ -35,7 +35,7 @@ def visualize(env_file, result_file, filename_video=None):
       obs_type = obs["type"]
       if (obs_type == 'octomap'):
          octomap_stl = obs["octomap_stl"]
-         vis[f"Obstacle{k}"].set_object(g.StlMeshGeometry.from_file(octomap_stl), g.MeshLambertMaterial(opacity=0.4, color=0xFFFFFF)) 
+         vis[f"Obstacle{k}"].set_object(g.StlMeshGeometry.from_file(octomap_stl), g.MeshLambertMaterial(opacity=0.8, color=0xFFFFFF)) 
       elif (obs_type == 'box'):
         vis[f"Obstacle{k}"].set_object(g.Mesh(g.Box(size)))
         vis[f"Obstacle{k}"].set_transform(tf.translation_matrix(center))

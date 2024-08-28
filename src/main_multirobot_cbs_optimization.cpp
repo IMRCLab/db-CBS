@@ -142,6 +142,7 @@ int main(int argc, char *argv[]) {
           }
           // get the environment, moving obstacles = non-cluster robots with soft-constrained optimized
           std::string tmp_envFile = "/tmp/dynoplan/tmp_envFile_" + gen_random(6) + ".yaml";
+          std::cout << "tmp envFile: " << tmp_envFile << std::endl;
           get_moving_obstacle(envFile, /*initGuess*/newNode.multirobot_trajectory, /*outputFile*/tmp_envFile, newNode.cluster);
           // run the optimization for the cluster
           feasible = execute_optimizationMetaRobot(/*envFile*/tmp_envFile,
