@@ -479,6 +479,8 @@ int main(int argc, char* argv[]) {
                 }
               } 
             } // while loop for the optimization
+            std::cout << "Optimization infeasible, open set is empty" << std::endl;
+            return 0;
         }
         ++expands;
         if (expands % 100 == 0) {

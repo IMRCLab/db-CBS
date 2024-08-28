@@ -328,22 +328,22 @@ void get_moving_obstacle(const std::string &env_file,
     
   }
   // static obstacles
-  for (const auto &obs : env["environment"]["obstacles"]) {
-    YAML::Node obs_node;
-    std::string octomap_filename;
-    if (obs["type"].as<std::string>() == "octomap") {
-      obs_node["center"] = YAML::Node(YAML::NodeType::Sequence);  // Empty list
-      obs_node["size"] = YAML::Node(YAML::NodeType::Sequence);  // Empty list
-      obs_node["octomap_file"] = obs["octomap_file"];
-      obs_node["type"] = "octomap";
-    }
-    else {
-      obs_node["center"] = obs["center"];
-      obs_node["size"] = obs["size"];
-      obs_node["type"] = obs["type"];
-    } 
-    data["environment"]["static_obstacles"].push_back(obs_node);
-  }
+  // for (const auto &obs : env["environment"]["obstacles"]) {
+  //   YAML::Node obs_node;
+  //   std::string octomap_filename;
+  //   if (obs["type"].as<std::string>() == "octomap") {
+  //     obs_node["center"] = YAML::Node(YAML::NodeType::Sequence);  // Empty list
+  //     obs_node["size"] = YAML::Node(YAML::NodeType::Sequence);  // Empty list
+  //     obs_node["octomap_file"] = obs["octomap_file"];
+  //     obs_node["type"] = "octomap";
+  //   }
+  //   else {
+  //     obs_node["center"] = obs["center"];
+  //     obs_node["size"] = obs["size"];
+  //     obs_node["type"] = obs["type"];
+  //   } 
+  //   data["environment"]["static_obstacles"].push_back(obs_node);
+  // }
   // MultiRobotTrajectory init_guess_multi_robot;
   // init_guess_multi_robot.read_from_yaml(initial_guess_file.c_str());
   size_t max_t = 0;
