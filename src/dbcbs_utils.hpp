@@ -285,6 +285,7 @@ struct Obstacle {
     std::vector<double> center;
     std::vector<double> size;
     std::string type;
+    std::string octomap_file = "";
 };
 
 // Convert Obstacle struct to YAML node
@@ -293,6 +294,7 @@ YAML::Node obstacle_to_yaml(const Obstacle& obs) {
     node["center"] = obs.center;
     node["size"] = obs.size;
     node["type"] = obs.type;
+    node["octomap_file"] = obs.octomap_file;
     return node;
 }
 /// for moving obstacles META-robot
@@ -355,6 +357,18 @@ void get_moving_obstacle(const std::string &env_file,
         obs.size = {size};
         obs.type = "sphere";
         moving_obs_per_time.push_back({obs});
+      }
+    }
+    // static obstacles
+    for (const auto &obs : env["environment"]["obstacles"]) {
+      Obstacle octomap_obs;
+      std::string octomap_filename;
+      if (obs["type"].as<std::string>() == "octomap") {
+        octomap_obs.center = {};
+        octomap_obs.size = {};
+        octomap_obs.octomap_file = obs["octomap_file"].as<std::string>();
+        octomap_obs.type = "octomap";
+        moving_obs_per_time.push_back({octomap_obs});
       }
     }
     moving_obs.push_back(moving_obs_per_time);

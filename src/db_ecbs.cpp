@@ -71,7 +71,7 @@ int main(int argc, char* argv[]) {
       return 1;
     }
     YAML::Node cfg = YAML::LoadFile(cfgFile);
-    // cfg = cfg["db-ecbs"]["default"];
+    cfg = cfg["db-ecbs"]["default"];
     float alpha = cfg["alpha"].as<float>();
     bool filter_duplicates = cfg["filter_duplicates"].as<bool>();
     fs::path output_path(outputFile);
@@ -108,16 +108,6 @@ int main(int argc, char* argv[]) {
     std::vector<std::shared_ptr<fcl::CollisionGeometryd>> collision_geometries;
     const auto &env_min = env["environment"]["min"];
     const auto &env_max = env["environment"]["max"];
-    ob::RealVectorBounds position_bounds(env_min.size());
-    for (size_t i = 0; i < env_min.size(); ++i) {
-        position_bounds.setLow(i, env_min[i].as<double>());
-        position_bounds.setHigh(i, env_max[i].as<double>());
-    }
-
-    fcl::AABBf workspace_aabb(
-        fcl::Vector3f(env_min[0].as<double>(),
-        env_min[1].as<double>(),-1),
-        fcl::Vector3f(env_max[0].as<double>(), env_max[1].as<double>(), 1));
 
     std::vector<std::shared_ptr<dynobench::Model_robot>> robots;
     // std::vector<dynobench::Trajectory> ll_trajs;
@@ -387,23 +377,27 @@ int main(int argc, char* argv[]) {
             options_trajopt.soft_control_bounds = true; 
             MultiRobotTrajectory parallel_multirobot_sol;
             parallel_multirobot_sol.trajectories.resize(num_robots);
+            // since homogen. robots hard-coded for single robot dynamics, can be fixed by creating new 
+            Result_opti opti_out;
+            dynobench::Problem tmp_problem;
+            tmp_problem.models_base_path = problem.models_base_path;
+            tmp_problem.robotType = problem.robotTypes.at(0);
+            tmp_problem.p_lb = problem.p_lb;
+            tmp_problem.p_ub = problem.p_ub;
+            tmp_problem.robotTypes.push_back(problem.robotTypes.at(0)); 
+            tmp_problem.obstacles = problem.obstacles;
             // TO DO: enable spft constraints, have initial guess like optimization
             for (size_t i = 0; i < num_robots; i++){
-              Result_opti opti_out;
-              dynobench::Problem tmp_problem;
-              tmp_problem.models_base_path = DYNOBENCH_BASE "models/";
-              tmp_problem.robotType = problem.robotTypes.at(i);
-              tmp_problem.robotTypes.push_back(tmp_problem.robotType); 
               tmp_problem.goal = problem.goals[i];
               tmp_problem.start = problem.starts[i];
-              tmp_problem.p_lb = Eigen::Map<Eigen::VectorXd>(&min_.at(0), min_.size());
-              tmp_problem.p_ub = Eigen::Map<Eigen::VectorXd>(&max_.at(0), max_.size());
+              opti_out.success = false;
               trajectory_optimization(tmp_problem, P.solution.at(i).trajectory, options_trajopt, parallel_multirobot_sol.trajectories.at(i),
                           opti_out);
               if(!opti_out.success) 
                 std::cout << "failure of parallel/independent optimization for robot " << i << std::endl;
             }
-            // parallel_multirobot_sol.to_yaml_format("/tmp/dynoplan/parallel_multirobot_sol.yaml");
+            parallel_multirobot_sol.to_yaml_format("/tmp/dynoplan/parallel_multirobot_sol.yaml");
+            // return 0;
             // CBS-style optimization
             typename boost::heap::d_ary_heap<HighLevelNodeOptimization, boost::heap::arity<2>,
                                         boost::heap::mutable_<true> > open_opt;
