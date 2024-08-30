@@ -304,7 +304,7 @@ void get_moving_obstacle(const std::string &env_file,
                         const std::string &out_file,
                         std::unordered_set<size_t> &cluster){
   // custom params for the obstacle
-  double size = 0.5; // maybe change to the robot's radius ?
+  double size = 0.1; // maybe change to the robot's radius ?
   std::string type = "sphere";
   YAML::Node env = YAML::LoadFile(env_file);
   const auto &env_min = env["environment"]["min"];
@@ -328,22 +328,22 @@ void get_moving_obstacle(const std::string &env_file,
     
   }
   // static obstacles
-  // for (const auto &obs : env["environment"]["obstacles"]) {
-  //   YAML::Node obs_node;
-  //   std::string octomap_filename;
-  //   if (obs["type"].as<std::string>() == "octomap") {
-  //     obs_node["center"] = YAML::Node(YAML::NodeType::Sequence);  // Empty list
-  //     obs_node["size"] = YAML::Node(YAML::NodeType::Sequence);  // Empty list
-  //     obs_node["octomap_file"] = obs["octomap_file"];
-  //     obs_node["type"] = "octomap";
-  //   }
-  //   else {
-  //     obs_node["center"] = obs["center"];
-  //     obs_node["size"] = obs["size"];
-  //     obs_node["type"] = obs["type"];
-  //   } 
-  //   data["environment"]["static_obstacles"].push_back(obs_node);
-  // }
+  for (const auto &obs : env["environment"]["obstacles"]) {
+    YAML::Node obs_node;
+    std::string octomap_filename;
+    if (obs["type"].as<std::string>() == "octomap") {
+      obs_node["center"] = YAML::Node(YAML::NodeType::Sequence);  // Empty list
+      obs_node["size"] = YAML::Node(YAML::NodeType::Sequence);  // Empty list
+      obs_node["octomap_file"] = obs["octomap_file"];
+      obs_node["type"] = "octomap";
+    }
+    else {
+      obs_node["center"] = obs["center"];
+      obs_node["size"] = obs["size"];
+      obs_node["type"] = obs["type"];
+    } 
+    data["environment"]["static_obstacles"].push_back(obs_node);
+  }
   // MultiRobotTrajectory init_guess_multi_robot;
   // init_guess_multi_robot.read_from_yaml(initial_guess_file.c_str());
   size_t max_t = 0;
