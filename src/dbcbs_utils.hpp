@@ -111,7 +111,8 @@ struct HighLevelNodeOptimization {
         handle;
 
     bool operator<(const HighLevelNodeOptimization& n) const {
-      return conflict > n.conflict; // min
+      // return conflict > n.conflict; // min
+      return conflict < n.conflict; // max
     }
 };
 

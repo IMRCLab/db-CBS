@@ -8,13 +8,26 @@
             "name": "My Debug Launch",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/buildDebug/db_cbs",
+            // "program": "${workspaceFolder}/buildDebug/db_ecbs",
+            // "args": [
+            //     "-i", "/home/akmarak-laptop/IMRC/db-CBS/example/swap4_drone.yaml",
+            //     "-o", "/home/akmarak-laptop/IMRC/db-CBS/result/result_dbcbs.yaml",
+            //     "--optimization", "/home/akmarak-laptop/IMRC/db-CBS/result/result_dbcbs_opt.yaml",
+            //     "--cfg", "/home/akmarak-laptop/IMRC/db-CBS/example/algorithms.yaml",
+            //     "-t", 1000000
+
+            // ],
+            // "cwd": "${workspaceFolder}/buildDebug",
+            "program": "${workspaceFolder}/dynoplan/build/main_multirobot_optimization",
             "args": [
-                // "-i", "/home/akmarak-laptop/IMRC/db-CBS/example/parallelpark.yaml",
-                // "-m", "/home/akmarak-laptop/IMRC/db-CBS/results/dbg/motions.msgpack",
-                // "-o", "/home/akmarak-laptop/IMRC/db-CBS/example/result/result_dbcbs.yaml"
+                "-env", "/home/akmarak-laptop/IMRC/db-CBS/example/drone2c.yaml",
+                "-init", "/home/akmarak-laptop/IMRC/db-CBS/results/static_obs/parallel_multirobot_sol.yaml",
+                "--out", "/home/akmarak-laptop/IMRC/db-CBS/results/static_obs/dbcbs_drone2c_opt.yaml",
+                "--base", "/home/akmarak-laptop/IMRC/db-CBS/dynoplan/dynobench/",
+                "--sum", true
+
             ],
-            "cwd": "${workspaceFolder}/buildDebug",
+            "cwd": "${workspaceFolder}/dynoplan/build",
             "externalConsole": false,
             "MIMode": "gdb",
             "setupCommands": [
