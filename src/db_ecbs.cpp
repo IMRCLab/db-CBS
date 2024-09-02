@@ -397,7 +397,6 @@ int main(int argc, char* argv[]) {
                 std::cout << "failure of parallel/independent optimization for robot " << i << std::endl;
             }
             parallel_multirobot_sol.to_yaml_format("/tmp/dynoplan/parallel_multirobot_sol.yaml");
-            // return 0;
             // CBS-style optimization
             typename boost::heap::d_ary_heap<HighLevelNodeOptimization, boost::heap::arity<2>,
                                         boost::heap::mutable_<true> > open_opt;
@@ -463,13 +462,6 @@ int main(int argc, char* argv[]) {
                       // update the cost, max conflict in these trajectories
                       newNode.cost = newNode.multirobot_trajectory.get_cost();
                       newNode.conflict = getConflicts(newNode.multirobot_trajectory.trajectories, robots, col_mng_robots, robot_objs, newNode.conflict_matrix);
-                      // std::cout << "checking the conflict_mtx of (Opt) newNode: " << std::endl;
-                      // for (size_t i = 0; i < num_robots; i++){
-                      //   for (size_t j = 0; j < num_robots; j++){
-                      //     std::cout << newNode.conflict_matrix[i][j] << ", ";
-                      //   }
-                      //   std::cout << "\n";
-                      // }
                       std::cout << "(Opt) new Node conflict: " << newNode.conflict << std::endl;
                       auto handle = open_opt.push(newNode);
                       (*handle).handle = handle;
