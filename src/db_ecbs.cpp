@@ -389,23 +389,26 @@ int main(int argc, char* argv[]) {
             options_trajopt.soft_control_bounds = true; 
             MultiRobotTrajectory parallel_multirobot_sol;
             parallel_multirobot_sol.trajectories.resize(num_robots);
-            // TO DO: enable spft constraints, have initial guess like optimization
+            // since homogen. robots
+            Result_opti opti_out;
+            dynobench::Problem tmp_problem;
+            tmp_problem.models_base_path = problem.models_base_path;
+            tmp_problem.robotType = problem.robotTypes.at(0);
+            tmp_problem.p_lb = problem.p_lb;
+            tmp_problem.p_ub = problem.p_ub;
+            tmp_problem.robotTypes.push_back(problem.robotTypes.at(0)); 
+            tmp_problem.obstacles = problem.obstacles;
+            // TO DO: enable soft constraints, have initial guess like optimization
             for (size_t i = 0; i < num_robots; i++){
-              Result_opti opti_out;
-              dynobench::Problem tmp_problem;
-              tmp_problem.models_base_path = DYNOBENCH_BASE "models/";
-              tmp_problem.robotType = problem.robotTypes.at(i);
-              tmp_problem.robotTypes.push_back(tmp_problem.robotType); 
               tmp_problem.goal = problem.goals[i];
               tmp_problem.start = problem.starts[i];
-              tmp_problem.p_lb = Eigen::Map<Eigen::VectorXd>(&min_.at(0), min_.size());
-              tmp_problem.p_ub = Eigen::Map<Eigen::VectorXd>(&max_.at(0), max_.size());
+              opti_out.success = false;
               trajectory_optimization(tmp_problem, P.solution.at(i).trajectory, options_trajopt, parallel_multirobot_sol.trajectories.at(i),
                           opti_out);
               if(!opti_out.success) 
                 std::cout << "failure of parallel/independent optimization for robot " << i << std::endl;
             }
-            // parallel_multirobot_sol.to_yaml_format("/tmp/dynoplan/parallel_multirobot_sol.yaml");
+            parallel_multirobot_sol.to_yaml_format("/tmp/dynoplan/parallel_multirobot_sol.yaml");
             // CBS-style optimization
             typename boost::heap::d_ary_heap<HighLevelNodeOptimization, boost::heap::arity<2>,
                                         boost::heap::mutable_<true> > open_opt;
