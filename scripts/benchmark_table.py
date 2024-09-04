@@ -123,6 +123,19 @@ def print_and_highlight_best_max(out, key, result, alg, algs, digits=1):
 		out += r"\textemdash"
 	return out
 
+def get_alg_name(alg_key):
+	# all algorithms we consider so far
+	mapping = {
+		"sst": "SST*",
+		"s2m2": "S2M2",
+		"k-cbs": "k-CBS",
+		"db-cbs": "db-CBS",
+		"db-ecbs": "db-ECBS",
+	}
+
+	if alg_key in mapping:
+		return mapping[alg_key]
+	return alg_key.upper().replace("-", "_")
 
 def write_table(rows, algs, results_path, fname, trials, T, regret=False):
 
@@ -154,14 +167,8 @@ def write_table(rows, algs, results_path, fname, trials, T, regret=False):
 		# 	'empty_0': "empty",
 		# }
 
-		alg_names = {
-			"sst": "SST*",
-			"s2m2": "S2M2",
-			"k-cbs": "k-CBS",
-			"db-cbs": "db-CBS",
-			"db-ecbs": "db-ECBS",
-		}
-
+		alg_names = {key: get_alg_name(key) for key in algs}
+		
 		out = r"\begin{tabular}{c || c"
 		for alg in algs:
 			if alg == "sst" and not regret:
