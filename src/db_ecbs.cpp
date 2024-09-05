@@ -92,7 +92,6 @@ int main(int argc, char* argv[]) {
     options_tdbastar.w = cfg["suboptimality_factor"].as<float>(); 
     options_tdbastar.rewire = cfg["rewire"].as<bool>();
     options_tdbastar.always_add_node = cfg["always_add_node"].as<bool>();
-    // bool execute_optimization = cfg["execute_optimization"].as<bool>();
     // tdbastar problem
     dynobench::Problem problem(inputFile);
     dynobench::Problem problem_original(inputFile);
@@ -396,7 +395,7 @@ int main(int argc, char* argv[]) {
           tmp_problem.p_ub = problem.p_ub;
           tmp_problem.robotTypes.push_back(problem.robotTypes.at(0)); 
           tmp_problem.obstacles = problem.obstacles;
-          // TO DO: enable spft constraints, have initial guess like optimization
+          
           for (size_t i = 0; i < num_robots; i++){
             tmp_problem.goal = problem.goals[i];
             tmp_problem.start = problem.starts[i];
@@ -418,84 +417,149 @@ int main(int argc, char* argv[]) {
             tmp.multirobot_trajectory.to_yaml_format(optimizationFile.c_str());
             return 0;
           }
-          int opt_id = 1;
-          for (size_t i = 0; i < num_robots; i++){
-            for (size_t j = 0; j <= i; j++){
-              // create cluster for each on-collision pairs
-              if(tmp.conflict_matrix[i][j] > 0){
-                HighLevelNodeOptimization startNode = tmp;
-                startNode.id = opt_id;
-                // Zeroing out all elements
-                std::for_each(startNode.conflict_matrix.begin(), startNode.conflict_matrix.end(), [](std::vector<int>& row) {
-                    std::fill(row.begin(), row.end(), 0);
-                });
-                startNode.cluster = {i, j};
-                startNode.conflict = tmp.conflict_matrix[i][j]; // only a single pair for the root
-                ++opt_id;
-                // all goes to the open set
-                auto handle = open_opt.push(startNode);
-                (*handle).handle = handle;
+          if(cfg["execute_cbs_greedy"].as<bool>()){
+            HighLevelNodeOptimization tmpNode = tmp;
+            int max_conflict_cluster_index;
+            // i. initialize clusters using conflict mtrx. ONLY in-conflict robots belong to clusters
+            for (size_t i = 0; i < num_robots; i++){
+              for (size_t j = 0; j <= i; j++){
+                if(tmp.conflict_matrix[i][j] > 0){
+                  tmpNode.clusters.push_back({{i, j}, tmp.conflict_matrix[i][j]}); 
+                }
+              }
+            }
+            while(true){
+              // ii. extract the MAX conflict cluster
+              auto max_conflict_cluster_it = std::max_element(tmpNode.clusters.begin(), tmpNode.clusters.end(),
+                                            [](std::pair<std::unordered_set<size_t>, int>& a, std::pair<std::unordered_set<size_t>, int>& b) {
+                                 return a.second < b.second; }); // compared based on conflicts
+              // iii. jointly optimiza the one with MAX conflicts
+              std::string tmp_envFile = "/tmp/dynoplan/tmp_envFile_" + gen_random(6) + ".yaml";
+              std::cout << "tmp envFile: " << tmp_envFile << std::endl;
+              get_moving_obstacle(inputFile, /*initGuess*/tmpNode.multirobot_trajectory, /*outputFile*/tmp_envFile, max_conflict_cluster_it->first, /*moving_obs*/false);
+              feasible = execute_optimizationMetaRobot(tmp_envFile,
+                                      /*initialGuess*/discrete_search_sol, // always from the discrete search
+                                      /*solution*/tmpNode.multirobot_trajectory, // update the solution
+                                      DYNOBENCH_BASE,
+                                      max_conflict_cluster_it->first,
+                                      sum_robot_cost);
+              if(feasible){
+                // iv. zero the optimized cluster's conflict, don't remove it
+                max_conflict_cluster_index = tmpNode.getIndexOfSet(max_conflict_cluster_it->first);
+                tmpNode.clusters.at(max_conflict_cluster_index).second = 0; 
+                // v. check for collision, update the collision_matrix
+                std::for_each(tmpNode.conflict_matrix.begin(), tmpNode.conflict_matrix.end(), [](std::vector<int>& row) {
+                    std::fill(row.begin(), row.end(), 0); });
+                if (!getConflicts(tmpNode.multirobot_trajectory.trajectories, robots, col_mng_robots, robot_objs, tmpNode.conflict_matrix)){
+                  std::cout << "No inter-robot conflict" << std::endl;
+                  tmpNode.multirobot_trajectory.to_yaml_format(optimizationFile.c_str());
+                  return 0;
+                }
+                // vi. the max conflict happening in the output, extract this pair
+                auto [i, j, max_conflict] = tmpNode.getMaxElement(); // row, column, max conflict
+                // none of them belong to any cluster
+                if(tmpNode.containsX(i) < 0 && tmpNode.containsX(j) < 0){
+                  tmpNode.clusters.push_back({{i, j}, tmp.conflict_matrix[i][j]}); 
+                }
+                // one of them belong to some cluster
+                else if(tmpNode.containsX(i) > 0 || tmpNode.containsX(j) > 0){
+                  if(tmpNode.containsX(i) > 0){
+                    tmpNode.clusters.at(i).first.insert(j);
+                    tmpNode.clusters.at(i).second = max_conflict;
+                  }
+                  else{
+                    tmpNode.clusters.at(j).first.insert(i);
+                    tmpNode.clusters.at(j).second = max_conflict;
+                  }
+                }
+                // both belong to some cluster
+                else {
+                  tmpNode.clusters.at(i).first.insert(tmpNode.clusters.at(j).first.begin(), tmpNode.clusters.at(j).first.end());
+                  tmpNode.clusters.at(i).second = std::max(tmpNode.clusters.at(i).second, max_conflict);
+                }
               }
             }
           }
-          while(!open_opt.empty()){
-            HighLevelNodeOptimization N = open_opt.top();
-            std::cout << "open set size: " << open_opt.size() << std::endl;
-            std::cout << "best node N.id: " << N.id << " N.conflicts: " << N.conflict << std::endl;
-            open_opt.pop();
-            std::string tmp_envFile = "/tmp/dynoplan/tmp_envFile_" + gen_random(6) + ".yaml";
-            std::cout << "tmp envFile: " << tmp_envFile << std::endl;
-            get_moving_obstacle(inputFile, /*initGuess*/N.multirobot_trajectory, /*outputFile*/tmp_envFile, N.cluster, /*moving_obs*/false);
-            feasible = execute_optimizationMetaRobot(tmp_envFile,
-                                    /*initialGuess*/discrete_search_sol, // always from the discrete search
-                                    /*solution*/N.multirobot_trajectory, // update the solution
-                                    DYNOBENCH_BASE,
-                                    N.cluster,
-                                    sum_robot_cost);
-
-            if(feasible){
-              // update the cost, max conflict in these trajectories
-              N.cost = N.multirobot_trajectory.get_cost();
-              // update it's conflict matrix
-              if(!getConflicts(N.multirobot_trajectory.trajectories, robots, col_mng_robots, robot_objs, N.conflict_matrix)){
-                std::cout << "No inter-robot conflict" << std::endl;
-                N.multirobot_trajectory.to_yaml_format(optimizationFile.c_str());
-                return 0;
-              }
-              // create clusters from this Node's updated solution
-              for (size_t i = 0; i < num_robots; i++){
-                for (size_t j = 0; j <= i; j++){
-                  // create cluster for each in-collision pairs
-                  if(N.conflict_matrix[i][j] > 0){
-                    HighLevelNodeOptimization newNode = N;
-                    newNode.id = opt_id;
-                    // Zeroing out all elements
-                    std::for_each(newNode.conflict_matrix.begin(), newNode.conflict_matrix.end(), [](std::vector<int>& row) {
-                        std::fill(row.begin(), row.end(), 0);
-                    });
-                    // check if collision between new pair of robots
-                    if(newNode.cluster.find(i) == newNode.cluster.end() && newNode.cluster.find(j) == newNode.cluster.end()){
-                      newNode.cluster = {i, j};
-                    }
-                    // check if the collision with/between any of robots of the existing cluster, then merge it
-                    else if(newNode.cluster.find(i) != newNode.cluster.end() || newNode.cluster.find(j) != newNode.cluster.end()){
-                      size_t c = newNode.cluster.find(i) == newNode.cluster.end() ? i : j;
-                      newNode.cluster.insert(c); // add new element
-                    }
-                    std::cout << "new Node cluster: " << std::endl;
-                    for(auto &a : newNode.cluster){
-                      std::cout << a << std::endl;
-                    }
-                    newNode.conflict = N.conflict_matrix[i][j]; // only the pair we are interested to optimize jointly later while picking from Open
-                    auto handle = open_opt.push(newNode);
-                    (*handle).handle = handle;
-                    ++opt_id;
-
-                  }
+          else {
+            int opt_id = 1;
+            for (size_t i = 0; i < num_robots; i++){
+              for (size_t j = 0; j <= i; j++){
+                // create cluster for each on-collision pairs
+                if(tmp.conflict_matrix[i][j] > 0){
+                  HighLevelNodeOptimization startNode = tmp;
+                  startNode.id = opt_id;
+                  // Zeroing out all elements
+                  std::for_each(startNode.conflict_matrix.begin(), startNode.conflict_matrix.end(), [](std::vector<int>& row) {
+                      std::fill(row.begin(), row.end(), 0);
+                  });
+                  startNode.cluster = {i, j};
+                  startNode.conflict = tmp.conflict_matrix[i][j]; // only a single pair for the root
+                  ++opt_id;
+                  // all goes to the open set
+                  auto handle = open_opt.push(startNode);
+                  (*handle).handle = handle;
                 }
               }
-            } 
-          } // while loop
+            }
+            while(!open_opt.empty()){
+              HighLevelNodeOptimization N = open_opt.top();
+              std::cout << "open set size: " << open_opt.size() << std::endl;
+              std::cout << "best node N.id: " << N.id << " N.conflicts: " << N.conflict << std::endl;
+              open_opt.pop();
+              std::string tmp_envFile = "/tmp/dynoplan/tmp_envFile_" + gen_random(6) + ".yaml";
+              std::cout << "tmp envFile: " << tmp_envFile << std::endl;
+              get_moving_obstacle(inputFile, /*initGuess*/N.multirobot_trajectory, /*outputFile*/tmp_envFile, N.cluster, /*moving_obs*/false);
+              feasible = execute_optimizationMetaRobot(tmp_envFile,
+                                      /*initialGuess*/discrete_search_sol, // always from the discrete search
+                                      /*solution*/N.multirobot_trajectory, // update the solution
+                                      DYNOBENCH_BASE,
+                                      N.cluster,
+                                      sum_robot_cost);
+
+              if(feasible){
+                // update the cost, max conflict in these trajectories
+                N.cost = N.multirobot_trajectory.get_cost();
+                // update it's conflict matrix
+                if(!getConflicts(N.multirobot_trajectory.trajectories, robots, col_mng_robots, robot_objs, N.conflict_matrix)){
+                  std::cout << "No inter-robot conflict" << std::endl;
+                  N.multirobot_trajectory.to_yaml_format(optimizationFile.c_str());
+                  return 0;
+                }
+                // create clusters from this Node's updated solution
+                for (size_t i = 0; i < num_robots; i++){
+                  for (size_t j = 0; j <= i; j++){
+                    // create cluster for each in-collision pairs
+                    if(N.conflict_matrix[i][j] > 0){
+                      HighLevelNodeOptimization newNode = N;
+                      newNode.id = opt_id;
+                      // Zeroing out all elements
+                      std::for_each(newNode.conflict_matrix.begin(), newNode.conflict_matrix.end(), [](std::vector<int>& row) {
+                          std::fill(row.begin(), row.end(), 0);
+                      });
+                      // check if collision between new pair of robots
+                      if(newNode.cluster.find(i) == newNode.cluster.end() && newNode.cluster.find(j) == newNode.cluster.end()){
+                        newNode.cluster = {i, j};
+                      }
+                      // check if the collision with/between any of robots of the existing cluster, then merge it
+                      else if(newNode.cluster.find(i) != newNode.cluster.end() || newNode.cluster.find(j) != newNode.cluster.end()){
+                        size_t c = newNode.cluster.find(i) == newNode.cluster.end() ? i : j;
+                        newNode.cluster.insert(c); // add new element
+                      }
+                      std::cout << "new Node cluster: " << std::endl;
+                      for(auto &a : newNode.cluster){
+                        std::cout << a << std::endl;
+                      }
+                      newNode.conflict = N.conflict_matrix[i][j]; // only the pair we are interested to optimize jointly later while picking from Open
+                      auto handle = open_opt.push(newNode);
+                      (*handle).handle = handle;
+                      ++opt_id;
+
+                    }
+                  }
+                }
+              } 
+            } // while loop
+          }
         }
         ++expands;
         if (expands % 100 == 0) {

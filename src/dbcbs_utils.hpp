@@ -21,7 +21,7 @@
 #include <dynobench/multirobot_trajectory.hpp>
 #include <dynoplan/optimization/multirobot_optimization.hpp>
 #include "dynobench/motions.hpp"
-
+#include <tuple>
 
 // Conflicts 
 struct Conflict {
@@ -94,8 +94,9 @@ struct HighLevelNodeOptimization {
     // std::vector<dynobench::Trajectory> trajectories;
     MultiRobotTrajectory multirobot_trajectory;
     std::unordered_set<size_t> cluster; // robot idx for the joint optimization
+    std::vector<std::pair<std::unordered_set<size_t>, int>> clusters; // used only with greedy cbs (cluster, its conflict)
     std::vector<std::vector<int>> conflict_matrix;
-    double cost; // tie-break if conflicts are equal
+    double cost; 
     int conflict;
     int id;
 
@@ -105,7 +106,48 @@ struct HighLevelNodeOptimization {
           conflict(0),
           id(0) {
     }
+    // check if the robot belongs to any cluster, return index of the clusters vector index
+    int containsX(size_t X) const {
+      int index = 0;
+      for (const auto& pair : clusters) {
+        if (pair.first.find(X) != pair.first.end()) {
+            return index;
+        }
+        ++index;
+      }
+      return -1;
+    }
 
+    int getIndexOfSet(std::unordered_set<size_t>& target_set) {
+        auto it = std::find_if(clusters.begin(), clusters.end(),
+            [&](const std::pair<std::unordered_set<size_t>, int>& pair) {
+                return pair.first == target_set; // Compare unordered_sets
+            });
+
+        if (it != clusters.end()) {
+            return std::distance(clusters.begin(), it); // Get the index
+        }
+        return -1; 
+    }
+    // return the indices (row, column) of 2D matrix the max element
+    std::tuple<int, int, int> getMaxElement() {
+      int max_value = std::numeric_limits<int>::min();
+      int max_vector_index = -1;
+      int max_element_index = -1;
+
+      for (size_t i = 0; i < conflict_matrix.size(); ++i) {
+        auto max_it = std::max_element(conflict_matrix[i].begin(), conflict_matrix[i].end());
+        if (max_it != conflict_matrix[i].end()) {
+          int current_max_value = *max_it;
+          if (current_max_value > max_value) {
+              max_value = current_max_value;
+              max_vector_index = i;
+              max_element_index = std::distance(conflict_matrix[i].begin(), max_it);
+          }
+        }
+      }
+      return {max_vector_index, max_element_index, max_value};
+    }
     typename boost::heap::d_ary_heap<HighLevelNodeOptimization, boost::heap::arity<2>,
                                      boost::heap::mutable_<true> >::handle_type
         handle;
