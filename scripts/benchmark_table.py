@@ -3,12 +3,11 @@ import yaml
 import numpy as np
 import subprocess
 
-def compute_results(instances, algs, results_path, trials, T, regret=False):
+def compute_results(instances, algs, results_path, trials, T, regret):
 	all_result = dict()
 
 	if isinstance(trials, int):
 		trials = [trials]*len(instances)
-	print(trials)
 
 	for instance, itrials in zip(instances, trials):
 		result = dict()
@@ -80,7 +79,6 @@ def compute_results(instances, algs, results_path, trials, T, regret=False):
 			if alg == "s2m2" and len(initial_times) == 0 and "unicycle_sphere" not in instance:
 				for key in result[alg].keys():
 					result[alg][key] = '*'
-
 		all_result[instance] = result
 	return all_result
 
@@ -123,11 +121,23 @@ def print_and_highlight_best_max(out, key, result, alg, algs, digits=1):
 		out += r"\textemdash"
 	return out
 
+def get_alg_name(alg_key):
+	# all algorithms we consider so far
+	mapping = {
+		"sst": "SST*",
+		"s2m2": "S2M2",
+		"k-cbs": "k-CBS",
+		"db-cbs": "db-CBS",
+		"db-ecbs": "db-ECBS",
+	}
+
+	if alg_key in mapping:
+		return mapping[alg_key]
+	return alg_key.upper().replace("-", "_")
 
 def write_table(rows, algs, results_path, fname, trials, T, regret=False):
 
 	result = compute_results(rows, algs, results_path, trials, T, regret)
-
 	output_path = Path(results_path) / Path(fname)
 	with open(output_path.with_suffix(".tex"), "w") as f:
 
@@ -137,30 +147,7 @@ def write_table(rows, algs, results_path, fname, trials, T, regret=False):
 		f.write("\n")
 		f.write(r"% GENERATED - DO NOT EDIT - " + output_path.name + "\n")
 
-		# system_names = {
-		# 	'unicycle_first_order_0': "unicycle $1^{\mathrm{st}}$ order, v0",
-		# 	'unicycle_first_order_1': "unicycle $1^{\mathrm{st}}$ order, v1",
-		# 	'unicycle_first_order_2': "unicycle $1^{\mathrm{st}}$ order, v2",
-		# 	'unicycle_second_order_0': "unicycle $2^{\mathrm{nd}}$ order",
-		# 	'car_first_order_with_1_trailers_0': "car with trailer",
-		# 	'quadrotor_0': "quadrotor",
-		# }
-
-		# instance_names = {
-		# 	'parallelpark_0': "park",
-		# 	'kink_0': "kink",
-		# 	'bugtrap_0': "bugtrap",
-		# 	'wall_0': "wall",
-		# 	'empty_0': "empty",
-		# }
-
-		alg_names = {
-			"sst": "SST*",
-			"s2m2": "S2M2",
-			"k-cbs": "k-CBS",
-			"db-cbs": "db-CBS",
-			"db-ecbs": "db-ECBS",
-		}
+		alg_names = {key: get_alg_name(key) for key in algs}
 
 		out = r"\begin{tabular}{c || c"
 		for alg in algs:
@@ -232,22 +219,90 @@ def write_table(rows, algs, results_path, fname, trials, T, regret=False):
 	# run pdflatex
 	gen_pdf(output_path)
 
+# to benchmark db-cbs, db-ecbs
+def write_table_test(instances, algs, trials, timelimit):
+	trials = [trials]*4 + [10*trials]*7
+
+	alg_names = {key: get_alg_name(key) for key in algs}
+
+	result = compute_results(instances, algs, Path("../results"), trials, timelimit, True)
+	output_path = Path("../results/benchmark_table.pdf")
+	with open(output_path.with_suffix(".tex"), "w") as f:
+
+		f.write(r"\documentclass{standalone}")
+		f.write("\n")
+		f.write(r"\begin{document}")
+		f.write("\n")
+		f.write(r"% GENERATED - DO NOT EDIT - " + output_path.name + "\n")
+
+		out = r"\begin{tabular}{c || c"
+		for alg in algs:
+			out += r" || r|r|r|r"
+		out += "}\n"
+		f.write(out)
+		out = r"\# & Instance"
+		for k, alg in enumerate(algs):
+			if k == len(algs) - 1:
+				out += r" & \multicolumn{4}{c}{"
+			else:
+				out += r" & \multicolumn{4}{c||}{"
+			out += alg_names[alg]
+			out += r"}"
+		out += r"\\"
+		f.write(out)
+		out = r"& "
+		for alg in algs:
+			out += r" & $p$ & $t [s]$ & $J [s]$ & $r [\%]$"
+		out += r"\\"
+		f.write(out)
+		f.write(r"\hline")
+
+		r_number = 0
+		for instance in instances:
+
+			if instance == "<<HLINE>>":
+				f.write(r"\hline")
+				f.write("\n")
+				continue
+
+			out = ""
+			out += r"\hline"
+			out += "\n"
+			out += "{} & ".format(r_number+1)
+			out += "{} ".format(instance.replace("_", "\_"))
+
+			for alg in algs:
+
+				out = print_and_highlight_best_max(out, 'success', result[instance], alg, algs)
+				out = print_and_highlight_best(out, 't^st_median', result[instance], alg, algs)
+				out = print_and_highlight_best(out, 'J^st_median', result[instance], alg, algs)
+				out = print_and_highlight_best(out, 'Jr^st_median', result[instance], alg, algs, digits=0)
+
+			out += r"\\"
+			f.write(out)
+			r_number += 1
+
+		f.write("\n")
+		f.write(r"\end{tabular}")
+		f.write("\n")
+		f.write(r"\end{document}")
+
+	gen_pdf(output_path)
+
+
 def main():
 	results_path = Path("../results")
 
 	rows = [
 		"swap1_unicycle",
-		"swap1_trailer",
 	]
 	algs = [
-		"sst",
-		"s2m2",
-		"k-cbs",
 		"db-cbs",
 		"db-ecbs",
 	]
 
-	write_table(rows, algs, results_path, "table.pdf", 1, 5*60)
+	write_table(rows, algs, results_path, "table.pdf", 5, 5*60)
+	# write_table_test(rows, algs, 2, 5*60)
 
 if __name__ == '__main__':
 	main()

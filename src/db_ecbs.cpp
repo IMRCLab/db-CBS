@@ -369,18 +369,18 @@ int main(int argc, char* argv[]) {
               fout << indent << "delta: " << options_tdbastar.delta;
               cost_bound = P.cost;
             }
-            // bool sum_robot_cost = true;
-            // bool feasible = execute_optimizationMultiRobot(inputFile,
-            //                               outputFile, 
-            //                               optimizationFile,
-            //                               DYNOBENCH_BASE,
-            //                               sum_robot_cost);
+            bool sum_robot_cost = true;
+            bool feasible = execute_optimizationMultiRobot(inputFile,
+                                          outputFile, 
+                                          optimizationFile,
+                                          DYNOBENCH_BASE,
+                                          sum_robot_cost);
 
-            // if (feasible) {
-            //   std::ofstream fout(optimizationFile, std::ios::app); 
-            //   fout << "  nodes: " << id << std::endl;
-            //   return 0;
-            // }
+            if (feasible) {
+              std::ofstream fout(optimizationFile, std::ios::app); 
+              fout << "  nodes: " << id << std::endl;
+              return 0;
+            }
             break;
         }
         ++expands;

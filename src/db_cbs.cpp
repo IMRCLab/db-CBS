@@ -288,18 +288,18 @@ int main(int argc, char* argv[]) {
                 traj.to_yaml_format(out2, "    ");
               }
             }
-            // bool sum_robot_cost = true;
-            // bool feasible = execute_optimizationMultiRobot(inputFile,
-            //                               outputFile, 
-            //                               optimizationFile,
-            //                               DYNOBENCH_BASE,
-            //                               sum_robot_cost);
+            bool sum_robot_cost = true;
+            bool feasible = execute_optimizationMultiRobot(inputFile,
+                                          outputFile, 
+                                          optimizationFile,
+                                          DYNOBENCH_BASE,
+                                          sum_robot_cost);
             
-            // std::ofstream fout(optimizationFile, std::ios::app); 
-            // fout << "  nodes: " << id << std::endl;
-            // if (feasible) {
-            //   return 0;
-            // }
+            if (feasible) {
+              std::ofstream fout(optimizationFile, std::ios::app); 
+              fout << "  nodes: " << id << std::endl;
+              return 0;
+            }
             break;
         }
         ++expands;
