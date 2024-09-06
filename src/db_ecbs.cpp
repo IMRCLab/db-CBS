@@ -422,27 +422,28 @@ int main(int argc, char* argv[]) {
             int max_conflict_cluster_index;
             int index_i, index_j;
             // i. initialize clusters using conflict mtrx. ONLY in-conflict robots belong to clusters
+            std::cout << "initializing the tmpNode clusters" << std::endl;
             for (size_t i = 0; i < num_robots; i++){
               for (size_t j = 0; j <= i; j++){
                 if(tmp.conflict_matrix[i][j] > 0){
                   tmpNode.clusters.push_back({{i, j}, tmp.conflict_matrix[i][j]}); 
+                  std::cout << "(" << i << " " << j << " " << "conflict value: " << tmp.conflict_matrix[i][j] << ")" <<  std::endl;
                 }
               }
             }
+            
             while(true){
               // ii. extract the MAX conflict cluster
               auto max_conflict_cluster_it = std::max_element(tmpNode.clusters.begin(), tmpNode.clusters.end(),
                                             [](std::pair<std::unordered_set<size_t>, int>& a, std::pair<std::unordered_set<size_t>, int>& b) {
                                  return a.second < b.second; }); // compared based on conflicts
               // DEBUG
-              auto& max_conflict_cluster = *max_conflict_cluster_it;
-              std::cout << "cluster to optimize:" << std::endl;
-              std::cout << "{ ";
-              for (const auto& element : max_conflict_cluster.first) {
-                std::cout << element << " ";
+              std::cout << "max cluster elements: ";
+              for (const auto& elem : max_conflict_cluster_it->first) {
+                  std::cout << elem << " ";
               }
-              std::cout << "}" << std::endl;
-
+              // Print the int value (second element of the pair)
+              std::cout << "\nconflict value: " << max_conflict_cluster_it->second << std::endl;
               // iii. jointly optimiza the one with MAX conflicts
               std::string tmp_envFile = "/tmp/dynoplan/tmp_envFile_" + gen_random(6) + ".yaml";
               std::cout << "tmp envFile: " << tmp_envFile << std::endl;
@@ -472,6 +473,7 @@ int main(int argc, char* argv[]) {
                 index_j = tmpNode.containsX(j);
                 // none of them belong to any cluster
                 if(index_i < 0 && index_j < 0){
+                  std::cout << "creating new cluster" << std::endl;
                   tmpNode.clusters.push_back({{i, j}, tmp.conflict_matrix[i][j]}); 
                 }
                 // one of them belong to some cluster
@@ -484,9 +486,11 @@ int main(int argc, char* argv[]) {
                     tmpNode.clusters.at(index_j).first.insert(i);
                     tmpNode.clusters.at(index_j).second = max_conflict;
                   }
+                  std::cout << "robot " << (index_i >= 0 ? i : j) << " already belongs to some cluster" << std::endl;
                 }
                 // both belong to some cluster
                 else {
+                  std::cout << "merging two existing clusters" << std::endl;
                   tmpNode.clusters.at(index_i).first.insert(tmpNode.clusters.at(index_j).first.begin(), tmpNode.clusters.at(index_j).first.end());
                   tmpNode.clusters.at(index_i).second = std::max(tmpNode.clusters.at(index_i).second, max_conflict);
                 }
