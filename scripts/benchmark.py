@@ -122,8 +122,8 @@ def execute_task(task: ExecutionTask):
 	else:
 		vis_script = scripts_path / "visualize.py"
 
-	for file in visualize_files:
-		run_visualize(vis_script, env, result_folder / file)
+	# for file in visualize_files:
+		# run_visualize(vis_script, env, result_folder / file)
 	
 	# search_viz_script = scripts_path / "visualize_search.py"
 	# if(len(search_plot_files) > 0):
@@ -147,8 +147,8 @@ def main():
 		"swap2_trailer",
 		"swap2_unicycle2",
 		"swap2_hetero",
-		# "makespan_vs_soc_1",
-		# "makespan_vs_soc_0",
+		"makespan_vs_soc_1",
+		"makespan_vs_soc_0",
 		"alcove_unicycle",
 		"alcove_unicycle_sphere",
 		"at_goal_unicycle",
