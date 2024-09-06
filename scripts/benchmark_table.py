@@ -5,11 +5,11 @@ import subprocess
 
 def compute_results(instances, algs, results_path, trials, T, regret):
 	all_result = dict()
-
 	if isinstance(trials, int):
 		trials = [trials]*len(instances)
-
+	print(trials)
 	for instance, itrials in zip(instances, trials):
+		print(instance)
 		result = dict()
 		for alg in algs:
 			if not regret:
@@ -221,7 +221,7 @@ def write_table(rows, algs, results_path, fname, trials, T, regret=False):
 
 # to benchmark db-cbs, db-ecbs
 def write_table_test(instances, algs, trials, timelimit):
-	trials = [trials]*4 + [10*trials]*7
+	# trials = [trials]*4 + [10*trials]*7
 
 	alg_names = {key: get_alg_name(key) for key in algs}
 
