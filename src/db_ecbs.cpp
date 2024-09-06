@@ -429,28 +429,6 @@ int main(int argc, char* argv[]) {
                   // option 1.
                   tmpNode.clusters.push_back({{i, j}, tmp.conflict_matrix[i][j]}); 
                   std::cout << "(" << i << " " << j << " " << "conflict value: " << tmp.conflict_matrix[i][j] << ")" <<  std::endl;
-                  // option 2.
-                  // index_i = tmpNode.containsX(i); // which element in clusters
-                  // index_j = tmpNode.containsX(j);
-                  // if(index_i < 0 && index_j < 0){
-                  //   tmpNode.clusters.push_back({{i, j}, tmp.conflict_matrix[i][j]}); 
-                  // }
-                  // both belong to some cluster
-                  // else if(index_i >= 0 && index_j >= 0){
-                  //   tmpNode.clusters.at(index_i).first.insert(tmpNode.clusters.at(index_j).first.begin(), tmpNode.clusters.at(index_j).first.end());
-                  //   tmpNode.clusters.at(index_i).second = std::max(tmpNode.clusters.at(index_i).second, tmp.conflict_matrix[i][j]);
-                  // }
-                  // only one belong to some cluster
-                  // else {
-                  //   if(index_i >= 0){
-                  //     tmpNode.clusters.at(index_i).first.insert(j);
-                  //     tmpNode.clusters.at(index_i).second = tmp.conflict_matrix[i][j];
-                  //   }
-                  //   else{
-                  //     tmpNode.clusters.at(index_j).first.insert(i);
-                  //     tmpNode.clusters.at(index_j).second = tmp.conflict_matrix[i][j];
-                  //   }
-                  // }
                 }
               }
             }
@@ -500,6 +478,8 @@ int main(int argc, char* argv[]) {
                 else if(index_i >= 0 && index_j >= 0){
                   tmpNode.clusters.at(index_i).first.insert(tmpNode.clusters.at(index_j).first.begin(), tmpNode.clusters.at(index_j).first.end());
                   tmpNode.clusters.at(index_i).second = std::max(tmpNode.clusters.at(index_i).second, max_conflict);
+                  if(index_i != index_j)
+                    tmpNode.clusters.erase(tmpNode.clusters.begin() + index_j); // delete the old one
                 }
                 // only one belong to some cluster
                 else {
