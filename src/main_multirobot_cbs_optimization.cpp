@@ -109,11 +109,37 @@ int main(int argc, char *argv[]) {
     HighLevelNodeOptimization tmpNode = tmp;
     int max_conflict_cluster_index;
     int index_i, index_j;
-    // i. initialize clusters using conflict mtrx. ONLY in-conflict robots belong to clusters
+    // i. initialize clusters using conflict mtrx. ONLY in-conflict robots belong to clusters. Merge already
+    std::cout << "initializing the tmpNode clusters" << std::endl;
     for (size_t i = 0; i < num_robots; i++){
       for (size_t j = 0; j <= i; j++){
         if(tmp.conflict_matrix[i][j] > 0){
-          tmpNode.clusters.push_back({{i, j}, tmp.conflict_matrix[i][j]}); 
+          // tmpNode.clusters.push_back({{i, j}, tmp.conflict_matrix[i][j]}); 
+          // std::cout << "(" << i << " " << j << " " << "conflict value: " << tmp.conflict_matrix[i][j] << ")" <<  std::endl;
+          index_i = tmpNode.containsX(i); // which element in clusters
+          index_j = tmpNode.containsX(j);
+          if(index_i < 0 && index_j < 0){
+            std::cout << "creating new cluster" << std::endl;
+            tmpNode.clusters.push_back({{i, j}, tmp.conflict_matrix[i][j]}); 
+          }
+          // both belong to some cluster
+          else if(index_i >= 0 && index_j >= 0){
+            std::cout << "merging two existing clusters" << std::endl;
+            tmpNode.clusters.at(index_i).first.insert(tmpNode.clusters.at(index_j).first.begin(), tmpNode.clusters.at(index_j).first.end());
+            tmpNode.clusters.at(index_i).second = std::max(tmpNode.clusters.at(index_i).second, tmp.conflict_matrix[i][j]);
+          }
+          // only one belong to some cluster
+          else {
+            if(index_i >= 0){
+              tmpNode.clusters.at(index_i).first.insert(j);
+              tmpNode.clusters.at(index_i).second = tmp.conflict_matrix[i][j];
+            }
+            else{
+              tmpNode.clusters.at(index_j).first.insert(i);
+              tmpNode.clusters.at(index_j).second = tmp.conflict_matrix[i][j];
+            }
+            std::cout << "robot " << (index_i >= 0 ? i : j) << " already belongs to some cluster" << std::endl;
+          }
         }
       }
     }
@@ -122,6 +148,13 @@ int main(int argc, char *argv[]) {
       auto max_conflict_cluster_it = std::max_element(tmpNode.clusters.begin(), tmpNode.clusters.end(),
                                     [](std::pair<std::unordered_set<size_t>, int>& a, std::pair<std::unordered_set<size_t>, int>& b) {
                           return a.second < b.second; }); // compared based on conflicts
+      // DEBUG
+      std::cout << "max cluster elements: ";
+      for (const auto& elem : max_conflict_cluster_it->first) {
+        std::cout << elem << " ";
+      }
+      std::cout << "\nconflict value: " << max_conflict_cluster_it->second << std::endl;
+
       // iii. jointly optimiza the one with MAX conflicts
       std::string tmp_envFile = "/tmp/dynoplan/tmp_envFile_" + gen_random(6) + ".yaml";
       std::cout << "tmp envFile: " << tmp_envFile << std::endl;
@@ -146,14 +179,22 @@ int main(int argc, char *argv[]) {
         }
         // vi. the max conflict happening in the output, extract this pair
         auto [i, j, max_conflict] = tmpNode.getMaxElement(); // row, column, max conflict
+        std::cout << "max conflict between: " << i << ", " << j << ", conflict: " << max_conflict << std::endl;
         // none of them belong to any cluster
         index_i = tmpNode.containsX(i); // which element in clusters
         index_j = tmpNode.containsX(j);
         if(index_i < 0 && index_j < 0){
+          std::cout << "creating new cluster" << std::endl;
           tmpNode.clusters.push_back({{i, j}, tmp.conflict_matrix[i][j]}); 
         }
-        // one of them belong to some cluster
-        else if(index_i >= 0 || index_j >= 0){
+        // both belong to some cluster
+        else if(index_i >= 0 && index_j >= 0){
+          std::cout << "merging two existing clusters" << std::endl;
+          tmpNode.clusters.at(index_i).first.insert(tmpNode.clusters.at(index_j).first.begin(), tmpNode.clusters.at(index_j).first.end());
+          tmpNode.clusters.at(index_i).second = std::max(tmpNode.clusters.at(index_i).second, max_conflict);
+        }
+        // only one belong to some cluster
+        else {
           if(index_i >= 0){
             tmpNode.clusters.at(index_i).first.insert(j);
             tmpNode.clusters.at(index_i).second = max_conflict;
@@ -162,11 +203,7 @@ int main(int argc, char *argv[]) {
             tmpNode.clusters.at(index_j).first.insert(i);
             tmpNode.clusters.at(index_j).second = max_conflict;
           }
-        }
-        // both belong to some cluster
-        else {
-          tmpNode.clusters.at(index_i).first.insert(tmpNode.clusters.at(index_j).first.begin(), tmpNode.clusters.at(index_j).first.end());
-          tmpNode.clusters.at(index_i).second = std::max(tmpNode.clusters.at(index_i).second, max_conflict);
+          std::cout << "robot " << (index_i >= 0 ? i : j) << " already belongs to some cluster" << std::endl;
         }
       }
     }
