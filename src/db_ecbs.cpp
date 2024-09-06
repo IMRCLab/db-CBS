@@ -420,6 +420,7 @@ int main(int argc, char* argv[]) {
           if(cfg["execute_cbs_greedy"].as<bool>()){
             HighLevelNodeOptimization tmpNode = tmp;
             int max_conflict_cluster_index;
+            int index_i, index_j;
             // i. initialize clusters using conflict mtrx. ONLY in-conflict robots belong to clusters
             for (size_t i = 0; i < num_robots; i++){
               for (size_t j = 0; j <= i; j++){
@@ -433,6 +434,15 @@ int main(int argc, char* argv[]) {
               auto max_conflict_cluster_it = std::max_element(tmpNode.clusters.begin(), tmpNode.clusters.end(),
                                             [](std::pair<std::unordered_set<size_t>, int>& a, std::pair<std::unordered_set<size_t>, int>& b) {
                                  return a.second < b.second; }); // compared based on conflicts
+              // DEBUG
+              auto& max_conflict_cluster = *max_conflict_cluster_it;
+              std::cout << "cluster to optimize:" << std::endl;
+              std::cout << "{ ";
+              for (const auto& element : max_conflict_cluster.first) {
+                std::cout << element << " ";
+              }
+              std::cout << "}" << std::endl;
+
               // iii. jointly optimiza the one with MAX conflicts
               std::string tmp_envFile = "/tmp/dynoplan/tmp_envFile_" + gen_random(6) + ".yaml";
               std::cout << "tmp envFile: " << tmp_envFile << std::endl;
@@ -457,25 +467,28 @@ int main(int argc, char* argv[]) {
                 }
                 // vi. the max conflict happening in the output, extract this pair
                 auto [i, j, max_conflict] = tmpNode.getMaxElement(); // row, column, max conflict
+                std::cout << "max conflict between: " << i << ", " << j << ", conflict: " << max_conflict << std::endl;
+                index_i = tmpNode.containsX(i); // which element in clusters
+                index_j = tmpNode.containsX(j);
                 // none of them belong to any cluster
-                if(tmpNode.containsX(i) < 0 && tmpNode.containsX(j) < 0){
+                if(index_i < 0 && index_j < 0){
                   tmpNode.clusters.push_back({{i, j}, tmp.conflict_matrix[i][j]}); 
                 }
                 // one of them belong to some cluster
-                else if(tmpNode.containsX(i) > 0 || tmpNode.containsX(j) > 0){
-                  if(tmpNode.containsX(i) > 0){
-                    tmpNode.clusters.at(i).first.insert(j);
-                    tmpNode.clusters.at(i).second = max_conflict;
+                else if(index_i >= 0 || index_j >= 0){
+                  if(index_i >= 0){
+                    tmpNode.clusters.at(index_i).first.insert(j);
+                    tmpNode.clusters.at(index_i).second = max_conflict;
                   }
                   else{
-                    tmpNode.clusters.at(j).first.insert(i);
-                    tmpNode.clusters.at(j).second = max_conflict;
+                    tmpNode.clusters.at(index_j).first.insert(i);
+                    tmpNode.clusters.at(index_j).second = max_conflict;
                   }
                 }
                 // both belong to some cluster
                 else {
-                  tmpNode.clusters.at(i).first.insert(tmpNode.clusters.at(j).first.begin(), tmpNode.clusters.at(j).first.end());
-                  tmpNode.clusters.at(i).second = std::max(tmpNode.clusters.at(i).second, max_conflict);
+                  tmpNode.clusters.at(index_i).first.insert(tmpNode.clusters.at(index_j).first.begin(), tmpNode.clusters.at(index_j).first.end());
+                  tmpNode.clusters.at(index_i).second = std::max(tmpNode.clusters.at(index_i).second, max_conflict);
                 }
               }
             }
