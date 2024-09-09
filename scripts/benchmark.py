@@ -241,8 +241,8 @@ def main():
 		]
 	)
 	# delete temp files
-	(Path("../results") / 'table.pdf').unlink()
-	(Path("../results") / 'stats.pdf').unlink()
+	# (Path("../results") / 'table.pdf').unlink()
+	# (Path("../results") / 'stats.pdf').unlink()
 
 	# paper_tables.write_table1(trials, timelimit)
 	# paper_tables.write_table2(trials, timelimit)
