@@ -217,16 +217,16 @@ def main():
 			for trial in range(trials):
 				tasks.append(ExecutionTask(instance, alg, trial, timelimit))
 
-	# if parallel and len(tasks) > 1:
-		# use_cpus = psutil.cpu_count(logical=False)-1
-		# print("Using {} CPUs".format(use_cpus))
-		# with mp.Pool(use_cpus) as p:
-			# for _ in tqdm.tqdm(p.imap_unordered(execute_task, tasks)):
-				# pass
-	# else:
-		# for task in tasks:
-			# execute_task(task)
-	# 
+	if parallel and len(tasks) > 1:
+		use_cpus = psutil.cpu_count(logical=False)-1
+		print("Using {} CPUs".format(use_cpus))
+		with mp.Pool(use_cpus) as p:
+			for _ in tqdm.tqdm(p.imap_unordered(execute_task, tasks)):
+				pass
+	else:
+		for task in tasks:
+			execute_task(task)
+	
 	# export_table_txt(instances, algs)
 	run_benchmark_stats(instances, algs, trials, timelimit)
 	# write_table(instances, algs, Path("../results"), "table.pdf", trials, timelimit)
@@ -241,8 +241,8 @@ def main():
 		]
 	)
 	# delete temp files
-	# (Path("../results") / 'table.pdf').unlink()
-	# (Path("../results") / 'stats.pdf').unlink()
+	(Path("../results") / 'table.pdf').unlink()
+	(Path("../results") / 'stats.pdf').unlink()
 
 	# paper_tables.write_table1(trials, timelimit)
 	# paper_tables.write_table2(trials, timelimit)
