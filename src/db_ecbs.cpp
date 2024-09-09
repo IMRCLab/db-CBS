@@ -222,8 +222,9 @@ int main(int argc, char* argv[]) {
     }
     bool solved_db = false;
     std::cout << "Running the main loop" << std::endl;
+    auto discrete_start = std::chrono::high_resolution_clock::now();
     // main loop
-    problem.starts = problem_original.starts;
+    problem.starts = problem_original.starts; 
     problem.goals = problem_original.goals;
     options_tdbastar.delta = cfg["delta_0"].as<float>();
     options_tdbastar.max_motions = cfg["num_primitives_0"].as<size_t>();
@@ -370,10 +371,14 @@ int main(int argc, char* argv[]) {
           create_dir_if_necessary(outputFile);
           std::ofstream out_db(outputFile);
           export_solutions(P.solution, &out_db);
+          auto discrete_end = std::chrono::high_resolution_clock::now();
+          std::chrono::duration<double> duration = discrete_end - discrete_start;
+          std::cout << "Time taken for discrete search: " << duration.count() << " seconds" << std::endl;
           // read the discrete search as initial guess for clustered robots ONLY
           MultiRobotTrajectory discrete_search_sol;
           discrete_search_sol.read_from_yaml(outputFile.c_str());
           // I. Parallel/Independent optimization
+          auto optimization_start = std::chrono::high_resolution_clock::now();
           std::vector<double> min_ = env["environment"]["min"].as<std::vector<double>>();
           std::vector<double> max_ = env["environment"]["max"].as<std::vector<double>>();
           Options_trajopt options_trajopt;
@@ -464,6 +469,9 @@ int main(int argc, char* argv[]) {
                 if (!getConflicts(tmpNode.multirobot_trajectory.trajectories, robots, col_mng_robots, robot_objs, tmpNode.conflict_matrix)){
                   std::cout << "No inter-robot conflict" << std::endl;
                   tmpNode.multirobot_trajectory.to_yaml_format(optimizationFile.c_str());
+                  auto optimization_end = std::chrono::high_resolution_clock::now();
+                  std::chrono::duration<double> opt_duration = optimization_end - optimization_start;
+                  std::cout << "Time taken for optimization: " << opt_duration.count() << " seconds" << std::endl;
                   return 0;
                 }
                 // vi. the max conflict happening in the output, extract this pair
