@@ -24,9 +24,9 @@ def saveyaml(file_dir, data):
 
 def computePayloadSt(r1, r2, r0):
     # compute the states from the estimated payload and the robots positions coming from dbCBS
-    p1 = np.array(r1[0:2])
-    p2 = np.array(r2[0:2])
-    p0 = np.array(r0[0:2])
+    p1 = np.array(r1[0:2], dtype=np.float64)
+    p2 = np.array(r2[0:2], dtype=np.float64)
+    p0 = np.array(r0[0:2], dtype=np.float64)
     u1 = p1 - p0
     th1 = np.arctan2(u1[1], u1[0])
     u2 = p2 - p0
@@ -132,10 +132,10 @@ for k, state in enumerate(states):
     else:
         r2_state = r2_states[-1]
     th1, th2, dp0, dth1, dth2 = computePayloadSt(r1_state, r2_state, p0_init[k])
-    states[k] = [p0_init[k][0], p0_init[k][1], th1, th2, dp0[0], dp0[1], dth1, dth2]
+    # states[k] = [p0_init[k][0], p0_init[k][1], th1, th2, dp0[0], dp0[1], dth1, dth2]
+    states[k] = [p0_init[k][0], p0_init[k][1], th1, th2, 0, 0, 0, 0]
 
 print("payload: ","("+str(len(p0_init))+","+ str(len(p0_init[0]))+")", "actions: ", actions.shape, "states:", states.shape)
-
 
 # actions = np.zeros((256,4))
 # # for k in range(actions.shape[0]):
