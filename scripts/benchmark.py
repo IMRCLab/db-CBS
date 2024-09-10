@@ -209,8 +209,8 @@ def main():
 		# "db-cbs",
 		"db-ecbs",
 	]
-	trials = 1
-	timelimit = 50*60
+	trials = 3
+	timelimit = 30*60
 
 	tasks = []
 	for instance in instances:
@@ -228,10 +228,9 @@ def main():
 		for task in tasks:
 			execute_task(task)
 	
-	export_table_txt(instances, algs)
+	# export_table_txt(instances, algs)
 	# run_benchmark_stats(instances, algs, trials, timelimit)
-
-	# write_table(instances, algs, Path("../results"), "table.pdf", trials, timelimit)
+	write_table(instances, algs, Path("../results"), "table.pdf", trials, timelimit)
 
 	# subprocess.run(
 	# 	['pdftk',
