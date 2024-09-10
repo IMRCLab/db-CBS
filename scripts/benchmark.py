@@ -229,20 +229,20 @@ def main():
 			execute_task(task)
 	
 	# export_table_txt(instances, algs)
-	# run_benchmark_stats(instances, algs, trials, timelimit)
+	run_benchmark_stats(instances, algs, trials, timelimit)
 	write_table(instances, algs, Path("../results"), "table.pdf", trials, timelimit)
 
-	# subprocess.run(
-	# 	['pdftk',
-	# 	 Path("../results") / 'table.pdf',
-	# 	 Path("../results") / 'stats.pdf',
-	# 	 'cat', 'output',
-	# 	 Path("../results") / 'results.pdf'
-	# 	]
-	# )
-	# # delete temp files
-	# (Path("../results") / 'table.pdf').unlink()
-	# (Path("../results") / 'stats.pdf').unlink()
+	subprocess.run(
+		['pdftk',
+		 Path("../results") / 'table.pdf',
+		 Path("../results") / 'stats.pdf',
+		 'cat', 'output',
+		 Path("../results") / 'results.pdf'
+		]
+	)
+	# delete temp files
+	(Path("../results") / 'table.pdf').unlink()
+	(Path("../results") / 'stats.pdf').unlink()
 
 	# paper_tables.write_table1(trials, timelimit)
 	# paper_tables.write_table2(trials, timelimit)
