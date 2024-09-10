@@ -364,47 +364,52 @@ int main(int argc, char* argv[]) {
 
         Conflict inter_robot_conflict;
         if (!getEarliestConflict(P.solution, robots, col_mng_robots, robot_objs, inter_robot_conflict)){
-            solved_db = true;
-            std::cout << "Final solution from db-ecbs!" << std::endl; 
-            create_dir_if_necessary(outputFile);
-            std::ofstream out_db(outputFile);
-            export_solutions(P.solution, &out_db);
-            // priority-based optimization, no smart prioritization - sequentially only
-            // r1, r2 with r1 as moving obst., r3 with r1, r2 as moving obs., etc.
-            if (cfg["priority_based_optimization"].as<bool>()){
-              Options_trajopt pr_opt_traj;
-              pr_opt_traj.solver_id = 0;
-              pr_opt_traj.control_bounds = 1;
-              pr_opt_traj.use_warmstart = 1;
-              pr_opt_traj.weight_goal = 400;
-              pr_opt_traj.max_iter = 50;
-              pr_opt_traj.soft_control_bounds = true; 
-              std::unordered_set<size_t> other_robots; 
-              HighLevelNodeFocal tmpNode;
-              tmpNode.solution.resize(robots.size());
-              for(size_t i = 0; i < robots.size(); i++){
-                if(i > 0)
-                  other_robots.insert(i-1); // skip the first robot, no moving obstacles for it
-                // 1. get the environment (use the tmpNode.solution=already optimized to create moving obstacles)
-                std::string tmp_envFile = "/tmp/dynoplan/tmp_envFile_" + gen_random(5) + ".yaml";
-                create_dir_if_necessary(tmp_envFile);
-                get_desired_moving_obstacles(/*envFile*/inputFile, /*outFile*/tmp_envFile, /*initialGuess*/P.solution.at(i).trajectory,
-                                             tmpNode.solution, i, other_robots);
-                // 2. create the problem
-                dynobench::Problem tmp_problem(tmp_envFile);
-                tmp_problem.models_base_path = DYNOBENCH_BASE "models/";
-                // 3. run the trajectory optimization
-                Result_opti tmp_opti_out;
-                trajectory_optimization(tmp_problem, P.solution.at(i).trajectory, pr_opt_traj, 
-                                          tmpNode.solution.at(i).trajectory, tmp_opti_out);
-                if(!tmp_opti_out.success)
-                  std::cout << "Priority-based Optimization failed for robot: " << i << std::endl;
+          solved_db = true;
+          std::cout << "Final solution from db-ecbs!" << std::endl; 
+          create_dir_if_necessary(outputFile);
+          std::ofstream out_db(outputFile);
+          export_solutions(P.solution, &out_db);
+          // priority-based optimization, no smart prioritization - sequentially only
+          // r1, r2 with r1 as moving obst., r3 with r1, r2 as moving obs., etc.
+          if (cfg["priority_based_optimization"].as<bool>()){
+            auto pr_opt_start = std::chrono::high_resolution_clock::now();
+            Options_trajopt pr_opt_traj;
+            pr_opt_traj.solver_id = 0;
+            pr_opt_traj.control_bounds = 1;
+            pr_opt_traj.use_warmstart = 1;
+            pr_opt_traj.weight_goal = 400;
+            pr_opt_traj.max_iter = 50;
+            pr_opt_traj.soft_control_bounds = true; 
+            std::unordered_set<size_t> other_robots; 
+            MultiRobotTrajectory multirobot_sol; // for the priority optimization
+            multirobot_sol.trajectories.resize(robots.size());
+            for(size_t i = 0; i < robots.size(); i++){
+              if(i > 0)
+                other_robots.insert(i-1); // skip the first robot, no moving obstacles for it
+              // 1. get the environment (use the tmpNode.solution=already optimized to create moving obstacles)
+              std::string tmp_envFile = "/tmp/dynoplan/tmp_envFile_" + gen_random(5) + ".yaml";
+              create_dir_if_necessary(tmp_envFile);
+              get_desired_moving_obstacles(/*envFile*/inputFile, multirobot_sol,/*robot_idx_sol*/P.solution.at(i).trajectory,
+                                          /*outFile*/tmp_envFile, i, other_robots);
+              // 2. create the problem
+              dynobench::Problem tmp_problem(tmp_envFile);
+              tmp_problem.models_base_path = DYNOBENCH_BASE "models/";
+              // 3. run the trajectory optimization
+              Result_opti tmp_opti_out;
+              trajectory_optimization(tmp_problem, P.solution.at(i).trajectory, pr_opt_traj, 
+                                      multirobot_sol.trajectories.at(i), tmp_opti_out);
+              if(!tmp_opti_out.success){
+                std::cout << "Priority-based optimization failed for robot: " << i << std::endl;
+                return 0;
               }
-              std::cout << "Priority-based optimization is done." << std::endl;
-              create_dir_if_necessary(optimizationFile);
-              std::ofstream out_opt(optimizationFile);
-              export_solutions(tmpNode.solution, &out_opt);
             }
+            std::cout << "Priority-based optimization is done." << std::endl;
+            multirobot_sol.to_yaml_format(optimizationFile.c_str());
+            auto pr_opt_end = std::chrono::high_resolution_clock::now();
+            std::chrono::duration<double> pr_opt_duration = pr_opt_end - pr_opt_start;
+            std::cout << "Time taken for the priority-based optimization: " << pr_opt_duration.count() << " seconds" << std::endl;
+            return 0;
+          }
         }
         ++expands;
         if (expands % 100 == 0) {

@@ -255,3 +255,22 @@ target_include_directories(main_ompl PUBLIC
   ${YAML_INCLUDE_DIRS}
   ${FCL_INCLUDE_DIRS}
 )
+
+# for priority based optimization + static obstacles
+add_executable(main_greedy_optimization
+  src/main_greedy_optimization.cpp
+)
+
+target_include_directories(main_greedy_optimization PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}/dynoplan/include
+)
+
+target_link_libraries(main_greedy_optimization PRIVATE 
+  idbastar::optimization
+  idbastar::tdbastar_epsilon
+  motion_planning_common
+  ${Boost_LIBRARIES}
+  ${YAML_LIBRARIES}
+  ompl
+  ${FCL_LIBRARIES}
+)
