@@ -235,7 +235,7 @@ bool getEarliestConflict(
     std::vector<ob::State*> node_states;
     Eigen::VectorXf p0_opt;
     std::vector<Eigen::VectorXf> p0_tmp;
-    Eigen::VectorXf p0_init_guess = create_vector({-1.0, 0.0});
+    Eigen::VectorXf p0_init_guess = create_vector({-1.2, 0.0});
     for (size_t t = 0; t <= max_t; ++t){
         // std::cout << "TIMESTAMP: " << t << std::endl;
         node_states.clear();

@@ -132,8 +132,8 @@ for k, state in enumerate(states):
     else:
         r2_state = r2_states[-1]
     th1, th2, dp0, dth1, dth2 = computePayloadSt(r1_state, r2_state, p0_init[k])
-    # states[k] = [p0_init[k][0], p0_init[k][1], th1, th2, dp0[0], dp0[1], dth1, dth2]
-    states[k] = [p0_init[k][0], p0_init[k][1], th1, th2, 0, 0, 0, 0]
+    states[k] = [p0_init[k][0], p0_init[k][1], th1, th2, dp0[0], dp0[1], dth1, dth2]
+    # states[k] = [p0_init[k][0], p0_init[k][1], th1, th2, 0, 0, 0, 0]
 
 print("payload: ","("+str(len(p0_init))+","+ str(len(p0_init[0]))+")", "actions: ", actions.shape, "states:", states.shape)
 
