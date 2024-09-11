@@ -51,11 +51,11 @@ def visualize(env_file, result_file, filename_video=None):
       robots = list(range(0, len(result["result"]), 1))
       plt.bar(robots, clusters)
       # plt.xticks(ticks=range(min(clusters), max(clusters) + 1, 1))
+      plt.xticks(np.arange(0, len(robots), 1))
       plt.title('Histogram for Robot Numbers')
       plt.xlabel('Robot ID')
       plt.ylabel('Frequency')
       plt.savefig(Path(result_file).with_suffix(".jpg"))
-      exit()
     states = []
     name_robot = 0
     max_k = 0
