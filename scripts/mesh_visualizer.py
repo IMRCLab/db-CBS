@@ -11,6 +11,7 @@ import argparse
 import yaml
 import time
 import os
+import matplotlib.pyplot as plt
 def visualize(env_file, result_file, filename_video=None):
     vis = meshcat.Visualizer()
     anim = Animation()
@@ -44,6 +45,14 @@ def visualize(env_file, result_file, filename_video=None):
 
     with open(result_file) as res_file:
         result = yaml.load(res_file, Loader=yaml.FullLoader)
+    # for the histogram
+    if result.get("cluster_tracking"):
+      clusters = result["cluster_tracking"]
+      plt.hist(clusters, bins=50, edgecolor='black')
+      plt.title('Histogram for Robot Numbers')
+      plt.xlabel('Robot ID')
+      plt.ylabel('Frequency')
+      plt.savefig(Path(result_file).with_suffix(".jpg"))
     states = []
     name_robot = 0
     max_k = 0
@@ -81,6 +90,7 @@ def visualize(env_file, result_file, filename_video=None):
     html_file = Path(result_file).with_suffix(".html")
     with open(html_file, "w") as f:
         f.write(res)
+
             
 def main():
   parser = argparse.ArgumentParser()

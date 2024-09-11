@@ -423,6 +423,7 @@ int main(int argc, char* argv[]) {
             return 0;
           }
           if(cfg["execute_greedy_optimization"].as<bool>()){
+            std::vector<int> cluster_tracking(num_robots, 0);
             HighLevelNodeOptimization tmpNode = tmp;
             int max_conflict_cluster_index;
             int index_i, index_j;
@@ -444,6 +445,7 @@ int main(int argc, char* argv[]) {
                                             [](std::pair<std::unordered_set<size_t>, int>& a, std::pair<std::unordered_set<size_t>, int>& b) {
                                  return a.second < b.second; }); // compared based on conflicts
               // DEBUG
+              ++cluster_tracking.at(max_conflict_cluster_it->first.size());
               std::cout << "max cluster elements: ";
               for (const auto& elem : max_conflict_cluster_it->first) {
                   std::cout << elem << " ";
@@ -472,6 +474,13 @@ int main(int argc, char* argv[]) {
                   auto optimization_end = std::chrono::high_resolution_clock::now();
                   std::chrono::duration<double> opt_duration = optimization_end - optimization_start;
                   std::cout << "Time taken for optimization: " << opt_duration.count() << " seconds" << std::endl;
+                  if(!cluster_tracking.empty()){
+                    std::ofstream fout(optimizationFile, std::ios::app); 
+                    fout << "cluster_tracking:" << std::endl;
+                    for (auto &c: cluster_tracking){
+                      fout << "  - " << c << std::endl;
+                    }
+                  }
                   return 0;
                 }
                 // vi. the max conflict happening in the output, extract this pair
