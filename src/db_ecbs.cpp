@@ -445,7 +445,8 @@ int main(int argc, char* argv[]) {
                                             [](std::pair<std::unordered_set<size_t>, int>& a, std::pair<std::unordered_set<size_t>, int>& b) {
                                  return a.second < b.second; }); // compared based on conflicts
               // DEBUG
-              ++cluster_tracking.at(max_conflict_cluster_it->first.size());
+              if(max_conflict_cluster_it->first.size())
+                cluster_tracking.at(max_conflict_cluster_it->first.size()) += 1;
               std::cout << "max cluster elements: ";
               for (const auto& elem : max_conflict_cluster_it->first) {
                   std::cout << elem << " ";
