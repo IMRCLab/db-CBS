@@ -383,7 +383,7 @@ void get_desired_moving_obstacles(const std::string &env_file,
                         size_t robot_idx,
                         std::unordered_set<size_t> &other_cluster){
   // custom params for the obstacle
-  double size = 0.1;
+  Eigen::Vector3d radii = Eigen::Vector3d(.12, .12, .3); // from tro paper
   std::string type = "sphere";
   YAML::Node env = YAML::LoadFile(env_file);
   const auto &env_min = env["environment"]["min"];
@@ -393,12 +393,11 @@ void get_desired_moving_obstacles(const std::string &env_file,
   data["environment"]["max"] = env_max;
   data["environment"]["min"] = env_min;
   size_t num_neighbors = other_cluster.size();
-  // assert(num_neighbors == multirobot_sol.trajectories.size());
 
   YAML::Node robot_node;
-  robot_node["start"] = env["robots"][robot_idx]["start"];;
+  robot_node["start"] = env["robots"][robot_idx]["start"];
   robot_node["goal"] = env["robots"][robot_idx]["goal"];
-  robot_node["type"] = env["robots"][robot_idx]["type"];
+  robot_node["type"] = env["robots"][robot_idx]["type"]; // "integrator2_3d_ellipsoid_v0";
   data["robots"].push_back(robot_node);
  
   size_t max_t = 0;
@@ -437,7 +436,6 @@ void get_desired_moving_obstacles(const std::string &env_file,
 
   max_t = std::max(max_t, robot_idx_sol.states.size() - 1); // check with the robot_idx trajectory
 
-  // optimization breaks
   YAML::Node moving_obstacles_node; // for all robots
   Eigen::VectorXd state;
   std::vector<Obstacle> moving_obs_per_time;
@@ -456,8 +454,8 @@ void get_desired_moving_obstacles(const std::string &env_file,
         // into vector
         Obstacle obs;
         obs.center = {state(0), state(1), state(2)};
-        obs.size = {size};
-        obs.type = "sphere";
+        obs.size = {radii(0), radii(1), radii(2)};
+        obs.type = "ellipsoid";
         moving_obs_per_time.push_back({obs});
       }
     }
