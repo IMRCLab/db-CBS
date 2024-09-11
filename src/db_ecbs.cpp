@@ -79,6 +79,8 @@ int main(int argc, char* argv[]) {
     bool save_search_video = false;
     bool save_expanded_trajs = cfg["save_expanded_trajs"].as<bool>();
     std::string conflicts_folder = output_folder + "/conflicts";
+    bool ellipsoid_collision_shape = cfg["ellipsoid_collision_shape"].as<bool>();
+    Eigen::Vector3d radii = Eigen::Vector3d(.12, .12, .3); // from tro paper
     // tdbstar options
     Options_tdbastar options_tdbastar;
     options_tdbastar.outFile = outputFile;
@@ -89,7 +91,6 @@ int main(int argc, char* argv[]) {
     options_tdbastar.w = cfg["suboptimality_factor"].as<float>(); 
     options_tdbastar.rewire = cfg["rewire"].as<bool>();
     options_tdbastar.always_add_node = cfg["always_add_node"].as<bool>();
-    bool execute_optimization = cfg["execute_optimization"].as<bool>();
     // options_tdbastar.max_expands = 200;
     // tdbastar problem
     dynobench::Problem problem(inputFile);
@@ -149,8 +150,13 @@ int main(int argc, char* argv[]) {
     col_mng_robots->setup();
     size_t i = 0;
     for (const auto &robot : robots){
-        collision_geometries.insert(collision_geometries.end(), 
+        if(ellipsoid_collision_shape && robot->name == "Integrator2_3d"){
+          collision_geometries.push_back(std::make_shared<fcl::Ellipsoidd>(radii)); // for inter-robot collision checking
+        }
+        else{
+          collision_geometries.insert(collision_geometries.end(), 
                               robot->collision_geometries.begin(), robot->collision_geometries.end());
+        }
         auto robot_obj = new fcl::CollisionObject(collision_geometries[col_geom_id]);
         collision_geometries[col_geom_id]->setUserData((void*)i);
         robot_objs.push_back(robot_obj);
