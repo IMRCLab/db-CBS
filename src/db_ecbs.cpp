@@ -375,6 +375,8 @@ int main(int argc, char* argv[]) {
           create_dir_if_necessary(outputFile);
           std::ofstream out_db(outputFile);
           export_solutions(P.solution, &out_db);
+          std::cout << "Number of HL nodes: " << id << std::endl;
+          return 0;
           // priority-based optimization, no smart prioritization - sequentially only
           // r1, r2 with r1 as moving obst., r3 with r1, r2 as moving obs., etc.
           if (cfg["priority_based_optimization"].as<bool>()){
