@@ -5,18 +5,14 @@ import yaml
 from pathlib import Path
 sys.path.append(str(Path(__file__).parent / "visualize_dintCables.py"))
 sys.path.append(str(Path(__file__).parent))
-# import robot_python
-print(sys.path)
+import argparse
 from visualize import main
 import subprocess
 
 
-#### This script generates the init guess for the plan of the two single robots to the joint robot
-#### moreover, it saves an html file for the meshcat animation of this initguess
+#### This script generates the init guess from the plan of the two single robots to the joint robot
+#### moreover, it saves an html file for the meshcat animation of this init guess
 ### from the main directory
-### cd buildRelease 
-### python3 ../scripts/init_guess_cables.py
-### init_guess_cables.yaml is created + a visualization for the init guess: cables_integrator2_2d_window.html
 
 def saveyaml(file_dir, data):
     with open(file_dir, 'w') as f:
@@ -24,6 +20,7 @@ def saveyaml(file_dir, data):
 
 def computePayloadSt(r1, r2, r0):
     # compute the states from the estimated payload and the robots positions coming from dbCBS
+    # note that even though I compute the velocities, I only use the geometric states for the initial guess
     p1 = np.array(r1[0:2], dtype=np.float64)
     p2 = np.array(r2[0:2], dtype=np.float64)
     p0 = np.array(r0[0:2], dtype=np.float64)
@@ -55,185 +52,108 @@ def computePayloadSt(r1, r2, r0):
     return th1, th2, dp0, dth1, dth2
 
 def normalize(vec):
-    return np.array(vec)/np.linalg.norm(np.array(vec))
+    norm_v = norm(vec)
+    if norm_v > 0:
+        return np.array(vec)/norm_v
+    else: 
+        raise("cannot divide by zero")
 
 def norm(vec):
     return np.linalg.norm(np.array(vec))
 
 
-videoname = "cables_integrator2_2d_window"
-html_path = f"../{videoname}.html"
-path_to_env = "../example/cables_integrator2_2d_window.yaml"
-path_to_dbcbs = "../2integrator2_2d_window_dbcbs.yaml"
-path_to_payload = "../window_payload.yaml"
-tmp = True
-path_to_result = "../../../init_guess_cables.yaml"
-if tmp:
-    path_to_result = "../init_guess_cables.yaml"
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--env', type=str, help="environment")
+    parser.add_argument('--payload', type=str, help="payload pose in dbcbs")
+    parser.add_argument('--dbcbs', type=str, help="dbcbs sol")
+    parser.add_argument('--result', type=str, help="init_guess_cable.yaml")
+    parser.add_argument('--output', type=str, help="init_guess_cable.html")
 
-# load db_cbs states: 
-with open(path_to_env, "r") as f: 
-    env = yaml.safe_load(f)
-#load payload data
-with open(path_to_payload, "r") as f: 
-    payload_yaml = yaml.safe_load(f)
-
-# load db_cbs states: 
-with open(path_to_dbcbs, "r") as f: 
-    db_cbs_states = yaml.safe_load(f)
-
-r1_states = np.array(db_cbs_states["result"][0]["states"])
-r2_states = np.array(db_cbs_states["result"][1]["states"])
-
-
-r1_actions = np.array(db_cbs_states["result"][0]["actions"])
-r2_actions = np.array(db_cbs_states["result"][1]["actions"])
-
-# payload states from dbCBS non linear opt
-p0_init = payload_yaml["payload"]
-
-num_act1 = r1_actions.shape[0]
-num_act2 = r2_actions.shape[0]
-# to find which action is the shortest and fill it with zero to be the same size as the other action
-if num_act1 > num_act2:
-    num_missing_actions = num_act1 - num_act2
-    for i in range(num_missing_actions):
-        r2_actions = np.append(r2_actions,[[0,0]], axis=0)
-elif num_act2 > num_act1:
-    num_missing_actions = num_act2 - num_act1
-    for i in range(num_missing_actions):
-        r1_actions = np.append(r1_actions,[[0,0]], axis=0)
-
-states = np.zeros((r1_actions.shape[0]+1,8))
-actions = np.zeros((r1_actions.shape[0],4))
-
-for k, action in enumerate(actions):
-    ac1 = r1_actions[k]
-    ac2 = r2_actions[k]
-    actions[k] = [ac1[0], ac1[1], ac2[0], ac2[1]]
-    # actions[k] = [0, 0, 0, 0]
-
-# r = robot_python.robot_factory_with_env(model_yaml, path_to_env)
-# for k, state in enumerate(states):
-#     if k < len(states)-1:
-#         print(states[k+1], states[k], actions[k])
-#         r.step(states[k+1], states[k], actions[k], 0.1)
-
-
-for k, state in enumerate(states):
-    # the conditions here to check if one robot's state is longer than the other
-    # then take the last state of the shortest 
-    if k < len(r1_states):
-        r1_state = r1_states[k]
-    else:
-        r1_state = r1_states[-1]    
-    if k < len(r2_states):
-        r2_state = r2_states[k]
-    else:
-        r2_state = r2_states[-1]
-    th1, th2, dp0, dth1, dth2 = computePayloadSt(r1_state, r2_state, p0_init[k])
-    states[k] = [p0_init[k][0], p0_init[k][1], th1, th2, dp0[0], dp0[1], dth1, dth2]
-    # states[k] = [p0_init[k][0], p0_init[k][1], th1, th2, 0, 0, 0, 0]
-
-print("payload: ","("+str(len(p0_init))+","+ str(len(p0_init[0]))+")", "actions: ", actions.shape, "states:", states.shape)
-
-# actions = np.zeros((256,4))
-# # for k in range(actions.shape[0]):
-# #     actions[k] = [0,0,0,0]
-# import numpy as np
-# import matplotlib.pyplot as plt
-
-# def interpolate_states(states, new_size, wrap_indices):
-#     """
-#     Linearly interpolates the given states to a new size with consideration for angle normalization.
+    args = parser.parse_args()
+    path_to_env = args.env
+    path_to_dbcbs = args.dbcbs
+    html_path = args.output
+    path_to_result = args.result
+    path_to_payload = args.payload 
     
-#     Parameters:
-#         states (np.ndarray): The original state matrix of shape (n_states, n_samples).
-#         new_size (int): The new number of samples after interpolation.
-#         wrap_indices (list): List of state indices that are angles and need wrapping.
-    
-#     Returns:
-#         np.ndarray: Interpolated state matrix of shape (n_states, new_size).
-#     """
-#     # Time vectors for original and interpolated data
-#     old_time = np.linspace(0, 1, states.shape[1])
-#     new_time = np.linspace(0, 1, new_size)
-#     print(states.shape)
-#     print(states.shape[0], new_size)
-#     # exit()
-#     # Initialize the interpolated state matrix
-#     new_states = np.zeros((states.shape[0], new_size))
-    
-#     for i in range(states.shape[0]):
-#         if i in wrap_indices:
-#             # Unwrap angles for linear interpolation
-#             unwrapped_angles = np.unwrap(states[i])
-#             interpolated_angles = np.interp(new_time, old_time, unwrapped_angles)
-#             # Wrap angles back into the -pi to pi range
-#             new_states[i] = (interpolated_angles + np.pi) % (2 * np.pi) - np.pi
-#         else:
-#             # Linear interpolation for non-angular states
-#             new_states[i] = np.interp(new_time, old_time, states[i])
-    
-#     return new_states
+    # load db_cbs states: 
+    with open(path_to_env, "r") as f: 
+        env = yaml.safe_load(f)
+    #load payload data
+    with open(path_to_payload, "r") as f: 
+        payload_yaml = yaml.safe_load(f)
 
-# def plot_states(original_states, interpolated_states):
-#     """
-#     Plots the original and interpolated states.
-    
-#     Parameters:
-#         original_states (np.ndarray): The original state matrix.
-#         interpolated_states (np.ndarray): The interpolated state matrix.
-#     """
-#     n_states = original_states.shape[0]
-#     print(n_states)
-#     fig, axes = plt.subplots(nrows=n_states, ncols=2, figsize=(12, 2 * n_states))
-    
-#     for i in range(n_states):
-#         axes[i, 0].plot(original_states[i], label='Original')
-#         axes[i, 1].plot(interpolated_states[i], label='Interpolated')
+    # load db_cbs states: 
+    with open(path_to_dbcbs, "r") as f: 
+        db_cbs_states = yaml.safe_load(f)
+
+    r1_states = np.array(db_cbs_states["result"][0]["states"])
+    r2_states = np.array(db_cbs_states["result"][1]["states"])
+
+
+    r1_actions = np.array(db_cbs_states["result"][0]["actions"])
+    r2_actions = np.array(db_cbs_states["result"][1]["actions"])
+
+    # payload states from dbCBS non linear opt
+    p0_init = payload_yaml["payload"]
+
+    num_act1 = r1_actions.shape[0]
+    num_act2 = r2_actions.shape[0]
+    # to find which action is the shortest 
+    # and fill it with zero to be the same size as the other action
+    if num_act1 > num_act2:
+        num_missing_actions = num_act1 - num_act2
+        for i in range(num_missing_actions):
+            r2_actions = np.append(r2_actions,[[0,0]], axis=0)
+    elif num_act2 > num_act1:
+        num_missing_actions = num_act2 - num_act1
+        for i in range(num_missing_actions):
+            r1_actions = np.append(r1_actions,[[0,0]], axis=0)
+
+    states = np.zeros((r1_actions.shape[0]+1,8))
+    actions = np.zeros((r1_actions.shape[0],4))
+
+    for k, action in enumerate(actions):
+        ac1 = r1_actions[k]
+        ac2 = r2_actions[k]
+        actions[k] = [ac1[0], ac1[1], ac2[0], ac2[1]]
+
+
+
+    for k, state in enumerate(states):
+        # the conditions here to check if one robot's state is longer than the other
+        # then take the last state of the shortest 
+        if k < len(r1_states):
+            r1_state = r1_states[k]
+        else:
+            r1_state = r1_states[-1]    
+        if k < len(r2_states):
+            r2_state = r2_states[k]
+        else:
+            r2_state = r2_states[-1]
+        th1, th2, dp0, dth1, dth2 = computePayloadSt(r1_state, r2_state, p0_init[k])
+        # states[k] = [p0_init[k][0], p0_init[k][1], th1, th2, dp0[0], dp0[1], dth1, dth2]
+        # I only use the geometric states for the initial guess
+        states[k] = [p0_init[k][0], p0_init[k][1], th1, th2, 0, 0, 0, 0]
+
+    print("payload: ","("+str(len(p0_init))+","+ str(len(p0_init[0]))+")", "actions: ", actions.shape, "states:", states.shape)
+
+    result_yaml = dict()
+    result_yaml["result"] = dict()
+    result_yaml["result"]["states"] = states.tolist()
+    result_yaml["result"]["actions"] = actions.tolist()
+    result_yaml["result"]["num_action"] = len(actions.tolist())
+    result_yaml["result"]["num_states"] = len(states.tolist())
+
+    saveyaml(path_to_result, result_yaml)
+
+    script = "../scripts/visualize_dintCables.py"
+    subprocess.run(["python3",
+                    script,
+                    "--env", path_to_env,
+                    "--result", path_to_result,
+                    "--output", html_path])
         
-#         axes[i, 0].set_title(f'State {i+1} Original')
-#         axes[i, 1].set_title(f'State {i+1} Interpolated')
-        
-#         axes[i, 0].legend()
-#         axes[i, 1].legend()
-    
-#     plt.tight_layout()
-#     plt.show()
-
-# # Example usage
-# n_states = 8
-# n_samples = states.shape[0]
-# new_samples = n_samples + 40
-
-# # Indices 2 and 3 are angles (th1 and th2)
-# wrap_indices = [2, 3]
-# # Interpolate states
-# interpolated_states = interpolate_states(states.T, new_samples, wrap_indices)
-# interpolated_actions = interpolate_states(actions.T, new_samples-1, [])
-# Plot original and interpolated states
-# plot_states(states.T, interpolated_states)
-
-
-
-
-result_yaml = dict()
-result_yaml["result"] = dict()
-# result_yaml["result"]["states"] = interpolated_states.T.tolist()
-# result_yaml["result"]["actions"] = interpolated_actions.T.tolist()
-result_yaml["result"]["states"] = states.tolist()
-result_yaml["result"]["actions"] = actions.tolist()
-result_yaml["result"]["num_action"] = len(actions.tolist())
-result_yaml["result"]["num_states"] = len(states.tolist())
-
-saveyaml(path_to_result, result_yaml)
-
-script = "../scripts/visualize_dintCables.py"
-# script = "../../../scripts/visualize_dintCables.py"
-subprocess.run(["python3",
-				script,
-				"--env", path_to_env,
-				"--result", path_to_result,
-				"--output", html_path])
-	
+if __name__ == "__main__":
+    main()

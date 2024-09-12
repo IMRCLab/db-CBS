@@ -100,12 +100,13 @@ void export_solution_p0(const std::vector<Eigen::VectorXf> &p0_opt, std::string 
 }
 // export path to .yaml file
 void export_solutions(const std::vector<LowLevelPlan<AStarNode*,ob::State*, oc::Control*>>& solution, 
-                        const std::vector<std::shared_ptr<Robot>>& robots, std::string outputFile){
+                        const std::vector<std::shared_ptr<Robot>>& robots, std::string outputFile, int & expansions){
     std::ofstream out(outputFile);
     std::vector<double> reals;
     float cost = 0;
     for (auto& n : solution)
       cost += n.cost;
+    out << "expansions: " << expansions << std::endl; 
     out << "cost: " << cost << std::endl; 
     out << "result:" << std::endl;
     for (size_t i = 0; i < solution.size(); ++i){ 
@@ -224,7 +225,7 @@ bool getEarliestConflict(
     std::shared_ptr<fcl::BroadPhaseCollisionManagerf> col_mng_robots,
     const std::vector<fcl::CollisionObjectf*>& col_mng_objs,
     Conflict& early_conflict,
-    std::vector<Eigen::VectorXf> & p0_sol)
+    std::vector<Eigen::VectorXf>& p0_sol)
 {
     size_t max_t = 0;
     for (const auto& sol : solution){
@@ -235,8 +236,9 @@ bool getEarliestConflict(
     std::vector<ob::State*> node_states;
     Eigen::VectorXf p0_opt;
     std::vector<Eigen::VectorXf> p0_tmp;
-    Eigen::VectorXf p0_init_guess = create_vector({-1.2, 0.0});
-    for (size_t t = 0; t <= max_t; ++t){
+    bool solve_p0 = true;
+    Eigen::VectorXf p0_init_guess = create_vector({-1.0, 0.0});
+    for (size_t t = 0; t <= max_t; ++t) {
         // std::cout << "TIMESTAMP: " << t << std::endl;
         node_states.clear();
         size_t obj_idx = 0;
@@ -280,44 +282,48 @@ bool getEarliestConflict(
 #endif
             return true;
         }
-
-        Eigen::Vector3f robot1_pos = col_mng_objs[0]->getTranslation();
-        Eigen::Vector3f robot2_pos = col_mng_objs[1]->getTranslation();
-        float l = 0.5;
-        
-        size_t dim = 2;
-        std::vector<double> li = {0.5, 0.5};
-        double mu = 0.1;
-
-        std::vector<Eigen::VectorXf> pi = {
-            create_vector({robot1_pos(0), robot1_pos(1)}),
-            create_vector({robot2_pos(0), robot2_pos(1)})
-        };        
-        cost_data data {pi, li, mu, p0_init_guess}; // prepare the data for the opt
-        optimizePayload(p0_opt, dim, p0_init_guess, data);
-        p0_init_guess << p0_opt(0), p0_opt(1);
-
-        for (const auto& p : pi) {
-            float distance = (p - p0_opt).norm();
-            // std::cout<< "distance between: [" << p(0)<<","  << p(1) << "] and "<< "[" << p0_opt(0)<<","  << p0_opt(1) << "] = " << distance << std::endl;
-            if (abs(distance - l) >= 0.1) { // assumed 2 robots
-                // std::cout<< "less than 0.15: " << distance<<std::endl;
-
-                early_conflict.time = t * all_robots[0]->dt();
-                early_conflict.robot_idx_i = 0; 
-                early_conflict.robot_idx_j = 1;
-                assert(early_conflict.robot_idx_i != early_conflict.robot_idx_j);
-                early_conflict.robot_state_i = node_states[early_conflict.robot_idx_i];
-                early_conflict.robot_state_j = node_states[early_conflict.robot_idx_j];
-                return true;
-            }
-        }
     
-    p0_tmp.push_back(p0_opt);
+        if (solve_p0) {
+            Eigen::Vector3f robot1_pos = col_mng_objs[0]->getTranslation();
+            Eigen::Vector3f robot2_pos = col_mng_objs[1]->getTranslation();
+            float l = 0.5;
+            
+            size_t dim = 2;
+            std::vector<double> li = {0.5, 0.5};
+            double mu = 0.18;
+
+            std::vector<Eigen::VectorXf> pi = {
+                create_vector({robot1_pos(0), robot1_pos(1)}),
+                create_vector({robot2_pos(0), robot2_pos(1)})
+            };        
+            cost_data data {pi, li, mu, p0_init_guess}; // prepare the data for the opt
+            optimizePayload(p0_opt, dim, p0_init_guess, data);
+            p0_init_guess << p0_opt(0), p0_opt(1);
+
+            for (const auto& p : pi) {
+                float distance = (p - p0_opt).norm();
+                if (abs(distance - l) >= 0.1) { // assumed 2 robots
+                    early_conflict.time = t * all_robots[0]->dt();
+                    early_conflict.robot_idx_i = 0; 
+                    early_conflict.robot_idx_j = 1;
+                    assert(early_conflict.robot_idx_i != early_conflict.robot_idx_j);
+                    early_conflict.robot_state_i = node_states[early_conflict.robot_idx_i];
+                    early_conflict.robot_state_j = node_states[early_conflict.robot_idx_j];
+                    return true;
+                }
+            }
+        }  
+    if (solve_p0) {
+        p0_tmp.push_back(p0_opt);
     }
-    for (const auto& p0i : p0_tmp) {
-        p0_sol.push_back(p0i);
     }
+    if (solve_p0) {
+        for (const auto& p0i : p0_tmp) {
+            p0_sol.push_back(p0i);
+        }
+    }
+
+
     return false;
 }
 
@@ -455,7 +461,7 @@ int main(int argc, char* argv[]) {
 
     // load config file
     YAML::Node cfg = YAML::LoadFile(cfgFile);
-    cfg = cfg["db-cbs"]["default"];
+    // cfg = cfg["default"];
     float alpha = cfg["alpha"].as<float>();
     bool filter_duplicates = cfg["filter_duplicates"].as<bool>();
 
@@ -666,21 +672,34 @@ int main(int argc, char* argv[]) {
             if (!getEarliestConflict(P.solution, robots, col_mng_robots, col_mng_objs, inter_robot_conflict, p0_sol)) {
                 solved_db = true;
                 std::cout << "Final solution! cost: " << P.cost << std::endl;
-                export_solutions(P.solution, robots, outputFile);
-                std::string outputFile_payload =  + "../window_payload.yaml";
+                std::ofstream out(outputFile);
+                out << "expansions: " << id << std::endl;
+                export_solutions(P.solution, robots, outputFile, id);
+                size_t pos = outputFile.rfind(".yaml");
+                std::string outputFile_payload = "../result_dbcbs_payload.yaml";
+                // Check if ".yaml" is found at the end of the string
+                if (pos != std::string::npos) {
+                    // Remove ".yaml" and add "_payload.yaml"
+                    outputFile_payload = outputFile.substr(0, pos) + "_payload.yaml";
+                    std::cout << "outputFile_payload: " << outputFile_payload << std::endl;
+                }
                 export_solution_p0(p0_sol, outputFile_payload);
                 export_joint_solutions(P.solution, robots, jointFile);
             
                 std::cout << "warning: using new multirobot optimization" << std::endl;
             
                 const bool sum_robot_cost = true;
-                bool feasible = execute_optimizationMultiRobot(inputFile,
-                                                    outputFile, 
-                                                    optimizationFile,
-                                                    dynobench_base,
-                                                    sum_robot_cost);
-                if (feasible) {
-                    return 0;
+                bool run_opt  = false;
+                if (run_opt) { 
+                    // switch off the optimization                   
+                    bool feasible = execute_optimizationMultiRobot(inputFile,
+                                                        outputFile, 
+                                                        optimizationFile,
+                                                        dynobench_base,
+                                                        sum_robot_cost);
+                    if (feasible) {
+                        return 0;
+                    }
                 }
                 return 0;
                 break;
@@ -725,7 +744,7 @@ int main(int argc, char* argv[]) {
                 }
             }
         }
+        std::cout << "HL expansions id: " << id << std::endl;
     }
-
     return 0;
 }
