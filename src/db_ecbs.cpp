@@ -423,7 +423,7 @@ int main(int argc, char* argv[]) {
             return 0;
           }
           if(cfg["execute_greedy_optimization"].as<bool>()){
-            std::vector<int> cluster_tracking(num_robots, 0);
+            std::vector<int> cluster_tracking(num_robots + 1, 0);
             HighLevelNodeOptimization tmpNode = tmp;
             int max_conflict_cluster_index;
             int index_i, index_j;

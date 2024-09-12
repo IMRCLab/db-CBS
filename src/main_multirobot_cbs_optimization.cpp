@@ -106,6 +106,7 @@ int main(int argc, char *argv[]) {
   bool greedy_cbs = true;
 
   if(greedy_cbs){
+    std::vector<int> cluster_tracking(num_robots + 1, 0);
     HighLevelNodeOptimization tmpNode = tmp;
     int max_conflict_cluster_index;
     int index_i, index_j;
@@ -130,7 +131,8 @@ int main(int argc, char *argv[]) {
         std::cout << elem << " ";
       }
       std::cout << "\nconflict value: " << max_conflict_cluster_it->second << std::endl;
-
+      if(max_conflict_cluster_it->first.size())
+        cluster_tracking.at(max_conflict_cluster_it->first.size()) += 1;
       // iii. jointly optimiza the one with MAX conflicts
       std::string tmp_envFile = "/tmp/dynoplan/tmp_envFile_" + gen_random(6) + ".yaml";
       std::cout << "tmp envFile: " << tmp_envFile << std::endl;
