@@ -48,7 +48,7 @@ def visualize(env_file, result_file, filename_video=None):
     # for the histogram
     if result.get("cluster_tracking"):
       clusters = result["cluster_tracking"]
-      robots = list(range(0, len(result["result"]), 1))
+      robots = list(range(0, len(result["result"]) + 1, 1))
       plt.bar(robots, clusters)
       # plt.xticks(ticks=range(min(clusters), max(clusters) + 1, 1))
       plt.xticks(np.arange(0, len(robots), 1))
