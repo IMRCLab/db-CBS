@@ -151,7 +151,7 @@ int main(int argc, char* argv[]) {
     col_mng_robots->setup();
     size_t i = 0;
     for (const auto &robot : robots){
-      if(cfg["external_force"].as<bool>() && robot->name == "Integrator2_3d"){
+      if(cfg["residual_force"].as<bool>() && robot->name == "Integrator2_3d"){
         collision_geometries.push_back(std::make_shared<fcl::Ellipsoidd>(radii));
       }
       else
