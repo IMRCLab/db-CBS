@@ -123,6 +123,19 @@ def print_and_highlight_best_max(out, key, result, alg, algs, digits=1):
 		out += r"\textemdash"
 	return out
 
+def get_alg_name(alg_key):
+	# all algorithms we consider so far
+	mapping = {
+		"sst": "SST*",
+		"s2m2": "S2M2",
+		"k-cbs": "k-CBS",
+		"db-cbs": "db-CBS",
+		"db-ecbs": "db-ECBS",
+	}
+
+	if alg_key in mapping:
+		return mapping[alg_key]
+	return alg_key.upper().replace("-", "_")
 
 def write_table(rows, algs, results_path, fname, trials, T, regret=False):
 
@@ -137,30 +150,7 @@ def write_table(rows, algs, results_path, fname, trials, T, regret=False):
 		f.write("\n")
 		f.write(r"% GENERATED - DO NOT EDIT - " + output_path.name + "\n")
 
-		# system_names = {
-		# 	'unicycle_first_order_0': "unicycle $1^{\mathrm{st}}$ order, v0",
-		# 	'unicycle_first_order_1': "unicycle $1^{\mathrm{st}}$ order, v1",
-		# 	'unicycle_first_order_2': "unicycle $1^{\mathrm{st}}$ order, v2",
-		# 	'unicycle_second_order_0': "unicycle $2^{\mathrm{nd}}$ order",
-		# 	'car_first_order_with_1_trailers_0': "car with trailer",
-		# 	'quadrotor_0': "quadrotor",
-		# }
-
-		# instance_names = {
-		# 	'parallelpark_0': "park",
-		# 	'kink_0': "kink",
-		# 	'bugtrap_0': "bugtrap",
-		# 	'wall_0': "wall",
-		# 	'empty_0': "empty",
-		# }
-
-		alg_names = {
-			"sst": "SST*",
-			"s2m2": "S2M2",
-			"k-cbs": "k-CBS",
-			"db-cbs": "db-CBS",
-			"db-ecbs": "db-ECBS",
-		}
+		alg_names = {key: get_alg_name(key) for key in algs}
 
 		out = r"\begin{tabular}{c || c"
 		for alg in algs:

@@ -10,7 +10,7 @@ from matplotlib.cm import get_cmap
 from collections import defaultdict
 
 class Report:
-  def __init__(self, filename, trials, T, dt):
+  def __init__(self, algs, filename, trials, T, dt):
 
     tex_fonts = {
         # Use LaTeX to write all text
@@ -30,20 +30,8 @@ class Report:
     self.pp = PdfPages(filename)
     self.fig = None
     cmap = get_cmap("Dark2")
-    self.alg_dict = {
-      'sst': {'idx': 0, 'color': cmap.colors[0], 'name': 'SST*'},
-      's2m2': {'idx': 1, 'color': cmap.colors[1], 'name': 'S2SM'},
-      'k-cbs': {'idx': 2, 'color': cmap.colors[2], 'name': 'K-CBS'},
-      'db-cbs': {'idx': 3, 'color': cmap.colors[3], 'name': 'DB-CBS'},
-      'db-ecbs': {'idx': 4, 'color': cmap.colors[4], 'name': 'DB-ECBS'},
-    }
-    self.color_dict = {
-      'sst': cmap.colors[0],
-      's2m2': cmap.colors[1],
-      'k-cbs': cmap.colors[2],
-      'db-cbs': cmap.colors[3],
-      'db-ecbs': cmap.colors[4],
-    }
+    alg_keys = algs
+    self.alg_dict, self.color_dict = generate_alg_and_color_dicts(alg_keys, cmap)
     self.trials = trials
     self.T = T
     self.dt = dt
@@ -299,6 +287,20 @@ def load_data(filename, T, dt):
         costs[idx:] = d["cost"]
   return costs
 
+def generate_alg_and_color_dicts(alg_keys, cmap):
+  alg_dict = {}
+  color_dict = {}
+
+  for idx, key in enumerate(alg_keys):
+      formatted_name = key.upper().replace("-", "_") 
+      alg_dict[key] = {
+          'idx': idx,
+          'color': cmap.colors[idx],
+          'name': formatted_name
+      }
+      color_dict[key] = cmap.colors[idx]
+
+  return alg_dict, color_dict
 
 def main():
   parser = argparse.ArgumentParser()

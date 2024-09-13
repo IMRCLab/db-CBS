@@ -21,7 +21,7 @@
 #include <dynobench/multirobot_trajectory.hpp>
 #include <dynoplan/optimization/multirobot_optimization.hpp>
 #include "dynobench/motions.hpp"
-
+#include <tuple>
 
 // Conflicts 
 struct Conflict {
@@ -88,6 +88,74 @@ typedef boost::heap::d_ary_heap<
       openset_handle_type, boost::heap::arity<2>, 
       boost::heap::compare<compareFocalHeuristic>, boost::heap::mutable_<true>>
       focalset_t;
+
+// for cbs-style optimization
+struct HighLevelNodeOptimization {
+    // std::vector<dynobench::Trajectory> trajectories;
+    MultiRobotTrajectory multirobot_trajectory;
+    std::unordered_set<size_t> cluster; // robot idx for the joint optimization
+    std::vector<std::pair<std::unordered_set<size_t>, int>> clusters; // used only with greedy cbs (cluster, its conflict)
+    std::vector<std::vector<int>> conflict_matrix;
+    double cost; 
+    int conflict;
+    int id;
+
+    HighLevelNodeOptimization(int rows, int cols)
+        : conflict_matrix(rows, std::vector<int>(cols, 0)),
+          cost(0.0),
+          conflict(0),
+          id(0) {
+    }
+    // check if the robot belongs to any cluster, return index of the clusters vector index
+    int containsX(size_t X) const {
+      int index = 0;
+      for (const auto& pair : clusters) {
+        if (pair.first.find(X) != pair.first.end()) {
+            return index;
+        }
+        ++index;
+      }
+      return -1;
+    }
+
+    int getIndexOfSet(std::unordered_set<size_t>& target_set) {
+        auto it = std::find_if(clusters.begin(), clusters.end(),
+            [&](const std::pair<std::unordered_set<size_t>, int>& pair) {
+                return pair.first == target_set; // Compare unordered_sets
+            });
+
+        if (it != clusters.end()) {
+            return std::distance(clusters.begin(), it); // Get the index
+        }
+        return -1; 
+    }
+    // return the indices (row, column) of 2D matrix the max element
+    std::tuple<int, int, int> getMaxElement() {
+      int max_value = std::numeric_limits<int>::min();
+      int max_vector_index = -1;
+      int max_element_index = -1;
+
+      for (size_t i = 0; i < conflict_matrix.size(); ++i) {
+        auto max_it = std::max_element(conflict_matrix[i].begin(), conflict_matrix[i].end());
+        if (max_it != conflict_matrix[i].end()) {
+          int current_max_value = *max_it;
+          if (current_max_value > max_value) {
+              max_value = current_max_value;
+              max_vector_index = i;
+              max_element_index = std::distance(conflict_matrix[i].begin(), max_it);
+          }
+        }
+      }
+      return {max_vector_index, max_element_index, max_value};
+    }
+    typename boost::heap::d_ary_heap<HighLevelNodeOptimization, boost::heap::arity<2>,
+                                     boost::heap::mutable_<true> >::handle_type
+        handle;
+
+    bool operator<(const HighLevelNodeOptimization& n) const {
+      return conflict < n.conflict; // max
+    }
+};
 
 bool getEarliestConflict(
     const std::vector<LowLevelPlan<dynobench::Trajectory>>& solution,
@@ -269,13 +337,15 @@ YAML::Node obstacle_to_yaml(const Obstacle& obs) {
     node["type"] = obs.type;
     return node;
 }
-
-void get_artificial_env(const std::string &env_file,
-                        const std::string &initial_guess_file,
+/// for moving obstacles META-robot
+void get_moving_obstacle(const std::string &env_file,
+                        // const std::string &initial_guess_file,
+                        MultiRobotTrajectory init_guess_multi_robot,
                         const std::string &out_file,
-                        std::unordered_set<size_t> &cluster){
+                        std::unordered_set<size_t> &cluster,
+                        bool moving_obstacles = false){
   // custom params for the obstacle
-  double size = 0.5; // maybe change to the robot's radius ?
+  double size = 0.1; // maybe change to the robot's radius ?
   std::string type = "sphere";
   YAML::Node env = YAML::LoadFile(env_file);
   const auto &env_min = env["environment"]["min"];
@@ -285,65 +355,166 @@ void get_artificial_env(const std::string &env_file,
   data["environment"]["max"] = env_max;
   data["environment"]["min"] = env_min;
   // read the result
-  YAML::Node initial_guess = YAML::LoadFile(initial_guess_file);
-  size_t num_robots = initial_guess["result"].size();
-
+  // YAML::Node initial_guess = YAML::LoadFile(initial_guess_file);
+  // size_t num_robots = initial_guess["result"].size();
+  size_t num_robots = init_guess_multi_robot.trajectories.size();
   for (size_t i = 0; i < num_robots; i++){
     if (cluster.find(i) != cluster.end()){ // robots that are within cluster
       YAML::Node robot_node;
-      robot_node["start"] = env["robots"][i]["start"];;
+      robot_node["start"] = env["robots"][i]["start"];
       robot_node["goal"] = env["robots"][i]["goal"];
       robot_node["type"] = env["robots"][i]["type"];
       data["robots"].push_back(robot_node);
     }
     
   }
-
-  MultiRobotTrajectory init_guess_multi_robot;
-  init_guess_multi_robot.read_from_yaml(initial_guess_file.c_str());
-  size_t max_t = 0;
-  size_t index = 0;
-  for (const auto& traj : init_guess_multi_robot.trajectories){
+  // static obstacles
+  if(env["environment"]["obstacles"]){
+    for (const auto &obs : env["environment"]["obstacles"]) {
+      YAML::Node obs_node;
+      std::string octomap_filename;
+      if (obs["type"].as<std::string>() == "octomap") {
+        obs_node["center"] = YAML::Node(YAML::NodeType::Sequence);  // Empty list
+        obs_node["size"] = YAML::Node(YAML::NodeType::Sequence);  // Empty list
+        obs_node["octomap_file"] = obs["octomap_file"];
+        obs_node["type"] = "octomap";
+      }
+      else {
+        obs_node["center"] = obs["center"];
+        obs_node["size"] = obs["size"];
+        obs_node["type"] = obs["type"];
+      } 
+      data["environment"]["obstacles"].push_back(obs_node); // if no moving obs, but clusters
+    }
+  }
+  
+  if(moving_obstacles){
+    size_t max_t = 0;
+    size_t index = 0;
+    for (const auto& traj : init_guess_multi_robot.trajectories){
       max_t = std::max(max_t, traj.states.size() - 1); // among all paths, optimization needs the longest traj
       ++index;
-  }
-  YAML::Node moving_obstacles_node; // for all robots
-  Eigen::VectorXd state;
-  std::vector<Obstacle> moving_obs_per_time;
-  std::vector<std::vector<Obstacle>> moving_obs;
-  std::cout << "MAXT: " << max_t << std::endl;
-  for (size_t t = 0; t <= max_t; ++t){ 
-    moving_obs_per_time.clear();
-    for (size_t i = 0; i < num_robots; i++){
+    }
+    YAML::Node moving_obstacles_node; // for all robots
+    Eigen::VectorXd state;
+    std::vector<Obstacle> moving_obs_per_time;
+    std::vector<std::vector<Obstacle>> moving_obs;
+    std::cout << "MAXT: " << max_t << std::endl;
+    for (size_t t = 0; t <= max_t; ++t){ 
+      moving_obs_per_time.clear();
+      for (size_t i = 0; i < num_robots; i++){
         if (cluster.find(i) == cluster.end()){
           if (t >= init_guess_multi_robot.trajectories.at(i).states.size()){
-              state = init_guess_multi_robot.trajectories.at(i).states.back();    
+            state = init_guess_multi_robot.trajectories.at(i).states.back();    
           }
           else {
-              state = init_guess_multi_robot.trajectories.at(i).states[t];
+            state = init_guess_multi_robot.trajectories.at(i).states[t];
           }
-        // into vector
-        Obstacle obs;
-        obs.center = {state(0), state(1), state(2)};
-        obs.size = {size};
-        obs.type = "sphere";
-        moving_obs_per_time.push_back({obs});
+          // into vector
+          Obstacle obs;
+          obs.center = {state(0), state(1), state(2)};
+          obs.size = {size};
+          obs.type = "sphere";
+          moving_obs_per_time.push_back({obs});
+        }
       }
+      moving_obs.push_back(moving_obs_per_time);
     }
-    moving_obs.push_back(moving_obs_per_time);
-  }
-  for (const auto &obs_list : moving_obs) {
+    for (const auto &obs_list : moving_obs) {
       YAML::Node yaml_obs_list;
       for (const auto &obs : obs_list) {
-          yaml_obs_list.push_back(obstacle_to_yaml(obs));
+        yaml_obs_list.push_back(obstacle_to_yaml(obs));
       }
       data["environment"]["moving_obstacles"].push_back(yaml_obs_list);
+    }
   }
+
   // Write YAML node to file
   std::ofstream fout(out_file);
   fout << data;
   fout.close();
 }
+
+// for meta-robot clustering, it counts how many times each robot collide with other members
+bool getConflicts(
+    // const std::vector<LowLevelPlan<dynobench::Trajectory>>& solution,
+    const std::vector<dynobench::Trajectory>& multi_robot_trajectories,
+    const std::vector<std::shared_ptr<dynobench::Model_robot>>& all_robots,
+    std::shared_ptr<fcl::BroadPhaseCollisionManagerd> col_mng_robots,
+    std::vector<fcl::CollisionObjectd*>& robot_objs,
+    std::vector<std::vector<int>>& conflict_matrix){
+    bool collision = false;
+    size_t max_t = 0;
+    for (const auto& traj : multi_robot_trajectories){
+      max_t = std::max(max_t, traj.states.size() - 1);
+    }
+    Eigen::VectorXd node_state;
+    std::vector<Eigen::VectorXd> node_states;
+    for (size_t t = 0; t <= max_t; ++t){
+        node_states.clear();
+        size_t robot_idx = 0;
+        size_t obj_idx = 0;
+        std::vector<fcl::Transform3d> ts_data;
+        for (auto &robot : all_robots){
+          if (t >= multi_robot_trajectories.at(robot_idx).states.size()){
+              node_state = multi_robot_trajectories.at(robot_idx).states.back();    
+          }
+          else {
+              node_state = multi_robot_trajectories.at(robot_idx).states[t];
+          }
+          node_states.push_back(node_state);
+          std::vector<fcl::Transform3d> tmp_ts(1);
+          if (robot->name == "car_with_trailers") {
+            tmp_ts.resize(2);
+          }
+          robot->transformation_collision_geometries(node_state, tmp_ts);
+          ts_data.insert(ts_data.end(), tmp_ts.begin(), tmp_ts.end());
+          ++robot_idx;
+        }
+        for (size_t i = 0; i < ts_data.size(); i++) {
+          fcl::Transform3d &transform = ts_data[i];
+          robot_objs[obj_idx]->setTranslation(transform.translation());
+          robot_objs[obj_idx]->setRotation(transform.rotation());
+          robot_objs[obj_idx]->computeAABB();
+          ++obj_idx;
+        }
+        col_mng_robots->update(robot_objs);
+        fcl::DefaultCollisionData<double> collision_data;
+        col_mng_robots->collide(&collision_data, fcl::DefaultCollisionFunction<double>);
+        if (collision_data.result.isCollision()) {
+            assert(collision_data.result.numContacts() > 0);
+            collision = true;
+            for(size_t k = 0; k < collision_data.result.numContacts(); k++){ // not 2 only ?
+              const auto& contact = collision_data.result.getContact(k);
+              auto idx_i = (size_t)contact.o1->getUserData();
+              auto idx_j = (size_t)contact.o2->getUserData();
+              assert(idx_i != idx_j);
+              // get lower-triangle matrix
+              if(idx_i >= idx_j)
+                conflict_matrix[idx_i][idx_j] += 1;
+              else
+                conflict_matrix[idx_j][idx_i] += 1;
+              // std::cout << "(Opt) CONFLICT at time " << t << " " << idx_i << " " << idx_j << std::endl;
+            }
+        } 
+    }
+    // get the max element
+    // int max_collision = 0;
+    // for (const auto& cft : conflict_matrix) {
+    //     int localMax = *std::max_element(cft.begin(), cft.end());
+    //     if (localMax > max_collision) {
+    //         max_collision = localMax;
+    //     }
+    // }
+    // return max_collision;
+    return collision;
+}
+
+struct MaxCollidingRobots {
+  size_t idx_i;
+  size_t idx_j;
+  int collisions;
+};
 
 // #include <boost/heap/d_ary_heap.hpp>
 
