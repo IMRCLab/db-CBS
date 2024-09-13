@@ -457,7 +457,7 @@ int main(int argc, char* argv[]) {
               std::cout << "tmp envFile: " << tmp_envFile << std::endl;
               get_moving_obstacle(inputFile, /*initGuess*/tmpNode.multirobot_trajectory, /*outputFile*/tmp_envFile, max_conflict_cluster_it->first, /*moving_obs*/false);
               feasible = execute_optimizationMetaRobot(tmp_envFile,
-                                      /*initialGuess*/,tmpNode.multirobot_trajectory // can be discrete search
+                                      /*initialGuess*/tmpNode.multirobot_trajectory, // can be discrete search
                                       /*solution*/tmpNode.multirobot_trajectory, // update the solution
                                       DYNOBENCH_BASE,
                                       max_conflict_cluster_it->first,
