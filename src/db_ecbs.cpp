@@ -79,6 +79,7 @@ int main(int argc, char* argv[]) {
     bool save_search_video = false;
     bool save_expanded_trajs = cfg["save_expanded_trajs"].as<bool>();
     std::string conflicts_folder = output_folder + "/conflicts";
+    Eigen::Vector3d radii = Eigen::Vector3d(.12, .12, .3);
     // optimization-related params
     bool sum_robot_cost = true;
     bool feasible = false;
@@ -150,26 +151,30 @@ int main(int argc, char* argv[]) {
     col_mng_robots->setup();
     size_t i = 0;
     for (const auto &robot : robots){
+      if(cfg["external_force"].as<bool>() && robot->name == "Integrator2_3d"){
+        collision_geometries.push_back(std::make_shared<fcl::Ellipsoidd>(radii));
+      }
+      else
         collision_geometries.insert(collision_geometries.end(), 
                               robot->collision_geometries.begin(), robot->collision_geometries.end());
-        auto robot_obj = new fcl::CollisionObject(collision_geometries[col_geom_id]);
-        collision_geometries[col_geom_id]->setUserData((void*)i);
-        robot_objs.push_back(robot_obj);
-        if (robot_motions.find(problem.robotTypes[i]) == robot_motions.end()){
-            options_tdbastar.motionsFile = all_motionsFile[i];
-            load_motion_primitives_new(options_tdbastar.motionsFile, *robot, robot_motions[problem.robotTypes[i]], 
-                                       options_tdbastar.max_motions,
-                                       options_tdbastar.cut_actions, false, options_tdbastar.check_cols);
-        }
-        if (robot->name == "car_with_trailers") {
-          col_geom_id++;
-          auto robot_obj = new fcl::CollisionObject(collision_geometries[col_geom_id]);
-          collision_geometries[col_geom_id]->setUserData((void*)i); // for the trailer
-          robot_objs.push_back(robot_obj);
-        }
-        
+      auto robot_obj = new fcl::CollisionObject(collision_geometries[col_geom_id]);
+      collision_geometries[col_geom_id]->setUserData((void*)i);
+      robot_objs.push_back(robot_obj);
+      if (robot_motions.find(problem.robotTypes[i]) == robot_motions.end()){
+          options_tdbastar.motionsFile = all_motionsFile[i];
+          load_motion_primitives_new(options_tdbastar.motionsFile, *robot, robot_motions[problem.robotTypes[i]], 
+                                      options_tdbastar.max_motions,
+                                      options_tdbastar.cut_actions, false, options_tdbastar.check_cols);
+      }
+      if (robot->name == "car_with_trailers") {
         col_geom_id++;
-        i++;
+        auto robot_obj = new fcl::CollisionObject(collision_geometries[col_geom_id]);
+        collision_geometries[col_geom_id]->setUserData((void*)i); // for the trailer
+        robot_objs.push_back(robot_obj);
+      }
+      
+      col_geom_id++;
+      i++;
     }
     col_mng_robots->registerObjects(robot_objs);
     // Heuristic computation

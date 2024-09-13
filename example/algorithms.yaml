@@ -68,6 +68,7 @@ db-ecbs:
     rewire: True
     execute_greedy_optimization: True
     save_expanded_trajs: False
+    residual_force: True # for drone
   '*_unicycle_sphere':
     delta_0: 0.9
     # suboptimality_factor: 3.3
