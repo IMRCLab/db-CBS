@@ -63,7 +63,7 @@ db-ecbs:
     heuristic1: "reverse-search"
     heuristic1_delta: 1.0
     heuristic1_num_primitives_0: 100
-    suboptimality_factor: 1.4 # 3.3
+    suboptimality_factor: 2 # 3.3
     always_add_node: False
     rewire: True
     execute_greedy_optimization: True
