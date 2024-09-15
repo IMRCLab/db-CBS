@@ -4,15 +4,18 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
+
         {
             "name": "My Debug Launch",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/buildDebug/db_cbs",
+            "program": "${workspaceFolder}/buildDebug/dynoplan/main_optimization",
             "args": [
-                // "-i", "/home/akmarak-laptop/IMRC/db-CBS/example/parallelpark.yaml",
-                // "-m", "/home/akmarak-laptop/IMRC/db-CBS/results/dbg/motions.msgpack",
-                // "-o", "/home/akmarak-laptop/IMRC/db-CBS/example/result/result_dbcbs.yaml"
+                "--init_file", "../stats_db/window_small/0.9/000/init_guess_cables.yaml",
+                "--env_file", "../stats_db/window_small/0.9/000/env.yaml",
+                "--models_base_path", "../dynoplan/dynobench/models/",
+                "--results_file", "../stats_db/window_small/0.9/000/output",
+                "--weight_goal", "800"
             ],
             "cwd": "${workspaceFolder}/buildDebug",
             "externalConsole": false,
