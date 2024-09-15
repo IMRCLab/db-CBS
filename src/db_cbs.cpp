@@ -301,8 +301,9 @@ bool getEarliestConflict(
             p0_init_guess << p0_opt(0), p0_opt(1);
 
             for (const auto& p : pi) {
+
                 float distance = (p - p0_opt).norm();
-                if (abs(distance - l) >= 0.1) { // assumed 2 robots
+                if (abs(distance - l) >= 0.2) { // assumed 2 robots
                     early_conflict.time = t * all_robots[0]->dt();
                     early_conflict.robot_idx_i = 0; 
                     early_conflict.robot_idx_j = 1;
