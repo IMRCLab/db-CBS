@@ -300,7 +300,7 @@ bool getEarliestConflict(
         for (const auto& p : pi) {
             float distance = (p - p0_opt).norm();
             // std::cout<< "distance between: [" << p(0)<<","  << p(1) << "] and "<< "[" << p0_opt(0)<<","  << p0_opt(1) << "] = " << distance << std::endl;
-            if (abs(distance - l) >= 0.1) { // assumed 2 robots
+            if (abs(distance - l) >= 0.15) { // assumed 2 robots
                 // std::cout<< "less than 0.15: " << distance<<std::endl;
 
                 early_conflict.time = t * all_robots[0]->dt();
