@@ -1,0 +1,17 @@
+environment:
+  min: [-2, -0.55]
+  max: [2,   0.55]
+  obstacles: []
+    # - type: box
+    #   center: [0,  0.5, 0.0]
+    #   size: [0.5, 0.2, 1.0]
+    # - type: box
+    #   center: [0, -0.5, 0.0]
+    #   size: [0.5, 0.2, 1.0]
+robots:
+  - type: double_integrator_0
+    start: [-1, 0.5, 0, 0]
+    goal:  [ 1, -0.5, 0, 0] 
+  - type: double_integrator_0
+    start: [-1, -0.5, 0, 0] 
+    goal:  [ 1, 0.5, 0, 0]

@@ -38,10 +38,10 @@ k-cbs:
     goal_epsilon: 0.2
 db-cbs:
   default:
-    delta_0: 0.5
-    delta_rate: 0.9
-    num_primitives_0: 1000
-    num_primitives_rate: 1.5
+    delta_0: 0.3
+    delta_rate: 0.5
+    num_primitives_0: 1200
+    num_primitives_rate: 3.
     alpha: 0.5
     filter_duplicates: True
     heuristic1: "reverse-search"
