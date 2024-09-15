@@ -23,16 +23,17 @@ class ExecutionTask:
 
 
 def run_optimization(result_folder, filename_init, filename_env , result, timelimit):
-    # try: 
-    with open("{}/log_opt.txt".format(str(result_folder)), 'w') as logfile:
-        subprocess.run(["./dynoplan/main_optimization",
-            "--init_file", str(filename_init),
-            "--env_file", str(filename_env),
-            "--models_base_path", "../dynoplan/dynobench/models/",
-            "--results_file", str(result)],
+    try: 
+        with open("{}/log_opt.txt".format(str(result_folder)), 'w') as logfile:
+            subprocess.run(["./dynoplan/main_optimization",
+                "--init_file", str(filename_init),
+                "--env_file", str(filename_env),
+                "--models_base_path", "../dynoplan/dynobench/models/",
+                "--results_file", str(result),
+                "--weight_goal", "800"],
             stdout=logfile, stderr=logfile, timeout=timelimit, check=True)
-    # except subprocess.TimeoutExpired as e:
-        # print(f"Error: The command '{' '.join(command)}' timed out after {e.timeout} seconds")
+    except subprocess.CalledProcessError as e:
+        print(f"Error: {e}")
 
 def visualize_dintCables(filename_env, output):
     print(output.with_suffix(".trajopt.yaml"))
@@ -187,8 +188,9 @@ def execute_task(task: ExecutionTask):
 def main():
     parallel = True
     instances = [
-        # "empty", 
-        "window"
+        "empty", 
+        "window",
+        "window_small"
     ]
     db_params = [
     # delta_0, delta_rate
@@ -199,11 +201,9 @@ def main():
         [0.5, 0.5],
         [0.4, 0.5],
         [0.35, 0.5],
-        # [0.3, 0.5],
-        # [0.2, 0.8]
     ] 
 
-    trials = 2
+    trials = 1
     timelimit = 1000
 
     tasks = []
