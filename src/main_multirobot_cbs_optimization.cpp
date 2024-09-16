@@ -23,6 +23,7 @@
 #include "dynoplan/tdbastar/tdbastar_epsilon.hpp"
 #include "dynoplan/tdbastar/planresult.hpp"
 
+using namespace dynoplan;
 #define DYNOBENCH_BASE "../dynoplan/dynobench/"
 // for debug the cbs-opt and develop. No need to run the discrete search each time
 int main(int argc, char *argv[]) {
@@ -30,14 +31,14 @@ int main(int argc, char *argv[]) {
   namespace po = boost::program_options;
   po::options_description desc("Allowed options");
   std::string envFile; // problem instance .yaml file
-  std::string initFile; // parallel/independent optimization output .yaml file
+  // std::string initFile; // parallel/independent optimization output .yaml file
   std::string discreteSearchFile; // discrete search output .yaml file
   std::string outFile; // output of the optimization .yaml file
   bool sum_robot_cost = true;
   bool feasible = false;
   desc.add_options()("help", "produce help message")(
       "env,e", po::value<std::string>(&envFile)->required())(
-      "init,i", po::value<std::string>(&initFile)->required())(
+      // "init,i", po::value<std::string>(&initFile)->required())(
       "discrete,d", po::value<std::string>(&discreteSearchFile)->required())(
       "out,o", po::value<std::string>(&outFile)->required());
 
@@ -87,11 +88,43 @@ int main(int argc, char *argv[]) {
   size_t num_robots = robots.size();
   bool only_max = true;
   // read given files
-  MultiRobotTrajectory parallel_multirobot_sol;
-  parallel_multirobot_sol.read_from_yaml(initFile.c_str());
+  // MultiRobotTrajectory parallel_multirobot_sol;
+  // parallel_multirobot_sol.read_from_yaml(initFile.c_str());
   MultiRobotTrajectory discrete_search_sol;
   discrete_search_sol.read_from_yaml(discreteSearchFile.c_str()); 
   // Handle trajectories, prepare for the optimization
+  // I. Parallel/Independent optimization
+  auto optimization_start = std::chrono::high_resolution_clock::now();
+  Options_trajopt options_trajopt;
+  options_trajopt.solver_id = 1; // time optimal, no moving obstacles 
+  options_trajopt.control_bounds = 1;
+  options_trajopt.use_warmstart = 1;
+  options_trajopt.weight_goal = 100;
+  options_trajopt.max_iter = 50;
+  options_trajopt.soft_control_bounds = true; 
+  MultiRobotTrajectory parallel_multirobot_sol;
+  parallel_multirobot_sol.trajectories.resize(num_robots);
+  // since homogen. robots
+  Result_opti opti_out;
+  dynobench::Problem tmp_problem;
+  tmp_problem.models_base_path = problem.models_base_path;
+  tmp_problem.robotType = problem.robotTypes.at(0);
+  tmp_problem.p_lb = problem.p_lb;
+  tmp_problem.p_ub = problem.p_ub;
+  tmp_problem.robotTypes.push_back(problem.robotTypes.at(0)); 
+  tmp_problem.obstacles = problem.obstacles;
+  
+  for (size_t i = 0; i < num_robots; i++){
+    tmp_problem.goal = problem.goals[i];
+    tmp_problem.start = problem.starts[i];
+    opti_out.success = false;
+    trajectory_optimization(tmp_problem, discrete_search_sol.trajectories.at(i), options_trajopt, parallel_multirobot_sol.trajectories.at(i),
+                opti_out);
+    if(!opti_out.success) 
+      std::cout << "failure of parallel/independent optimization for robot " << i << std::endl;
+  }
+  parallel_multirobot_sol.to_yaml_format("/tmp/dynoplan/parallel_multirobot_sol.yaml");
+  // start the greedy optimization part
   typename boost::heap::d_ary_heap<HighLevelNodeOptimization, boost::heap::arity<2>,
                                         boost::heap::mutable_<true> > open_opt;
   HighLevelNodeOptimization tmp (num_robots, num_robots);
@@ -151,6 +184,9 @@ int main(int argc, char *argv[]) {
         std::for_each(tmpNode.conflict_matrix.begin(), tmpNode.conflict_matrix.end(), [](std::vector<int>& row) {
             std::fill(row.begin(), row.end(), 0); });
         if (!getConflicts(tmpNode.multirobot_trajectory.trajectories, robots, col_mng_robots, robot_objs, tmpNode.conflict_matrix)){
+          auto optimization_end = std::chrono::high_resolution_clock::now();
+          std::chrono::duration<double> opt_duration = optimization_end - optimization_start;
+          std::cout << "Time taken for optimization: " << opt_duration.count() << " seconds" << std::endl;
           std::cout << "No inter-robot conflict" << std::endl;
           tmpNode.multirobot_trajectory.to_yaml_format(outFile.c_str());
           return 0;
