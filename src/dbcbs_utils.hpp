@@ -240,15 +240,17 @@ void export_constraints(const std::vector<std::vector<dynoplan::Constraint>> &fi
       *out << "  - robot_id: " << j << std::endl;
       *out << "    states:" << std::endl;
       for (size_t i = 0; i < c.size(); i ++){
-          if (c[i].constrained_state.size() > 0)
-            *out << "      - ";
-            *out << c[i].constrained_state.format(dynobench::FMT) << std::endl;
+        if (c[i].constrained_state.size() > 0){
+          *out << "      - ";
+          *out << c[i].constrained_state.format(dynobench::FMT) << std::endl;
+        }
       }
       *out << "    time:" << std::endl;
       for (size_t i = 0; i < c.size(); i ++){
-          if (c[i].constrained_state.size() > 0)
-            *out << "      - ";
-            *out << c[i].time << std::endl;
+        if (c[i].constrained_state.size() > 0){
+          *out << "      - ";
+          *out << c[i].time << std::endl;
+        }
       }
     }
   }
@@ -259,6 +261,7 @@ struct Obstacle {
     std::vector<double> center;
     std::vector<double> size;
     std::string type;
+    std::string octomap_file = "";
 };
 
 // Convert Obstacle struct to YAML node
@@ -267,15 +270,16 @@ YAML::Node obstacle_to_yaml(const Obstacle& obs) {
     node["center"] = obs.center;
     node["size"] = obs.size;
     node["type"] = obs.type;
+    node["octomap_file"] = obs.octomap_file;
     return node;
 }
 
-void get_artificial_env(const std::string &env_file,
-                        const std::string &initial_guess_file,
+void get_moving_obstacles(const std::string &env_file,
+                        MultiRobotTrajectory init_guess_multi_robot,
                         const std::string &out_file,
                         std::unordered_set<size_t> &cluster){
   // custom params for the obstacle
-  double size = 0.5; // maybe change to the robot's radius ?
+  double size = 0.1; 
   std::string type = "sphere";
   YAML::Node env = YAML::LoadFile(env_file);
   const auto &env_min = env["environment"]["min"];
@@ -285,8 +289,7 @@ void get_artificial_env(const std::string &env_file,
   data["environment"]["max"] = env_max;
   data["environment"]["min"] = env_min;
   // read the result
-  YAML::Node initial_guess = YAML::LoadFile(initial_guess_file);
-  size_t num_robots = initial_guess["result"].size();
+  size_t num_robots = init_guess_multi_robot.trajectories.size();
 
   for (size_t i = 0; i < num_robots; i++){
     if (cluster.find(i) != cluster.end()){ // robots that are within cluster
@@ -296,11 +299,25 @@ void get_artificial_env(const std::string &env_file,
       robot_node["type"] = env["robots"][i]["type"];
       data["robots"].push_back(robot_node);
     }
-    
+  }
+  // static obstacles
+  for (const auto &obs : env["environment"]["obstacles"]) {
+    YAML::Node obs_node;
+    std::string octomap_filename;
+    if (obs["type"].as<std::string>() == "octomap") {
+      obs_node["center"] = YAML::Node(YAML::NodeType::Sequence);  // Empty list
+      obs_node["size"] = YAML::Node(YAML::NodeType::Sequence);  // Empty list
+      obs_node["octomap_file"] = obs["octomap_file"];
+      obs_node["type"] = "octomap";
+    }
+    else {
+      obs_node["center"] = obs["center"];
+      obs_node["size"] = obs["size"];
+      obs_node["type"] = obs["type"];
+    } 
+    data["environment"]["static_obstacles"].push_back(obs_node);
   }
 
-  MultiRobotTrajectory init_guess_multi_robot;
-  init_guess_multi_robot.read_from_yaml(initial_guess_file.c_str());
   size_t max_t = 0;
   size_t index = 0;
   for (const auto& traj : init_guess_multi_robot.trajectories){
@@ -315,19 +332,143 @@ void get_artificial_env(const std::string &env_file,
   for (size_t t = 0; t <= max_t; ++t){ 
     moving_obs_per_time.clear();
     for (size_t i = 0; i < num_robots; i++){
-        if (cluster.find(i) == cluster.end()){
-          if (t >= init_guess_multi_robot.trajectories.at(i).states.size()){
-              state = init_guess_multi_robot.trajectories.at(i).states.back();    
-          }
-          else {
-              state = init_guess_multi_robot.trajectories.at(i).states[t];
-          }
+      if (cluster.find(i) == cluster.end()){
+        if (t >= init_guess_multi_robot.trajectories.at(i).states.size()){
+            state = init_guess_multi_robot.trajectories.at(i).states.back();    
+        }
+        else {
+            state = init_guess_multi_robot.trajectories.at(i).states[t];
+        }
         // into vector
         Obstacle obs;
         obs.center = {state(0), state(1), state(2)};
         obs.size = {size};
         obs.type = "sphere";
         moving_obs_per_time.push_back({obs});
+      }
+    }
+    // static obstacles
+    for (const auto &obs : env["environment"]["obstacles"]) {
+      Obstacle octomap_obs;
+      std::string octomap_filename;
+      if (obs["type"].as<std::string>() == "octomap") {
+        octomap_obs.center = {};
+        octomap_obs.size = {};
+        octomap_obs.octomap_file = obs["octomap_file"].as<std::string>();
+        octomap_obs.type = "octomap";
+        moving_obs_per_time.push_back({octomap_obs});
+      }
+    }
+    moving_obs.push_back(moving_obs_per_time);
+  }
+  for (const auto &obs_list : moving_obs) {
+      YAML::Node yaml_obs_list;
+      for (const auto &obs : obs_list) {
+          yaml_obs_list.push_back(obstacle_to_yaml(obs));
+      }
+      data["environment"]["moving_obstacles"].push_back(yaml_obs_list);
+  }
+  // Write YAML node to file
+  std::ofstream fout(out_file);
+  fout << data;
+  fout.close();
+}
+
+// get moving obstacles given the id of the robots of interest.
+// assumes we are considering a single robot with single/many neighbors
+void get_desired_moving_obstacles(const std::string &env_file,
+                        MultiRobotTrajectory multirobot_sol, // other_cluster robots solution
+                        dynobench::Trajectory robot_idx_sol,
+                        const std::string &out_file,
+                        size_t robot_idx,
+                        std::unordered_set<size_t> &other_cluster){
+  // custom params for the obstacle
+  Eigen::Vector3d radii = Eigen::Vector3d(.12, .12, .3); // from tro paper
+  std::string type = "sphere";
+  YAML::Node env = YAML::LoadFile(env_file);
+  const auto &env_min = env["environment"]["min"];
+  const auto &env_max = env["environment"]["max"];
+  // data
+  YAML::Node data;
+  data["environment"]["max"] = env_max;
+  data["environment"]["min"] = env_min;
+  size_t num_neighbors = other_cluster.size();
+
+  YAML::Node robot_node;
+  robot_node["start"] = env["robots"][robot_idx]["start"];
+  robot_node["goal"] = env["robots"][robot_idx]["goal"];
+  robot_node["type"] = env["robots"][robot_idx]["type"]; // "integrator2_3d_ellipsoid_v0";
+  data["robots"].push_back(robot_node);
+ 
+  size_t max_t = 0;
+  size_t index = 0;
+  // static obstacles
+  for (const auto &obs : env["environment"]["obstacles"]) {
+    YAML::Node obs_node;
+    std::string octomap_filename;
+    if (obs["type"].as<std::string>() == "octomap") {
+      obs_node["center"] = YAML::Node(YAML::NodeType::Sequence);  // Empty list
+      obs_node["size"] = YAML::Node(YAML::NodeType::Sequence);  // Empty list
+      obs_node["octomap_file"] = obs["octomap_file"];
+      obs_node["type"] = "octomap";
+    }
+    else {
+      obs_node["center"] = obs["center"];
+      obs_node["size"] = obs["size"];
+      obs_node["type"] = obs["type"];
+    } 
+    data["environment"]["static_obstacles"].push_back(obs_node);
+  }
+
+  if (num_neighbors < 1){ 
+    data["environment"]["moving_obstacles"] = YAML::Node(YAML::NodeType::Sequence);
+    std::ofstream fout(out_file);
+    fout << data;
+    fout.close();
+    return;
+  }
+
+  for (const auto& traj : multirobot_sol.trajectories){
+    if(other_cluster.find(index) != other_cluster.end()) // only those within other_cluster = moving obstacles
+      max_t = std::max(max_t, traj.states.size() - 1); 
+    ++index;
+  }
+
+  max_t = std::max(max_t, robot_idx_sol.states.size() - 1); // check with the robot_idx trajectory
+
+  YAML::Node moving_obstacles_node; // for all robots
+  Eigen::VectorXd state;
+  std::vector<Obstacle> moving_obs_per_time;
+  std::vector<std::vector<Obstacle>> moving_obs;
+  std::cout << "MAXT: " << max_t << std::endl;
+  for (size_t t = 0; t <= max_t; ++t){ 
+    moving_obs_per_time.clear();
+    for (size_t i = 0; i < num_neighbors; i++){
+      if (other_cluster.find(i) != other_cluster.end()){ // only those in other_cluster = moving obstacles
+        if (t >= multirobot_sol.trajectories.at(i).states.size()){
+          state = multirobot_sol.trajectories.at(i).states.back();    
+        }
+        else {
+          state = multirobot_sol.trajectories.at(i).states[t];
+        }
+        // into vector
+        Obstacle obs;
+        obs.center = {state(0), state(1), state(2)};
+        obs.size = {radii(0), radii(1), radii(2)};
+        obs.type = "ellipsoid";
+        moving_obs_per_time.push_back({obs});
+      }
+    }
+    // static obstacles per timestamp
+    for (const auto &obs : env["environment"]["obstacles"]) {
+      Obstacle octomap_obs;
+      std::string octomap_filename;
+      if (obs["type"].as<std::string>() == "octomap") {
+        octomap_obs.center = {};
+        octomap_obs.size = {};
+        octomap_obs.octomap_file = obs["octomap_file"].as<std::string>();
+        octomap_obs.type = "octomap";
+        moving_obs_per_time.push_back({octomap_obs});
       }
     }
     moving_obs.push_back(moving_obs_per_time);
