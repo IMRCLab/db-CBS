@@ -226,6 +226,7 @@ int main(int argc, char* argv[]) {
     }
     bool solved_db = false;
     std::cout << "Running the main loop" << std::endl;
+    auto discrete_start = std::chrono::high_resolution_clock::now();
     // main loop
     problem.starts = problem_original.starts;
     problem.goals = problem_original.goals;
@@ -371,11 +372,14 @@ int main(int argc, char* argv[]) {
         Conflict inter_robot_conflict;
         if (!getEarliestConflict(P.solution, robots, col_mng_robots, robot_objs, inter_robot_conflict)){
           solved_db = true;
+          auto discrete_end = std::chrono::high_resolution_clock::now();
+          std::chrono::duration<double> duration = discrete_end - discrete_start;
           std::cout << "Final solution from db-ecbs!" << std::endl; 
           create_dir_if_necessary(outputFile);
           std::ofstream out_db(outputFile);
           export_solutions(P.solution, &out_db);
           std::cout << "Number of HL nodes: " << id << std::endl;
+          std::cout << "Time taken for discrete search: " << duration.count() << " seconds" << std::endl;
           return 0;
           // priority-based optimization, no smart prioritization - sequentially only
           // r1, r2 with r1 as moving obst., r3 with r1, r2 as moving obs., etc.
