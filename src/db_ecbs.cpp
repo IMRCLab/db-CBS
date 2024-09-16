@@ -387,7 +387,7 @@ int main(int argc, char* argv[]) {
           std::vector<double> min_ = env["environment"]["min"].as<std::vector<double>>();
           std::vector<double> max_ = env["environment"]["max"].as<std::vector<double>>();
           Options_trajopt options_trajopt;
-          options_trajopt.solver_id = 1; // no moving obstacles 
+          options_trajopt.solver_id = 0; // 1 - no moving obstacles 
           options_trajopt.control_bounds = 1;
           options_trajopt.use_warmstart = 1;
           options_trajopt.weight_goal = 100;
