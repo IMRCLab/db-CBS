@@ -254,11 +254,12 @@ void createConstraintsFromConflicts(const Conflict& early_conflict, std::map<siz
 }
 
 void export_solutions(const std::vector<LowLevelPlan<dynobench::Trajectory>>& solution, 
-                        const int robot_numx, std::ofstream *out){
+                        const int robot_numx, std::ofstream *out, int & expansions){
     float cost = 0;
     for (auto& n : solution)
       cost += n.trajectory.cost;
     *out << "cost: " << cost << std::endl; 
+    *out << "expansions: " << expansions << std::endl;
     *out << "result:" << std::endl;
     for (size_t i = 0; i < solution.size(); ++i){ 
         std::vector<Eigen::VectorXd> tmp_states = solution[i].trajectory.states;

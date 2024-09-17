@@ -65,7 +65,7 @@ int main(int argc, char* argv[]) {
       return 1;
     }
     YAML::Node cfg = YAML::LoadFile(cfgFile);
-    cfg = cfg["db-cbs"]["default"];
+    // cfg = cfg["db-cbs"]["default"];
     float alpha = cfg["alpha"].as<float>();
     bool filter_duplicates = cfg["filter_duplicates"].as<bool>();
     fs::path output_path(outputFile);
@@ -273,7 +273,7 @@ int main(int argc, char* argv[]) {
             std::cout << "Final solution!" << std::endl; 
             create_dir_if_necessary(outputFile);
             std::ofstream out(outputFile);
-            export_solutions(P.solution, robots.size(), &out);
+            export_solutions(P.solution, robots.size(), &out, id);
             size_t pos = outputFile.rfind(".yaml");
             std::string outputFile_payload = "../result_dbcbs_payload.yaml";
             // Check if ".yaml" is found at the end of the string
