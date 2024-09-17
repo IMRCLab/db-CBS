@@ -11,3 +11,4 @@ out_quad
 out_unicycle
 old_format_motions/
 out_integrators/
+stats_db/
