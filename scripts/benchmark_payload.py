@@ -86,9 +86,9 @@ def run_dbcbs(filename_env, folder, timelimit, cfg):
             cmd = ["./db_cbs", 
                 "-i", filename_env,
                 "-o", filename_result_dbcbs,
-                "--joint", filename_result_dbcbs_joint,
-                "--opt", filename_result_dbcbs_opt,
-                "-c", str(filename_cfg)]
+                "--optimization", filename_result_dbcbs_opt,
+                "--cfg", str(filename_cfg),
+                "-t", str(timelimit)]
             print(subprocess.list2cmdline(cmd))
             try:
                 with open("{}/log.txt".format(folder), 'w') as logfile:
@@ -188,8 +188,8 @@ def execute_task(task: ExecutionTask):
 def main():
     parallel = True
     instances = [
-        "empty", 
-        "window",
+        # "empty", 
+        # "window",
         "window_small"
     ]
     db_params = [
