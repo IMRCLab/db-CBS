@@ -3,10 +3,10 @@ environment:
   max: [2,   0.35]
   obstacles: []
 robots:
-  - type: double_integrator_0
+  - type: integrator2_2d_v0
     start: [-1, 0.3, 0, 0]
     goal:  [ 1, 0.3, 0, 0] 
-  - type: double_integrator_0
+  - type: integrator2_2d_v0
     start: [-1, -0.3, 0, 0] 
     goal:  [ 1, -0.3, 0, 0]
 joint_robot: 
