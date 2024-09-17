@@ -500,7 +500,7 @@ int main(int argc, char* argv[]) {
                 // both belong to some cluster
                 else if(index_i >= 0 && index_j >= 0){
                   tmpNode.clusters.at(index_i).first.insert(tmpNode.clusters.at(index_j).first.begin(), tmpNode.clusters.at(index_j).first.end());
-                  tmpNode.clusters.at(index_i).second = tmpNode.clusters.at(index_i).second + max_conflict; // std::max(tmpNode.clusters.at(index_i).second, max_conflict);
+                  tmpNode.clusters.at(index_i).second = std::max(tmpNode.clusters.at(index_i).second, max_conflict);
                   if(index_i != index_j)
                     tmpNode.clusters.erase(tmpNode.clusters.begin() + index_j); // delete the old one
                 }
@@ -508,11 +508,11 @@ int main(int argc, char* argv[]) {
                 else {
                   if(index_i >= 0){
                     tmpNode.clusters.at(index_i).first.insert(j);
-                    tmpNode.clusters.at(index_i).second = tmpNode.clusters.at(index_i).second + max_conflict; // max_conflict;
+                    tmpNode.clusters.at(index_i).second = max_conflict;
                   }
                   else{
                     tmpNode.clusters.at(index_j).first.insert(i);
-                    tmpNode.clusters.at(index_j).second = tmpNode.clusters.at(index_j).second + max_conflict; // max_conflict;
+                    tmpNode.clusters.at(index_j).second = max_conflict;
                   }
                 }
               }
