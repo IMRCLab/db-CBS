@@ -159,17 +159,18 @@ int main(int argc, char *argv[]) {
                                     [](std::pair<std::unordered_set<size_t>, int>& a, std::pair<std::unordered_set<size_t>, int>& b) {
                           return a.second < b.second; }); // compared based on conflicts
       // DEBUG
+      if(max_conflict_cluster_it->first.size())
+        cluster_tracking.at(max_conflict_cluster_it->first.size()) += 1;
       std::cout << "max cluster elements: ";
       for (const auto& elem : max_conflict_cluster_it->first) {
         std::cout << elem << " ";
       }
       std::cout << "\nconflict value: " << max_conflict_cluster_it->second << std::endl;
-      if(max_conflict_cluster_it->first.size())
-        cluster_tracking.at(max_conflict_cluster_it->first.size()) += 1;
       // iii. jointly optimiza the one with MAX conflicts
       std::string tmp_envFile = "/tmp/dynoplan/tmp_envFile_" + gen_random(6) + ".yaml";
+      create_dir_if_necessary(tmp_envFile);
       std::cout << "tmp envFile: " << tmp_envFile << std::endl;
-      get_moving_obstacle(envFile, /*initGuess*/tmpNode.multirobot_trajectory, /*outputFile*/tmp_envFile, max_conflict_cluster_it->first, /*moving_obs*/false);
+      get_moving_obstacle(envFile, /*initGuess*/tmpNode.multirobot_trajectory, /*outputFile*/tmp_envFile, max_conflict_cluster_it->first, /*moving_obs*/true);
       feasible = execute_optimizationMetaRobot(tmp_envFile,
                               /*initialGuess*/discrete_search_sol, // always from the discrete search
                               /*solution*/tmpNode.multirobot_trajectory, // update the solution
@@ -189,6 +190,13 @@ int main(int argc, char *argv[]) {
           std::cout << "Time taken for optimization: " << opt_duration.count() << " seconds" << std::endl;
           std::cout << "No inter-robot conflict" << std::endl;
           tmpNode.multirobot_trajectory.to_yaml_format(outFile.c_str());
+          if(!cluster_tracking.empty()){
+            std::ofstream fout(outFile, std::ios::app); 
+            fout << "cluster_tracking:" << std::endl;
+            for (auto &c: cluster_tracking){
+              fout << "  - " << c << std::endl;
+            }
+          }
           return 0;
         }
         // vi. the max conflict happening in the output, extract this pair
@@ -205,7 +213,7 @@ int main(int argc, char *argv[]) {
         else if(index_i >= 0 && index_j >= 0){
           std::cout << "merging two existing clusters" << std::endl;
           tmpNode.clusters.at(index_i).first.insert(tmpNode.clusters.at(index_j).first.begin(), tmpNode.clusters.at(index_j).first.end());
-          tmpNode.clusters.at(index_i).second = tmpNode.clusters.at(index_i).second + max_conflict; // std::max(tmpNode.clusters.at(index_i).second, max_conflict);
+          tmpNode.clusters.at(index_i).second = std::max(tmpNode.clusters.at(index_i).second, max_conflict);
           if(index_i != index_j)
             tmpNode.clusters.erase(tmpNode.clusters.begin() + index_j); // delete the old one
         }
@@ -213,12 +221,12 @@ int main(int argc, char *argv[]) {
         else {
           if(index_i >= 0){
             tmpNode.clusters.at(index_i).first.insert(j);
-            tmpNode.clusters.at(index_i).second = tmpNode.clusters.at(index_i).second + max_conflict; // max_conflict;
+            tmpNode.clusters.at(index_i).second = max_conflict;
             
           }
           else{
             tmpNode.clusters.at(index_j).first.insert(i);
-            tmpNode.clusters.at(index_j).second = tmpNode.clusters.at(index_j).second + max_conflict; // max_conflict;
+            tmpNode.clusters.at(index_j).second = max_conflict;
           }
           std::cout << "robot " << (index_i >= 0 ? i : j) << " already belongs to some cluster" << std::endl;
         }
