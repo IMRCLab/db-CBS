@@ -1,0 +1,18 @@
+environment:
+  min: [-2, -0.35]
+  max: [2,   0.35]
+  obstacles: []
+robots:
+  - type: double_integrator_0
+    start: [-1, 0.3, 0, 0]
+    goal:  [ 1, 0.3, 0, 0] 
+  - type: double_integrator_0
+    start: [-1, -0.3, 0, 0] 
+    goal:  [ 1, -0.3, 0, 0]
+joint_robot: 
+  - type: DintegratorCables
+    start: [-1.0, 0.0, 1.57, -1.57, 0.0, 0.0, 0.0, 0.0]
+    goal:  [ 1.0, 0.0, 1.57, -1.57,  0.0, 0.0, 0.0, 0.0]
+    l: [0.5, 0.5]
+    rp: 0.01
+    ri: 0.1
