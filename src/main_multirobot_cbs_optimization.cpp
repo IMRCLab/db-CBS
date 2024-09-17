@@ -96,7 +96,7 @@ int main(int argc, char *argv[]) {
   // I. Parallel/Independent optimization
   auto optimization_start = std::chrono::high_resolution_clock::now();
   Options_trajopt options_trajopt;
-  options_trajopt.solver_id = 1; // time optimal, no moving obstacles 
+  options_trajopt.solver_id = 0; // 1 - time optimal, no moving obstacles 
   options_trajopt.control_bounds = 1;
   options_trajopt.use_warmstart = 1;
   options_trajopt.weight_goal = 100;
@@ -205,7 +205,7 @@ int main(int argc, char *argv[]) {
         else if(index_i >= 0 && index_j >= 0){
           std::cout << "merging two existing clusters" << std::endl;
           tmpNode.clusters.at(index_i).first.insert(tmpNode.clusters.at(index_j).first.begin(), tmpNode.clusters.at(index_j).first.end());
-          tmpNode.clusters.at(index_i).second = std::max(tmpNode.clusters.at(index_i).second, max_conflict);
+          tmpNode.clusters.at(index_i).second = tmpNode.clusters.at(index_i).second + max_conflict; // std::max(tmpNode.clusters.at(index_i).second, max_conflict);
           if(index_i != index_j)
             tmpNode.clusters.erase(tmpNode.clusters.begin() + index_j); // delete the old one
         }
@@ -213,11 +213,12 @@ int main(int argc, char *argv[]) {
         else {
           if(index_i >= 0){
             tmpNode.clusters.at(index_i).first.insert(j);
-            tmpNode.clusters.at(index_i).second = max_conflict;
+            tmpNode.clusters.at(index_i).second = tmpNode.clusters.at(index_i).second + max_conflict; // max_conflict;
+            
           }
           else{
             tmpNode.clusters.at(index_j).first.insert(i);
-            tmpNode.clusters.at(index_j).second = max_conflict;
+            tmpNode.clusters.at(index_j).second = tmpNode.clusters.at(index_j).second + max_conflict; // max_conflict;
           }
           std::cout << "robot " << (index_i >= 0 ? i : j) << " already belongs to some cluster" << std::endl;
         }
