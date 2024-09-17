@@ -65,7 +65,7 @@ int main(int argc, char* argv[]) {
       return 1;
     }
     YAML::Node cfg = YAML::LoadFile(cfgFile);
-    // cfg = cfg["db-cbs"]["default"];
+    cfg = cfg["db-cbs"]["default"];
     float alpha = cfg["alpha"].as<float>();
     bool filter_duplicates = cfg["filter_duplicates"].as<bool>();
     fs::path output_path(outputFile);
@@ -95,6 +95,7 @@ int main(int argc, char* argv[]) {
     std::vector<fcl::CollisionObjectf *> obstacles;
     std::vector<std::vector<fcl::Vector3f>> positions;
     std::vector<std::shared_ptr<fcl::CollisionGeometryd>> collision_geometries;
+    std::vector<Eigen::VectorXf> p0_sol;
     for (const auto &obs : env["environment"]["obstacles"])
     {
         if (obs["type"].as<std::string>() == "box"){
@@ -142,7 +143,9 @@ int main(int argc, char* argv[]) {
             motionsFile = "../new_format_motions/integrator2_2d_v0/integrator2_2d_v0.msgpack";
         } else if (robotType == "integrator2_3d_v0"){
             motionsFile = "../new_format_motions/integrator2_3d_v0/integrator2_3d_v0.bin.im.bin.sp.bin";
-        } else{
+        } else if (robotType == "quad3d_v0") {
+            motionsFile = "../new_format_motions/quad3d_v0/quad3d_v0.msgpack";
+        } else {
             throw std::runtime_error("Unknown motion filename for this robottype!");
         }
         all_motionsFile.push_back(motionsFile);
@@ -186,7 +189,7 @@ int main(int argc, char* argv[]) {
       options_tdbastar.delta = cfg["heuristic1_delta"].as<float>();
       for (const auto &robot : robots){
         // start to inf for the reverse search
-        problem.starts[robot_id].head<2>().setConstant(std::sqrt(std::numeric_limits<double>::max())); // assumes 2D robots! 
+        problem.starts[robot_id].head(robot->translation_invariance).setConstant(std::sqrt(std::numeric_limits<double>::max())); // assumes 2D robots! 
         Eigen::VectorXd tmp_state = problem.starts[robot_id];
         problem.starts[robot_id] = problem.goals[robot_id];
         problem.goals[robot_id] = tmp_state;
@@ -265,12 +268,21 @@ int main(int argc, char* argv[]) {
         HighLevelNode P = open.top();
         open.pop();
         Conflict inter_robot_conflict;
-        if (!getEarliestConflict(P.solution, robots, col_mng_robots, robot_objs, inter_robot_conflict)){
+        if (!getEarliestConflict(P.solution, robots, col_mng_robots, robot_objs, inter_robot_conflict, p0_sol)){
             solved_db = true;
             std::cout << "Final solution!" << std::endl; 
             create_dir_if_necessary(outputFile);
             std::ofstream out(outputFile);
             export_solutions(P.solution, robots.size(), &out);
+            size_t pos = outputFile.rfind(".yaml");
+            std::string outputFile_payload = "../result_dbcbs_payload.yaml";
+            // Check if ".yaml" is found at the end of the string
+            if (pos != std::string::npos) {
+              // Remove ".yaml" and add "_payload.yaml"
+              outputFile_payload = outputFile.substr(0, pos) + "_payload.yaml";
+              std::cout << "outputFile_payload: " << outputFile_payload << std::endl;
+            }
+            export_solution_p0(p0_sol, outputFile_payload);
             // get motion_primitives_plot
             if (save_forward_search_expansion){
               std::string output_folder = output_path.parent_path().string();
