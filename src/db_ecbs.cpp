@@ -428,6 +428,7 @@ int main(int argc, char* argv[]) {
             return 0;
           }
           if(cfg["execute_greedy_optimization"].as<bool>()){
+            bool moving_obstacles = false;
             std::vector<int> cluster_tracking(num_robots + 1, 0);
             HighLevelNodeOptimization tmpNode = tmp;
             int max_conflict_cluster_index;
@@ -457,10 +458,12 @@ int main(int argc, char* argv[]) {
                   std::cout << elem << " ";
               }
               std::cout << "\nconflict value: " << max_conflict_cluster_it->second << std::endl;
+              if(max_conflict_cluster_it->first.size() != num_robots)
+                moving_obstacles = false;
               // iii. jointly optimiza the one with MAX conflicts
               std::string tmp_envFile = "/tmp/dynoplan/tmp_envFile_" + gen_random(6) + ".yaml";
               std::cout << "tmp envFile: " << tmp_envFile << std::endl;
-              get_moving_obstacle(inputFile, /*initGuess*/tmpNode.multirobot_trajectory, /*outputFile*/tmp_envFile, max_conflict_cluster_it->first, /*moving_obs*/true);
+              get_moving_obstacle(inputFile, /*initGuess*/tmpNode.multirobot_trajectory, /*outputFile*/tmp_envFile, max_conflict_cluster_it->first, /*moving_obs*/moving_obstacles);
               feasible = execute_optimizationMetaRobot(tmp_envFile,
                                       /*initialGuess*/discrete_search_sol, // can be discrete search
                                       /*solution*/tmpNode.multirobot_trajectory, // update the solution
