@@ -7,3 +7,7 @@ demo/
 cloud/motions/
 .vscode/
 __pycache__/
+out_quad
+out_unicycle
+old_format_motions/
+out_integrators/
