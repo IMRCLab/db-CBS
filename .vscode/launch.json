@@ -10,9 +10,24 @@
             "request": "launch",
             "program": "${workspaceFolder}/buildDebug/db_cbs",
             "args": [
-                // "-i", "/home/akmarak-laptop/IMRC/db-CBS/example/parallelpark.yaml",
-                // "-m", "/home/akmarak-laptop/IMRC/db-CBS/results/dbg/motions.msgpack",
-                // "-o", "/home/akmarak-laptop/IMRC/db-CBS/example/result/result_dbcbs.yaml"
+                // "-i", "../example/simple_quadrotors.yaml",
+                // "-o", "../out_quad/result_dbcbs.yaml",
+                // "--optimization", "../out_quad/result_opt.yaml",
+                // "--t", "1000",
+                // "--cfg", "../example/algorithms.yaml"
+
+                // "-i", "../example/simple_unicycle.yaml",
+                // "-o", "../out_unicycle/result_dbcbs.yaml",
+                // "--optimization", "../out_unicycle/result_opt.yaml",
+                // "--t", "500",
+                // "--cfg", "../example/algorithms.yaml"
+
+                "-i", "../example/payload_envs/window_integrators2_2d.yaml",
+                "-o", "../out_integrators/result_dbcbs.yaml",
+                "--optimization", "../out_integrators/result_opt.yaml",
+                "--t", "1000",
+                "--cfg", "../example/algorithms.yaml"
+
             ],
             "cwd": "${workspaceFolder}/buildDebug",
             "externalConsole": false,
