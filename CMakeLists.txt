@@ -8,7 +8,8 @@ find_package(PkgConfig)
 pkg_check_modules(YAML REQUIRED yaml-cpp)
 find_package(fcl REQUIRED)
 
-
+find_package(NLopt REQUIRED)
+message(STATUS "Found NLopt in ${NLOPT_INCLUDE_DIRS}")
 
 add_subdirectory(dynoplan)
 
@@ -131,7 +132,8 @@ target_link_libraries(db_cbs PRIVATE
   ${YAML_LIBRARIES}
   ompl
   ${FCL_LIBRARIES}
-)
+  ${NLOPT_LIBRARIES} 
+  )
 target_include_directories(main_ompl PUBLIC 
   ${YAML_INCLUDE_DIRS}
   ${FCL_INCLUDE_DIRS}
