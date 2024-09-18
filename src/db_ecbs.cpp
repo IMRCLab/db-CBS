@@ -459,7 +459,7 @@ int main(int argc, char* argv[]) {
               }
               std::cout << "\nconflict value: " << max_conflict_cluster_it->second << std::endl;
               if(max_conflict_cluster_it->first.size() != num_robots)
-                moving_obstacles = false;
+                moving_obstacles = true;
               // iii. jointly optimiza the one with MAX conflicts
               std::string tmp_envFile = "/tmp/dynoplan/tmp_envFile_" + gen_random(6) + ".yaml";
               std::cout << "tmp envFile: " << tmp_envFile << std::endl;
