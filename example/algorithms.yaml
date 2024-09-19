@@ -38,9 +38,9 @@ k-cbs:
     goal_epsilon: 0.2
 db-cbs:
   default:
-    delta_0: 0.5
+    delta_0: 0.9
     delta_rate: 0.9
-    num_primitives_0: 100
+    num_primitives_0: 3000
     num_primitives_rate: 1.5
     alpha: 0.5
     filter_duplicates: True
