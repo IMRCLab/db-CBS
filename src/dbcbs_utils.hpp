@@ -25,7 +25,7 @@ void export_solution_p0(const std::vector<Eigen::VectorXf> &p0_opt, std::string 
     out << "payload:" << std::endl;
     for (const auto& p0 : p0_opt){ 
         out << "    - [";
-        out << p0(0) << ", " << p0(1) << "]";      
+        out << p0(0) << ", " << p0(1) << ", " << p0(2) << "]";      
         out << std::endl;
         }
 }
@@ -139,7 +139,9 @@ bool getEarliestConflict(
     std::shared_ptr<fcl::BroadPhaseCollisionManagerd> col_mng_robots,
     std::vector<fcl::CollisionObjectd*>& robot_objs,
     Conflict& early_conflict,
-    std::vector<Eigen::VectorXf>& p0_sol){
+    std::vector<double>& p0_init_guess_std,
+    std::vector<Eigen::VectorXf>& p0_sol,
+    size_t& condition_num){
     size_t max_t = 0;
     for (const auto& sol : solution){
       max_t = std::max(max_t, sol.trajectory.states.size() - 1);
@@ -149,7 +151,11 @@ bool getEarliestConflict(
     Eigen::VectorXf p0_opt;
     std::vector<Eigen::VectorXf> p0_tmp;
     bool solve_p0 = true;
-    Eigen::VectorXf p0_init_guess = create_vector({-1.0, 0.0});
+    for (double val : p0_init_guess_std) {
+        std::cout << val << " ";
+    }
+    std::cout << std::endl;
+    Eigen::VectorXf p0_init_guess = create_vector(p0_init_guess_std);
 
     for (size_t t = 0; t <= max_t; ++t){
         node_states.clear();
@@ -205,39 +211,75 @@ bool getEarliestConflict(
             return true;
         } 
         if (solve_p0) {
-            Eigen::Vector3f robot1_pos = robot_objs[0]->getTranslation().cast<float>();
-            Eigen::Vector3f robot2_pos = robot_objs[1]->getTranslation().cast<float>();
-            float l = 0.5;
-            
-            size_t dim = 2;
-            std::vector<double> li = {0.5, 0.5};
-            double mu = 0.18;
+            size_t dim = 3;
 
-            std::vector<Eigen::VectorXf> pi = {
-                create_vector({robot1_pos(0), robot1_pos(1)}),
-                create_vector({robot2_pos(0), robot2_pos(1)})
-            };        
+            std::vector<double> li;
+            double mu = 0.1;
+            std::vector<Eigen::VectorXf> pi;
+            for (const auto& robot_obj : robot_objs) {
+                Eigen::Vector3f robot_pos = robot_obj->getTranslation().cast<float>();
+                pi.push_back(create_vector({robot_pos(0), robot_pos(1), robot_pos(2)}));
+                li.push_back(0.5);
+            }
             cost_data data {pi, li, mu, p0_init_guess}; // prepare the data for the opt
             optimizePayload(p0_opt, dim, p0_init_guess, data);
-            p0_init_guess << p0_opt(0), p0_opt(1);
-
+            p0_init_guess << p0_opt(0), p0_opt(1), p0_opt(2);
+            // std::cout << " p0_opt: "<< p0_opt(0) << p0_opt(1) << p0_opt(2) << std::endl;
+            size_t robot_counter = 0;
+            bool conflict_exists = false;
             for (const auto& p : pi) {
-
                 float distance = (p - p0_opt).norm();
-                if (abs(distance - l) >= 0.2) { // assumed 2 robots
+                double tol = abs(distance - li[robot_counter]);
+                switch (condition_num) {
+                    case 0: {
+                        conflict_exists = false;
+                        break;
+                        }
+                    case 1: {
+                        conflict_exists = tol >= 0.3;
+                        break;
+                        std::cout << "checking case 1: " << conflict_exists << std::endl;
+
+                    }
+                    case 2: {
+                        bool conf1 = p0_opt(2) > p(2); 
+                        bool conf2 = tol >= 0.3;
+                        conflict_exists = conf1 || conf2;
+                        std::cout << "checking case 2: " << conf1 << ", " << conf2 << std::endl;
+
+                        break;
+                    }
+                    case 3: {
+                        bool conf1 = p(2) - p0_opt(2) < 0.1; 
+                        bool conf2 = tol >= 0.3;
+                        conflict_exists = conf1 || conf2;
+                        std::cout << "checking case 3: " << conf1 << ", " << conf2 << std::endl;
+                        break;
+                    }
+                    default:
+                        conflict_exists = false;
+                } 
+                if (conflict_exists) {
+                    std::cout << "conflict exists: "<< condition_num << std::endl;
+                    std::cout << "tol: " << tol << std::endl;
+                    std::cout << "p0(2): " << p0_opt(2) << std::endl;
+                    std::cout << "p: " << p(2) << std::endl;
+                    std::cout << "p(2) - p0_opt(2): " << p(2) - p0_opt(2) << std::endl;
                     early_conflict.time = t * all_robots[0]->ref_dt;
-                    early_conflict.robot_idx_i = 0; 
-                    early_conflict.robot_idx_j = 1;
+                    early_conflict.robot_idx_i = robot_counter; 
+                    early_conflict.robot_idx_j = 99;
                     assert(early_conflict.robot_idx_i != early_conflict.robot_idx_j);
                     early_conflict.robot_state_i = node_states[early_conflict.robot_idx_i];
-                    early_conflict.robot_state_j = node_states[early_conflict.robot_idx_j];
+                    // early_conflict.robot_state_j = node_states[early_conflict.robot_idx_j];
                     return true;
+
                 }
+            ++robot_counter;
             }
         }  
-    if (solve_p0) {
-        p0_tmp.push_back(p0_opt);
-    }
+        if (solve_p0) {
+            p0_tmp.push_back(p0_opt);
+        }
     }
     if (solve_p0) {
         for (const auto& p0i : p0_tmp) {
@@ -250,7 +292,9 @@ bool getEarliestConflict(
 
 void createConstraintsFromConflicts(const Conflict& early_conflict, std::map<size_t, std::vector<dynoplan::Constraint>>& constraints){
     constraints[early_conflict.robot_idx_i].push_back({early_conflict.time, early_conflict.robot_state_i});
-    constraints[early_conflict.robot_idx_j].push_back({early_conflict.time, early_conflict.robot_state_j});
+    if (early_conflict.robot_idx_j != 99) {
+        constraints[early_conflict.robot_idx_j].push_back({early_conflict.time, early_conflict.robot_state_j});
+    } 
 }
 
 void export_solutions(const std::vector<LowLevelPlan<dynobench::Trajectory>>& solution, 

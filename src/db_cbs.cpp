@@ -65,7 +65,27 @@ int main(int argc, char* argv[]) {
       return 1;
     }
     YAML::Node cfg = YAML::LoadFile(cfgFile);
-    // cfg = cfg["db-cbs"]["default"];
+    cfg = cfg["db-cbs"]["default"];
+    // payload HL constraints configs
+    std::vector<double> p0_init_guess;
+
+    if (cfg["p0_init_guess"]) {
+      for (const auto& value : cfg["p0_init_guess"]) {
+        p0_init_guess.push_back(value.as<double>());
+      }
+    } else {
+      p0_init_guess = {0.0, 0.0, 0.0};
+    }
+    size_t p0_condition_num = 0;
+    // p0_constraint determines which HL condition is set using switch cases
+    if (cfg["p0_condition_num"]) {
+      size_t condition_num = cfg["p0_condition_num"].as<size_t>();
+      if (condition_num <= 3) {
+          p0_condition_num = condition_num;
+      } else {
+        p0_condition_num = 0;
+      } 
+    }
     float alpha = cfg["alpha"].as<float>();
     bool filter_duplicates = cfg["filter_duplicates"].as<bool>();
     fs::path output_path(outputFile);
@@ -189,7 +209,7 @@ int main(int argc, char* argv[]) {
       options_tdbastar.delta = cfg["heuristic1_delta"].as<float>();
       for (const auto &robot : robots){
         // start to inf for the reverse search
-        problem.starts[robot_id].head(robot->translation_invariance).setConstant(std::sqrt(std::numeric_limits<double>::max())); // assumes 2D robots! 
+        problem.starts[robot_id].head(robot->translation_invariance).setConstant(std::sqrt(std::numeric_limits<double>::max()));
         Eigen::VectorXd tmp_state = problem.starts[robot_id];
         problem.starts[robot_id] = problem.goals[robot_id];
         problem.goals[robot_id] = tmp_state;
@@ -268,7 +288,7 @@ int main(int argc, char* argv[]) {
         HighLevelNode P = open.top();
         open.pop();
         Conflict inter_robot_conflict;
-        if (!getEarliestConflict(P.solution, robots, col_mng_robots, robot_objs, inter_robot_conflict, p0_sol)){
+        if (!getEarliestConflict(P.solution, robots, col_mng_robots, robot_objs, inter_robot_conflict, p0_init_guess, p0_sol, p0_condition_num)){
             solved_db = true;
             std::cout << "Final solution!" << std::endl; 
             create_dir_if_necessary(outputFile);
@@ -290,11 +310,12 @@ int main(int argc, char* argv[]) {
               export_node_expansion(expanded_trajs_tmp, &out2);
             }
             bool sum_robot_cost = true;
-            bool feasible = execute_optimizationMultiRobot(inputFile,
-                                          outputFile, 
-                                          optimizationFile,
-                                          DYNOBENCH_BASE,
-                                          sum_robot_cost);
+            // bool feasible = execute_optimizationMultiRobot(inputFile,
+            //                               outputFile, 
+            //                               optimizationFile,
+            //                               DYNOBENCH_BASE,
+            //                               sum_robot_cost);
+            bool feasible = true;
             if (feasible) {
               return 0;
             }
