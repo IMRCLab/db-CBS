@@ -15,7 +15,7 @@ import time
 # add start/goal robots with different color
 # html out file as arg
 
-def visualize(env_file, result_file):
+def visualize(env_file, result_file, video_file):
     vis = meshcat.Visualizer()
     # vis.open()
     anim = Animation()
@@ -60,7 +60,6 @@ def visualize(env_file, result_file):
       # vis["Quadrotor_start" + str(name_robot)].set_object(g.StlMeshGeometry.from_file('../meshes/cf2_assembly.stl'), g.MeshLambertMaterial(color="blue"))
       # vis["Quadrotor_start" + "0"].set_transform(tf.translation_matrix([1,0,0]).dot(
       #         tf.quaternion_matrix(np.array([1,0,0,0]))))
-      vis[f"Obstacle_Box{k}"].set_transform(tf.translation_matrix(center))
       
       name_robot+=1
 
@@ -76,21 +75,21 @@ def visualize(env_file, result_file):
             robot_state = states[l][k]
           frame["Quadrotor" + str(l)].set_transform(tf.translation_matrix(robot_state[0:3]).dot(
               tf.quaternion_matrix(np.array([1,0,0,0]))))
-      time.sleep(0.1)
+      # time.sleep(0.1)
     vis.set_animation(anim)
     res = vis.static_html()
-    with open("output_trial2.html", "w") as f:
+    with open(video_file, "w") as f:
         f.write(res)
 
             
 def main():
   parser = argparse.ArgumentParser()
-  parser.add_argument("env", help="input file containing map")
+  parser.add_argument("--env", help="input file containing map")
   parser.add_argument("--result", help="output file containing solution")
   parser.add_argument("--video", help="output file for video")
   args = parser.parse_args()
 
-  visualize(args.env, args.result)
+  visualize(args.env, args.result, args.video)
 
 if __name__ == "__main__":
   main()
