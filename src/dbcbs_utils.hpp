@@ -531,6 +531,60 @@ struct MaxCollidingRobots {
   int collisions;
 };
 
+// hard-coded for double integrator case
+void export_solutions_joint(const std::vector<LowLevelPlan<dynobench::Trajectory>>& solution, std::ofstream *out){
+  float cost = 0;
+  size_t max_t = 0;
+  size_t max_a = 0;
+  int k = 4; // for the state
+  Eigen::VectorXd tmp_state(k*2);
+  Eigen::VectorXd tmp_action(4);
+  std::vector<Eigen::VectorXd> joint_states;
+  std::vector<Eigen::VectorXd> joint_actions;
+
+  for (auto& n : solution){
+    cost += n.trajectory.cost;
+    max_t = std::max(max_t, n.trajectory.states.size() - 1);
+    max_a = std::max(max_a, n.trajectory.actions.size() - 1);
+  }
+
+  *out << "cost: " << cost << std::endl; 
+  *out << "result:" << std::endl;
+  *out << "  - states:" << std::endl;
+  for (size_t t = 0; t <= max_t; ++t){
+    for (size_t i = 0; i < solution.size(); ++i){ // for each robot
+      if (t >= solution[i].trajectory.states.size()){
+          tmp_state.segment(i*k,k) = solution[i].trajectory.states.back();    
+      }
+      else {
+          tmp_state.segment(i*k,k) = solution[i].trajectory.states[t];
+      }
+    }
+    joint_states.push_back(tmp_state);
+  }
+  // write to file 
+  for (size_t j = 0; j < joint_states.size(); ++j){
+      *out << "      - ";
+      *out << joint_states.at(j).format(dynobench::FMT)<< std::endl;
+  }
+  *out << "    actions:" << std::endl;
+  for (size_t t = 0; t <= max_a; ++t){
+    for (size_t i = 0; i < solution.size(); ++i){ 
+      if (t >= solution[i].trajectory.actions.size()){
+          tmp_action.segment(i*2,2) = solution[i].trajectory.actions.back();    
+      }
+      else {
+          tmp_action.segment(i*2,2) = solution[i].trajectory.actions[t];
+      }
+    }
+    joint_actions.push_back(tmp_action); 
+  }
+  // write to file 
+  for (size_t j = 0; j < joint_actions.size(); ++j){
+      *out << "      - ";
+      *out << joint_actions.at(j).format(dynobench::FMT)<< std::endl;
+  }
+}
 // #include <boost/heap/d_ary_heap.hpp>
 
 // // Define your element type (e.g., HighLevelNode)
