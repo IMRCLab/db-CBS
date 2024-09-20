@@ -531,14 +531,15 @@ struct MaxCollidingRobots {
   int collisions;
 };
 
-// hard-coded for double integrator case
+// hard-coded, check j, k
 void export_solutions_joint(const std::vector<LowLevelPlan<dynobench::Trajectory>>& solution, std::ofstream *out){
   float cost = 0;
   size_t max_t = 0;
   size_t max_a = 0;
-  int k = 4; // for the state
+  int k = 6; // for the state
+  int j = 3; // for the actions
   Eigen::VectorXd tmp_state(k*2);
-  Eigen::VectorXd tmp_action(4);
+  Eigen::VectorXd tmp_action(j*2);
   std::vector<Eigen::VectorXd> joint_states;
   std::vector<Eigen::VectorXd> joint_actions;
 
@@ -571,10 +572,10 @@ void export_solutions_joint(const std::vector<LowLevelPlan<dynobench::Trajectory
   for (size_t t = 0; t <= max_a; ++t){
     for (size_t i = 0; i < solution.size(); ++i){ 
       if (t >= solution[i].trajectory.actions.size()){
-          tmp_action.segment(i*2,2) = solution[i].trajectory.actions.back();    
+          tmp_action.segment(i*j,j) = solution[i].trajectory.actions.back();    
       }
       else {
-          tmp_action.segment(i*2,2) = solution[i].trajectory.actions[t];
+          tmp_action.segment(i*j,j) = solution[i].trajectory.actions[t];
       }
     }
     joint_actions.push_back(tmp_action); 

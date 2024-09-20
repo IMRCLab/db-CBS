@@ -71,7 +71,7 @@ int main(int argc, char* argv[]) {
       return 1;
     }
     YAML::Node cfg = YAML::LoadFile(cfgFile);
-    // cfg = cfg["db-ecbs"]["default"];
+    cfg = cfg["db-ecbs"]["default"];
     float alpha = cfg["alpha"].as<float>();
     bool filter_duplicates = cfg["filter_duplicates"].as<bool>();
     fs::path output_path(outputFile);
@@ -376,6 +376,9 @@ int main(int argc, char* argv[]) {
           create_dir_if_necessary(outputFile);
           std::ofstream out_db(outputFile);
           export_solutions(P.solution, &out_db);
+          std::ofstream out_db2(optimizationFile);
+          export_solutions_joint(P.solution, &out_db2);
+          return 0;
           auto discrete_end = std::chrono::high_resolution_clock::now();
           std::chrono::duration<double> duration = discrete_end - discrete_start;
           std::cout << "Time taken for discrete search: " << duration.count() << " seconds" << std::endl;
