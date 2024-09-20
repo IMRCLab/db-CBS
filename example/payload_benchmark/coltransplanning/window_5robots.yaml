@@ -15,10 +15,10 @@ environment:
       size: [0.2, 0.6, 3.0]
       type: box
     - center: [0.0, 1.3, 0.0]
-      size: [0.2, 0.2, 3.0]
+      size: [0.2, 0.4, 3.0]
       type: box
     - center: [0.0, -1.3, 0.0]
-      size: [0.2, 0.2, 3.0]
+      size: [0.2, 0.4, 3.0]
       type: box
 name: quad3d_payload_window_5
 robots:
