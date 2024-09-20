@@ -194,7 +194,7 @@ class Visualizer():
                 Path(__file__).parent.parent / 'meshes/cf2_assembly.stl'), g.MeshLambertMaterial(color=DnametoColor.get(color_name, 0xffffff)))
             self.vis[prefix + "cable_" + name].set_object(g.Box([0.005,0.005,self.quads[name].l]), g.MeshLambertMaterial(color=0x000000))            
             self.vis[prefix + name + "_sphere"].set_object(
-                g.Mesh(g.Sphere(0.15), g.MeshLambertMaterial(opacity=0.1)))  # safety distance
+                g.Mesh(g.Sphere(0.1), g.MeshLambertMaterial(opacity=0.1)))  # safety distance
 
     def _setObstacles(self, obstacles):
         for idx, obstacle in enumerate(obstacles):
