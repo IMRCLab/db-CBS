@@ -41,14 +41,17 @@ def run_optimization(result_folder, filename_init, filename_env , result, timeli
         print(f"Error: {e}")
         return False
 
-def visualize_payload(filename_env, output):
+def visualize_payload(filename_env, output, opt_success=True):
+    if opt_success:
+        output = output.with_suffix(".trajopt.yaml")
+        output_result = output.with_suffix(".trajopt.html")
     print("fileoutput to visualize:",output.with_suffix(".trajopt.yaml"))
     subprocess.run(["python3",
         "../scripts/visualize_payload.py",
         "--env", str(filename_env),
         "--robot", "point",
-        "--result", output.with_suffix(".trajopt.yaml"),
-        "--output", output.with_suffix(".trajopt.html")],
+        "--result", output,
+        "--output", output_result],
         check=True)
 
 def generate_init_guess(script, path_to_env, path_to_dbcbs, path_to_result,  path_to_payload, num_robots):
@@ -62,16 +65,23 @@ def generate_init_guess(script, path_to_env, path_to_dbcbs, path_to_result,  pat
         "--num_robots", str(num_robots)])
 
 
-def run_visualize(script, filename_env, filename_result, path_to_payload):
-	subprocess.run(["python3",
-        script,
-        "--env", filename_env,
-        "--result", filename_result,
-        "--payload", path_to_payload,
-        "--video", filename_result.with_suffix(".html")])
+def run_visualize(script, filename_env, filename_result, path_to_payload=None):
+    if path_to_payload is not None:
+        subprocess.run(["python3",
+            script,
+            "--env", filename_env,
+            "--result", filename_result,
+            "--payload", path_to_payload,
+            "--video", filename_result.with_suffix(".html")])
+    else: 
+        subprocess.run(["python3",
+            script,
+            "--env", filename_env,
+            "--result", filename_result,
+            "--video", filename_result.with_suffix(".html")])
 
-
-def run_dbcbs(filename_env, folder, timelimit, cfg):
+def run_dbcbs(filename_env, folder, task, cfg):
+    timelimit = task.timelimit
     with tempfile.TemporaryDirectory() as tmpdirname:
         p = Path(tmpdirname)
         filename_cfg = p / "cfg.yaml"
@@ -96,7 +106,7 @@ def run_dbcbs(filename_env, folder, timelimit, cfg):
                 "-o", filename_result_dbcbs,
                 "--optimization", filename_result_dbcbs_opt,
                 "--cfg", str(filename_cfg),
-                "-t", str(timelimit*1000)]
+                "-t", str(timelimit*1000)] # -t is in milliseconds [ms]
             print(subprocess.list2cmdline(cmd))
             try:
                 with open("{}/log_dbcbs.txt".format(folder), 'w') as logfile:
@@ -113,7 +123,7 @@ def run_dbcbs(filename_env, folder, timelimit, cfg):
                     expansions = results_dbcbs["expansions"]
                     now = time.time()
                     t = now - start
-                    print("success!", t)                    
+                    print("success!", t, ", instance:", task.instance, " trial: ", task.trial)                    
                     stats.write("  - duration_dbcbs: {}\n".format(t))
                     stats.write("    delta_0: {}\n".format(delta))
                     stats.write("    delta_rate: {}\n".format(delta_rate))
@@ -149,6 +159,9 @@ def execute_task(task: ExecutionTask):
     mycfg = cfg["db-cbs"]["default"]
     mycfg["delta_0"] = task.db_param["delta_0"]
     mycfg["delta_rate"] = task.db_param["delta_rate"]
+    mycfg["num_primitives_0"] = task.db_param["num_primitives_0"]
+    mycfg["num_primitives_rate"] = task.db_param["num_primitives_rate"]
+    mycfg["heuristic1"] = task.db_param["heuristic1"]
     mycfg["payload"] = task.db_param["payload"]
     # wildcard matching
     import fnmatch
@@ -162,59 +175,64 @@ def execute_task(task: ExecutionTask):
     print("Using configurations ", mycfg)
     print("---------------------------------------")
     print("Running db-CBS......")
-    if(run_dbcbs(str(env_path), str(result_folder), task.timelimit, mycfg)):
+    if(run_dbcbs(str(env_path), str(result_folder), task, mycfg)):
  
  
         print("Visualizing db-CBS solution......")
         vis_script = scripts_path / "mesh_visualizer.py"
         path_to_dbcbs_result =  result_folder / "result_dbcbs.yaml"
         path_to_payload = result_folder / "result_dbcbs_payload.yaml"
-        run_visualize(vis_script, env_path, path_to_dbcbs_result, path_to_payload)
+        if (path_to_payload.exists()):
+            run_visualize(vis_script, env_path, path_to_dbcbs_result, path_to_payload)
         
-        init_guess_script = scripts_path / "init_guess_payload.py"
-        with open(env_path) as f:
-            env_dict = yaml.safe_load(f)
+            init_guess_script = scripts_path / "init_guess_payload.py"
+            with open(env_path) as f:
+                env_dict = yaml.safe_load(f)
 
-        env_joint_robot = {"environment": env_dict["environment"], "robots": list()}
-        env_joint_robot["robots"].append(env_dict["joint_robot"][0])
-        # exit()
+            env_joint_robot = {"environment": env_dict["environment"], "robots": list()}
+            env_joint_robot["robots"].append(env_dict["joint_robot"][0])
+            # exit()
 
-        env_joint_robot_path = result_folder / "env.yaml"
+            env_joint_robot_path = result_folder / "env.yaml"
 
-        with open(env_joint_robot_path, "w") as f:
-            yaml.dump(env_joint_robot, f, default_flow_style=None)
-        path_to_result = result_folder / "init_guess_payload"
-        
-        print("Generating initial guess from db-CBS solution and visualizing it......")
-        num_robots = env_dict["joint_robot"][0]["quadsNum"]
-        generate_init_guess(init_guess_script, str(env_joint_robot_path), str(path_to_dbcbs_result), path_to_result, str(path_to_payload), num_robots)
-        
+            with open(env_joint_robot_path, "w") as f:
+                yaml.dump(env_joint_robot, f, default_flow_style=None)
+            path_to_result = result_folder / "init_guess_payload"
+            
+            print("Generating initial guess from db-CBS solution and visualizing it......")
+            num_robots = env_dict["joint_robot"][0]["quadsNum"]
+            generate_init_guess(init_guess_script, str(env_joint_robot_path), str(path_to_dbcbs_result), path_to_result, str(path_to_payload), num_robots)
+            
 
-        print("Running optimization......")
-        if(run_optimization(result_folder ,path_to_result.with_suffix(".yaml"), str(env_joint_robot_path), result_folder / "output", task.timelimit)):
-            print("Visualizing optimization solution......")
-            visualize_payload(str(env_joint_robot_path), result_folder / "output")
-        else:
-            print(f"optimization failed in {task.instance}, trial {task.trial}")
+            print("Running optimization......")
+            if(run_optimization(result_folder ,path_to_result.with_suffix(".yaml"), str(env_joint_robot_path), result_folder / "output", task.timelimit)):
+                print("Visualizing optimization solution......")
+                visualize_payload(str(env_joint_robot_path), result_folder / "output")
+            else:
+                print(f"optimization failed in {task.instance}, trial {task.trial}")
+                print("visualizing the unfeasible solution...")
+                visualize_payload(str(env_joint_robot_path), result_folder / "output", opt_success=False)
+        else: 
+            run_visualize(vis_script, env_path, path_to_dbcbs_result)
     else: 
         print(f"db-cbs failed in {task.instance}, trial {task.trial}")
 
 def main():
     parallel = True
     instances = [
-        "window_2robots",
-        "window_3robots",
-        "window_4robots",
-        "window_5robots",
+        # "window_2robots",
+        # "window_3robots",
+        # "window_4robots",
+        # "window_5robots",
         "window_6robots",
     ]
 
-    db_params = [
-        {"delta_0": 0.85, "delta_rate": 0.9, "payload": {"solve_p0": True, "p0_init_guess": [-0.5,0,0], "tol": 0.25}},
-        {"delta_0": 0.85, "delta_rate": 0.9, "payload": {"solve_p0": True, "p0_init_guess": [-0.5,0,0], "tol": 0.3}},
-        {"delta_0": 0.9, "delta_rate": 0.9, "payload": {"solve_p0": True, "p0_init_guess": [-0.5,0,0], "tol": 0.4}},
-        {"delta_0": 0.9, "delta_rate": 0.9, "payload": {"solve_p0": True, "p0_init_guess": [-0.5,0,0], "tol": 0.4}},
-        {"delta_0": 0.9, "delta_rate": 0.9, "payload": {"solve_p0": True, "p0_init_guess": [-0.5,0,0], "tol": 0.4}},
+    db_params = [    
+        # {"delta_0": 0.9, "delta_rate": 0.9, "num_primitives_0": 3000, "num_primitives_rate": 1.5, "heuristic1": "no-reverse-search", "payload": {"solve_p0": True, "p0_init_guess": [-0.5,0,0], "tol": 0.25}},
+        # {"delta_0": 0.9, "delta_rate": 0.9, "num_primitives_0": 3000, "num_primitives_rate": 1.5, "heuristic1": "no-reverse-search", "payload": {"solve_p0": True, "p0_init_guess": [-0.5,0,0], "tol": 0.3}},
+        # {"delta_0": 0.9, "delta_rate": 0.9, "num_primitives_0": 3000, "num_primitives_rate": 1.5, "heuristic1": "no-reverse-search", "payload": {"solve_p0": True, "p0_init_guess": [-0.5,0,0], "tol": 1.5}},
+        {"delta_0": 0.9, "delta_rate": 0.9, "num_primitives_0": 3000, "num_primitives_rate": 1.5, "heuristic1": "no-reverse-search", "payload": {"solve_p0": True, "p0_init_guess": [-0.5,0,0], "tol": 0.5}},
+        # {"delta_0": 0.9, "delta_rate": 0.9, "num_primitives_0": 3000, "num_primitives_rate": 1.5, "heuristic1": "no-reverse-search", "payload": {"solve_p0": True, "p0_init_guess": [-0.5,0,0], "tol": 1.5}},
     ] 
 
 
