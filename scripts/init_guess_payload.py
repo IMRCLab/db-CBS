@@ -28,6 +28,7 @@ def norm(vec):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--env', type=str, help="environment")
+    parser.add_argument('--joint_robot_env',default=None, type=str, help="environment")
     parser.add_argument("--num_robots", type=int, help="num of robots")
     parser.add_argument('--payload', type=str, help="payload pose in dbcbs")
     parser.add_argument('--dbcbs', type=str, help="dbcbs sol")
@@ -36,22 +37,23 @@ def main():
 
     args = parser.parse_args()
     num_robots = args.num_robots
-    path_to_env = args.env
+    if args.joint_robot_env is None:
+        path_to_env = args.env 
+    else:
+        path_to_env = args.joint_robot_env
     path_to_dbcbs = args.dbcbs
     html_path = args.output
     path_to_result = args.result
     path_to_payload = args.payload 
 
-    new_path_to_env = re.sub(r'[^/]+\.yaml$', 'env.yaml', path_to_env)
-
-    # load db_cbs states: 
+    # load env 
     with open(path_to_env, "r") as f: 
         env = yaml.safe_load(f)
     #load payload data
     with open(path_to_payload, "r") as f: 
         payload_yaml = yaml.safe_load(f)
 
-    # load db_cbs states: 
+    # load db_cbs states
     with open(path_to_dbcbs, "r") as f: 
         db_cbs_states = yaml.safe_load(f)
 
@@ -94,22 +96,25 @@ def main():
 
     saveyaml(path_to_result, result_yaml)
 
+    if args.joint_robot_env is None:
+        with open(path_to_env) as f:
+            env_dict = yaml.safe_load(f)
 
-    with open(path_to_env) as f:
-        env_dict = yaml.safe_load(f)
-
-    env_joint_robot = {"environment": env_dict["environment"], "robots": list()}
-    env_joint_robot["robots"].append(env_dict["joint_robot"][0])
-    env_joint_robot["robots"][0]["start"] = env_dict["joint_robot"][0]["start"]
-    goal = np.zeros(payload_states.shape[1])
-    goal[0:3] = payload_states[-1][0:3]
-    goal[3::] = payload_states[0][3::]
-    env_joint_robot["robots"][0]["goal"]  = env_dict["joint_robot"][0]["goal"]
+        env_joint_robot = {"environment": env_dict["environment"], "robots": list()}
+        env_joint_robot["robots"].append(env_dict["joint_robot"][0])
+        env_joint_robot["robots"][0]["start"] = env_dict["joint_robot"][0]["start"]
+        goal = np.zeros(payload_states.shape[1])
+        goal[0:3] = payload_states[-1][0:3]
+        goal[3::] = payload_states[0][3::]
+        env_joint_robot["robots"][0]["goal"]  = env_dict["joint_robot"][0]["goal"]
+        new_path_to_env = re.sub(r'[^/]+\.yaml$', 'env.yaml', path_to_env)
     
+        saveyaml(new_path_to_env, env_joint_robot)
+    else:
+        with open(args.joint_robot_env) as f:
+            env_joint_robot = yaml.safe_load(f)
+        new_path_to_env = args.joint_robot_env
 
-    print(new_path_to_env)
-    # exit()
-    saveyaml(new_path_to_env, env_joint_robot)
 
     script = "../scripts/visualize_payload.py"
     subprocess.run(["python3",
