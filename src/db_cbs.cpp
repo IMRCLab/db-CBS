@@ -65,27 +65,28 @@ int main(int argc, char* argv[]) {
       return 1;
     }
     YAML::Node cfg = YAML::LoadFile(cfgFile);
-    cfg = cfg["db-cbs"]["default"];
+    if (cfg["db-cbs"]){
+      cfg = cfg["db-cbs"]["default"];
+    }
     // payload HL constraints configs
     std::vector<double> p0_init_guess;
-
-    if (cfg["p0_init_guess"]) {
-      for (const auto& value : cfg["p0_init_guess"]) {
-        p0_init_guess.push_back(value.as<double>());
-      }
-    } else {
-      p0_init_guess = {0.0, 0.0, 0.0};
-    }
-    size_t p0_condition_num = 0;
-    // p0_constraint determines which HL condition is set using switch cases
-    if (cfg["p0_condition_num"]) {
-      size_t condition_num = cfg["p0_condition_num"].as<size_t>();
-      if (condition_num <= 3) {
-          p0_condition_num = condition_num;
+    bool solve_p0 = false;
+    float tol = 0.3;
+    if (cfg["payload"]) {
+      if (cfg["payload"]["solve_p0"])
+        solve_p0 = cfg["payload"]["solve_p0"].as<bool>();
+      if (cfg["payload"]["p0_init_guess"]) {
+        for (const auto& value : cfg["payload"]["p0_init_guess"]) {
+          p0_init_guess.push_back(value.as<double>());
+        }
       } else {
-        p0_condition_num = 0;
-      } 
+        p0_init_guess = {0.0, 0.0, 0.0};
+      }
+      if (cfg["payload"]["tol"]) {
+        tol = cfg["payload"]["tol"].as<float>();
+      }
     }
+    std::cout << "solve with payload: " << solve_p0 << std::endl;
     float alpha = cfg["alpha"].as<float>();
     bool filter_duplicates = cfg["filter_duplicates"].as<bool>();
     fs::path output_path(outputFile);
@@ -264,6 +265,8 @@ int main(int argc, char* argv[]) {
       for (const auto &robot : robots){
         expanded_trajs_tmp.clear();
         options_tdbastar.motions_ptr = &robot_motions[problem.robotTypes[robot_id]]; 
+        load_env(*robot, problem);
+        robots[robot_id] = robot;
         tdbastar(problem, options_tdbastar, start.solution[robot_id].trajectory, start.constraints[robot_id],
                   out_tdb, robot_id,/*reverse_search*/false, expanded_trajs_tmp, heuristics[robot_id], nullptr);
         if(!out_tdb.solved){
@@ -288,7 +291,7 @@ int main(int argc, char* argv[]) {
         HighLevelNode P = open.top();
         open.pop();
         Conflict inter_robot_conflict;
-        if (!getEarliestConflict(P.solution, robots, col_mng_robots, robot_objs, inter_robot_conflict, p0_init_guess, p0_sol, p0_condition_num)){
+        if (!getEarliestConflict(P.solution, robots, col_mng_robots, robot_objs, inter_robot_conflict, p0_init_guess, p0_sol, solve_p0, tol)){
             solved_db = true;
             std::cout << "Final solution!" << std::endl; 
             create_dir_if_necessary(outputFile);
