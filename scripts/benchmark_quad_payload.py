@@ -210,8 +210,11 @@ def main():
     ]
 
     db_params = [
-        {"delta_0": 0.9, "delta_rate": 0.9, "payload": {"solve_p0": True, "p0_init_guess": [-0.5,0,0], "tol": 0.4}},
         {"delta_0": 0.85, "delta_rate": 0.9, "payload": {"solve_p0": True, "p0_init_guess": [-0.5,0,0], "tol": 0.25}},
+        {"delta_0": 0.85, "delta_rate": 0.9, "payload": {"solve_p0": True, "p0_init_guess": [-0.5,0,0], "tol": 0.3}},
+        {"delta_0": 0.9, "delta_rate": 0.9, "payload": {"solve_p0": True, "p0_init_guess": [-0.5,0,0], "tol": 0.4}},
+        {"delta_0": 0.9, "delta_rate": 0.9, "payload": {"solve_p0": True, "p0_init_guess": [-0.5,0,0], "tol": 0.4}},
+        {"delta_0": 0.9, "delta_rate": 0.9, "payload": {"solve_p0": True, "p0_init_guess": [-0.5,0,0], "tol": 0.4}},
     ] 
 
 
