@@ -363,20 +363,20 @@ bool getEarliestConflict(
                 return true;
             }
 
-            if (robots_collision_data.result.isCollision()) {
-                const auto& contact = robots_collision_data.result.getContact(0);
-                // std::cout << "collision exists: \n" << "cables: " <<  cable_collision_data.result.isCollision() 
-                std::cout << "robot collision exists: \n" << " robots: " << robots_collision_data.result.isCollision() << std::endl;
-                early_conflict.time = t * all_robots[0]->ref_dt;
-                early_conflict.robot_idx_i = (size_t)contact.o1->getUserData();
-                early_conflict.robot_idx_j = (size_t)contact.o2->getUserData();
-                std::cout << "id 1:" << (size_t)contact.o1->getUserData() << std::endl;
-                std::cout << "id 2:" << (size_t)contact.o2->getUserData() << std::endl;
-                assert(early_conflict.robot_idx_i != early_conflict.robot_idx_j);
-                early_conflict.robot_state_i = node_states[early_conflict.robot_idx_i];
-                early_conflict.robot_state_j = node_states[early_conflict.robot_idx_j];
-                return true;
-            }
+            // if (robots_collision_data.result.isCollision()) {
+            //     const auto& contact = robots_collision_data.result.getContact(0);
+            //     // std::cout << "collision exists: \n" << "cables: " <<  cable_collision_data.result.isCollision() 
+            //     std::cout << "robot collision exists: \n" << " robots: " << robots_collision_data.result.isCollision() << std::endl;
+            //     early_conflict.time = t * all_robots[0]->ref_dt;
+            //     early_conflict.robot_idx_i = (size_t)contact.o1->getUserData();
+            //     early_conflict.robot_idx_j = (size_t)contact.o2->getUserData();
+            //     std::cout << "id 1:" << (size_t)contact.o1->getUserData() << std::endl;
+            //     std::cout << "id 2:" << (size_t)contact.o2->getUserData() << std::endl;
+            //     assert(early_conflict.robot_idx_i != early_conflict.robot_idx_j);
+            //     early_conflict.robot_state_i = node_states[early_conflict.robot_idx_i];
+            //     early_conflict.robot_state_j = node_states[early_conflict.robot_idx_j];
+            //     return true;
+            // }
             p0_tmp.push_back(p0_opt);        
         }
     }

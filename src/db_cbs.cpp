@@ -305,7 +305,9 @@ int main(int argc, char* argv[]) {
               outputFile_payload = outputFile.substr(0, pos) + "_payload.yaml";
               std::cout << "outputFile_payload: " << outputFile_payload << std::endl;
             }
-            export_solution_p0(p0_sol, outputFile_payload);
+            if (solve_p0) {
+              export_solution_p0(p0_sol, outputFile_payload);
+            }
             // get motion_primitives_plot
             if (save_forward_search_expansion){
               std::string output_folder = output_path.parent_path().string();
