@@ -289,7 +289,7 @@ def quad3dpayload_meshcatViewer():
     # robot2
     # control1
     # control2
-    print(args.result)
+    # print(args.result)
     if args.result is not None:
         with open(args.result, 'r') as file:
             __path = yaml.safe_load(file)
@@ -298,103 +298,88 @@ def quad3dpayload_meshcatViewer():
             __path = __path
         else:
             __path = __path["result"]
+        plot_and_visualize = False
+        
+        if __path["states"]:
+            plot_and_visualize = True
+        
+        if plot_and_visualize:
+            xs = [ x[:6] for x in __path["states"] ]
+
+            labels_x = ["x" + str(i) for i in range(len(xs[0]))]
+
+            for i, l in enumerate(labels_x):
+                xi = [x[i] for x in xs]
+                axs[0].plot(xi, label=l)
+            axs[0].legend()
+
+            xs = [ x[6:6+6] for x in __path["states"] ]
+
+            labels_x = ["x" + str(i) for i in range(len(xs[0]))]
+
+            for i, l in enumerate(labels_x):
+                xi = [x[i] for x in xs]
+                axs[1].plot(xi, label=l)
+            axs[1].legend()
 
 
-        xs = [ x[:6] for x in __path["states"] ]
+            xs = [ x[6+6:6+6+6] for x in __path["states"] ]
 
-        labels_x = ["x" + str(i) for i in range(len(xs[0]))]
+            labels_x = ["x" + str(i) for i in range(len(xs[0]))]
 
-        for i, l in enumerate(labels_x):
-            xi = [x[i] for x in xs]
-            axs[0].plot(xi, label=l)
-        axs[0].legend()
+            for i, l in enumerate(labels_x):
+                xi = [x[i] for x in xs]
+                axs[2].plot(xi, label=l)
+            axs[2].legend()
 
-        xs = [ x[6:6+6] for x in __path["states"] ]
+            xs = [ x[6+6+6:6+6+6+7] for x in __path["states"] ]
 
-        labels_x = ["x" + str(i) for i in range(len(xs[0]))]
+            labels_x = ["x" + str(i) for i in range(len(xs[0]))]
 
-        for i, l in enumerate(labels_x):
-            xi = [x[i] for x in xs]
-            axs[1].plot(xi, label=l)
-        axs[1].legend()
-
-
-        xs = [ x[6+6:6+6+6] for x in __path["states"] ]
-
-        labels_x = ["x" + str(i) for i in range(len(xs[0]))]
-
-        for i, l in enumerate(labels_x):
-            xi = [x[i] for x in xs]
-            axs[2].plot(xi, label=l)
-        axs[2].legend()
-
-        xs = [ x[6+6+6:6+6+6+7] for x in __path["states"] ]
-
-        labels_x = ["x" + str(i) for i in range(len(xs[0]))]
-
-        for i, l in enumerate(labels_x):
-            xi = [x[i] for x in xs]
-            axs[3].plot(xi, label=l)
-        axs[3].legend()
+            for i, l in enumerate(labels_x):
+                xi = [x[i] for x in xs]
+                axs[3].plot(xi, label=l)
+            axs[3].legend()
 
 
-        xs = [ x[6+6+6+7:6+6+6+7+7] for x in __path["states"] ]
+            xs = [ x[6+6+6+7:6+6+6+7+7] for x in __path["states"] ]
 
-        labels_x = ["x" + str(i) for i in range(len(xs[0]))]
+            labels_x = ["x" + str(i) for i in range(len(xs[0]))]
 
-        for i, l in enumerate(labels_x):
-            xi = [x[i] for x in xs]
-            axs[4].plot(xi, label=l)
-        axs[4].legend()
+            for i, l in enumerate(labels_x):
+                xi = [x[i] for x in xs]
+                axs[4].plot(xi, label=l)
+            axs[4].legend()
 
-        us = [ u[:4] for u in __path["actions"] ]
+            us = [ u[:4] for u in __path["actions"] ]
 
-        labels_u = ["x" + str(i) for i in range(len(us[0]))]
+            labels_u = ["x" + str(i) for i in range(len(us[0]))]
 
-        for i, l in enumerate(labels_u):
-            ui = [u[i] for u in us]
-            axs[5].plot(ui, label=l)
-        axs[5].legend()
-
-
-        us = [ u[4:4+4] for u in __path["actions"] ]
-
-        labels_u = ["x" + str(i) for i in range(len(us[0]))]
-
-        for i, l in enumerate(labels_u):
-            ui = [u[i] for u in us]
-            axs[6].plot(ui, label=l)
-        axs[6].legend()
+            for i, l in enumerate(labels_u):
+                ui = [u[i] for u in us]
+                axs[5].plot(ui, label=l)
+            axs[5].legend()
 
 
-        # for u in __path["actions"]:
-        #     print(u)
-    print("visualizing")
+            us = [ u[4:4+4] for u in __path["actions"] ]
+
+            labels_u = ["x" + str(i) for i in range(len(us[0]))]
+
+            for i, l in enumerate(labels_u):
+                ui = [u[i] for u in us]
+                axs[6].plot(ui, label=l)
+            axs[6].legend()
+
     visualizer = Visualizer(quadsPayload, env)
 
-    
-    # point1 = [-0.473381,0.0529316,0.186414]
-    # point2 = [-0.487709,0.0579852,0.186402]
-    # point1 =  [1.14314,0.118284,0.451639]
-    # point2=  [1.03288,0.118285,0.451639]
-
-    # points = np.array([point1, point2]).T
-
-    # visualizer.vis["col1"].set_object(
-    #     g.Line(g.PointsGeometry(points), g.LineBasicMaterial()))
-
-
-    # name = input("press any key on terminal to close: ")
-    # print("closing")
-
-
-
     if args.interactive:
-        plt.show()
+        if plot_and_visualize:
+            plt.show()
         visualizer.vis.open()
 
     pathtoresult = args.result
-
+    if not plot_and_visualize:
+        pathtoresult = pathtoresult.replace(".trajopt.yaml", "")
     if args.result is not None:
 
         with open(pathtoresult, 'r') as file:
@@ -403,9 +388,12 @@ def quad3dpayload_meshcatViewer():
         if "states" in path:
             states = path['states']
         elif "result" in path:
-            states = path['result']['states']
-            actions = path['result']['actions']
-            # print("shape of actions: ", np.array(actions).shape)
+            if plot_and_visualize:
+                states = path['result']['states']
+                actions = path['result']['actions']
+            else:
+                states = path['result'][0]['states']
+                actions = path['result'][0]['actions']
         else: 
             raise NotImplementedError("unknown result format")
         

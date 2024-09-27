@@ -24,6 +24,7 @@ def visualize(env_file, result_file, video_file, payload_file=None):
     with open("output.html", "w") as f:
         f.write(res)
     draw_payload = False
+    print("payload file: ",payload_file)
     if payload_file is not None:
       with open(payload_file, "r") as f:
         payload_states = yaml.safe_load(f)
