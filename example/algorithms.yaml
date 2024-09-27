@@ -38,20 +38,23 @@ k-cbs:
     goal_epsilon: 0.2
 db-cbs:
   default:
-    delta_0: 0.9
+    delta_0: 0.85
     delta_rate: 0.9
-    solve_p0: True
-    p0_init_guess: [-0.5, 0.0, 0.0]
-    tol: 0.4
     num_primitives_0: 3000
     num_primitives_rate: 1.5
     alpha: 0.5
     filter_duplicates: True
     heuristic1: "reverse-search"
     heuristic1_delta: 1.0
+    payload:
+      solve_p0: True
+      p0_init_guess: [-0.5, 0.0, 0.0]
+      tol: 0.3
   '*_unicycle_sphere':
     delta_0: 0.9
   '*_hetero':
     delta_0: 0.75
   '*_trailer':
     delta_0: 0.9
+
+
