@@ -536,7 +536,7 @@ void export_solutions_joint(const std::vector<LowLevelPlan<dynobench::Trajectory
   float cost = 0;
   size_t max_t = 0;
   size_t max_a = 0;
-  int k = 6; // for the state
+  int k = 6; // for the state, no residual force
   int j = 3; // for the actions
   Eigen::VectorXd tmp_state(k*2);
   Eigen::VectorXd tmp_action(j*2);
@@ -555,11 +555,14 @@ void export_solutions_joint(const std::vector<LowLevelPlan<dynobench::Trajectory
   for (size_t t = 0; t <= max_t; ++t){
     for (size_t i = 0; i < solution.size(); ++i){ // for each robot
       if (t >= solution[i].trajectory.states.size()){
+          // tmp_state.segment(i*k,k-1) = solution[i].trajectory.states.back();    
           tmp_state.segment(i*k,k) = solution[i].trajectory.states.back();    
       }
       else {
+          // tmp_state.segment(i*k,k-1) = solution[i].trajectory.states[t];
           tmp_state.segment(i*k,k) = solution[i].trajectory.states[t];
       }
+      // tmp_state((i+1)*k-1) = 0; // for the residual force
     }
     joint_states.push_back(tmp_state);
   }
