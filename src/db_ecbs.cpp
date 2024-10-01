@@ -71,7 +71,7 @@ int main(int argc, char* argv[]) {
       return 1;
     }
     YAML::Node cfg = YAML::LoadFile(cfgFile);
-    cfg = cfg["db-ecbs"]["default"];
+    // cfg = cfg["db-ecbs"]["default"];
     float alpha = cfg["alpha"].as<float>();
     bool filter_duplicates = cfg["filter_duplicates"].as<bool>();
     fs::path output_path(outputFile);
@@ -80,6 +80,7 @@ int main(int argc, char* argv[]) {
     bool save_expanded_trajs = cfg["save_expanded_trajs"].as<bool>();
     std::string conflicts_folder = output_folder + "/conflicts";
     Eigen::Vector3d radii = Eigen::Vector3d(.12, .12, .3);
+    bool residual_force = cfg["residual_force"].as<bool>();
     // optimization-related params
     bool sum_robot_cost = true;
     bool feasible = false;
@@ -151,7 +152,7 @@ int main(int argc, char* argv[]) {
     col_mng_robots->setup();
     size_t i = 0;
     for (const auto &robot : robots){
-      if(cfg["residual_force"].as<bool>() && robot->name == "Integrator2_3d"){
+      if(residual_force && robot->name == "Integrator2_3d"){
         collision_geometries.push_back(std::make_shared<fcl::Ellipsoidd>(radii));
       }
       else
@@ -376,15 +377,22 @@ int main(int argc, char* argv[]) {
           create_dir_if_necessary(outputFile);
           std::ofstream out_db(outputFile);
           export_solutions(P.solution, &out_db);
-          std::ofstream out_db2(optimizationFile);
-          export_solutions_joint(P.solution, &out_db2);
-          return 0;
+          // std::ofstream out_db2(optimizationFile);
+          // export_solutions_joint(P.solution, &out_db2);
           auto discrete_end = std::chrono::high_resolution_clock::now();
           std::chrono::duration<double> duration = discrete_end - discrete_start;
           std::cout << "Time taken for discrete search: " << duration.count() << " seconds" << std::endl;
           // read the discrete search as initial guess for clustered robots ONLY
           MultiRobotTrajectory discrete_search_sol;
-          discrete_search_sol.read_from_yaml(outputFile.c_str());
+          if(residual_force){ // augment the state artificially for the optimization
+            std::string tmp_outputFile = "/tmp/dynoplan/result_dbecbs_fa.yaml"; 
+            create_dir_if_necessary(tmp_outputFile);
+            std::ofstream out_db_fa(tmp_outputFile.c_str());
+            export_solutions(P.solution, &out_db_fa, true);
+            discrete_search_sol.read_from_yaml(tmp_outputFile.c_str());
+          }
+          else
+            discrete_search_sol.read_from_yaml(outputFile.c_str());
           // I. Parallel/Independent optimization
           auto optimization_start = std::chrono::high_resolution_clock::now();
           std::vector<double> min_ = env["environment"]["min"].as<std::vector<double>>();
@@ -465,6 +473,7 @@ int main(int argc, char* argv[]) {
                 moving_obstacles = true;
               // iii. jointly optimiza the one with MAX conflicts
               std::string tmp_envFile = "/tmp/dynoplan/tmp_envFile_" + gen_random(6) + ".yaml";
+              create_dir_if_necessary(tmp_envFile);
               std::cout << "tmp envFile: " << tmp_envFile << std::endl;
               get_moving_obstacle(inputFile, /*initGuess*/tmpNode.multirobot_trajectory, /*outputFile*/tmp_envFile, max_conflict_cluster_it->first, /*moving_obs*/moving_obstacles);
               feasible = execute_optimizationMetaRobot(tmp_envFile,
@@ -472,7 +481,8 @@ int main(int argc, char* argv[]) {
                                       /*solution*/tmpNode.multirobot_trajectory, // update the solution
                                       DYNOBENCH_BASE,
                                       max_conflict_cluster_it->first,
-                                      sum_robot_cost);
+                                      sum_robot_cost,
+                                      residual_force);
               if(feasible){
                 // iv. zero the optimized cluster's conflict, don't remove it
                 max_conflict_cluster_index = tmpNode.getIndexOfSet(max_conflict_cluster_it->first);

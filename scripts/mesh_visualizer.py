@@ -56,6 +56,15 @@ def visualize(env_file, result_file, filename_video=None):
       plt.xlabel('Robot ID')
       plt.ylabel('Frequency')
       plt.savefig(Path(result_file).with_suffix(".jpg"))
+    # for the residual force
+    if result.get("fa"):
+      fa = result["fa"]
+      plt.plot(fa)
+      plt.title('Residual force')
+      plt.xlabel('time')
+      plt.ylabel('fa')
+      fa_file = Path(result_file).with_stem(Path(result_file).stem + "_fa").with_suffix(".jpg")
+      plt.savefig(fa_file)
     states = []
     name_robot = 0
     max_k = 0

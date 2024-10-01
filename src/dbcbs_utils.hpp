@@ -231,9 +231,9 @@ void createConstraintsFromConflicts(const Conflict& early_conflict, std::map<siz
     constraints[early_conflict.robot_idx_i].push_back({early_conflict.time, early_conflict.robot_state_i});
     constraints[early_conflict.robot_idx_j].push_back({early_conflict.time, early_conflict.robot_state_j});
 }
-
+// assumes if residual force, then add 0 to all robots, only homogeneous robots for now
 void export_solutions(const std::vector<LowLevelPlan<dynobench::Trajectory>>& solution, 
-                      std::ofstream *out){
+                      std::ofstream *out, bool residual_forse = false){
     float cost = 0;
     std::string indent = "  ";
     for (auto& n : solution)
@@ -241,17 +241,21 @@ void export_solutions(const std::vector<LowLevelPlan<dynobench::Trajectory>>& so
     *out << "cost: " << cost << std::endl; 
     *out << "result:" << std::endl;
     for (size_t i = 0; i < solution.size(); ++i){ 
-        std::vector<Eigen::VectorXd> tmp_states = solution[i].trajectory.states;
-        std::vector<Eigen::VectorXd> tmp_actions = solution[i].trajectory.actions;
-        *out << "-" << std::endl;
-        *out << indent << "states:" << std::endl;
-        for (size_t j = 0; j < tmp_states.size(); ++j){
-            *out << indent << "  - " << tmp_states.at(j).format(dynobench::FMT)<< std::endl;
+      std::vector<Eigen::VectorXd> tmp_states = solution[i].trajectory.states;
+      std::vector<Eigen::VectorXd> tmp_actions = solution[i].trajectory.actions;
+      *out << "-" << std::endl;
+      *out << indent << "states:" << std::endl;
+      for (size_t j = 0; j < tmp_states.size(); ++j){
+        if(residual_forse){
+          tmp_states.at(j).conservativeResize(tmp_states.at(j).size() + 1);
+          tmp_states.at(j)(tmp_states.at(j).size() - 1) = 0;
         }
-        *out << indent << "actions:" << std::endl;
-        for (size_t j = 0; j < tmp_actions.size(); ++j){
-            *out << indent << "  - " << tmp_actions.at(j).format(dynobench::FMT)<< std::endl;
-        }
+        *out << indent << "  - " << tmp_states.at(j).format(dynobench::FMT) << std::endl;
+      }
+      *out << indent << "actions:" << std::endl;
+      for (size_t j = 0; j < tmp_actions.size(); ++j){
+          *out << indent << "  - " << tmp_actions.at(j).format(dynobench::FMT) << std::endl;
+      }
     }
 }
 
@@ -339,7 +343,7 @@ YAML::Node obstacle_to_yaml(const Obstacle& obs) {
     node["octomap_file"] = obs.octomap_file;
     return node;
 }
-/// for moving obstacles META-robot
+/// for moving obstacles META-robot. Joint robots become "integrator2_3d_res_v0", and start/goal augments
 void get_moving_obstacle(const std::string &env_file,
                         // const std::string &initial_guess_file,
                         MultiRobotTrajectory init_guess_multi_robot,
@@ -364,9 +368,12 @@ void get_moving_obstacle(const std::string &env_file,
   for (size_t i = 0; i < num_robots; i++){
     if (cluster.find(i) != cluster.end()){ // robots that are within cluster
       YAML::Node robot_node;
+      // augment the start/goal
+      env["robots"][i]["start"].push_back(0);
+      env["robots"][i]["goal"].push_back(0);
       robot_node["start"] = env["robots"][i]["start"];
       robot_node["goal"] = env["robots"][i]["goal"];
-      robot_node["type"] = env["robots"][i]["type"];
+      robot_node["type"] = "integrator2_3d_res_v0"; // env["robots"][i]["type"];
       data["robots"].push_back(robot_node);
     }
     

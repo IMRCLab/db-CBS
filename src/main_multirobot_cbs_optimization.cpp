@@ -90,8 +90,6 @@ int main(int argc, char *argv[]) {
   size_t num_robots = robots.size();
   bool only_max = true;
   // read given files
-  // MultiRobotTrajectory parallel_multirobot_sol;
-  // parallel_multirobot_sol.read_from_yaml(initFile.c_str());
   MultiRobotTrajectory discrete_search_sol;
   discrete_search_sol.read_from_yaml(discreteSearchFile.c_str()); 
   // Handle trajectories, prepare for the optimization
@@ -126,6 +124,9 @@ int main(int argc, char *argv[]) {
       std::cout << "failure of parallel/independent optimization for robot " << i << std::endl;
   }
   parallel_multirobot_sol.to_yaml_format("/tmp/dynoplan/parallel_multirobot_sol.yaml");
+  // for the optimization, augment the discrete search with f
+  MultiRobotTrajectory discrete_search_sol_fa;
+  discrete_search_sol_fa.read_from_yaml("/tmp/dynoplan/result_dbecbs_fa.yaml");
   // start the greedy optimization part
   typename boost::heap::d_ary_heap<HighLevelNodeOptimization, boost::heap::arity<2>,
                                         boost::heap::mutable_<true> > open_opt;
@@ -170,13 +171,15 @@ int main(int argc, char *argv[]) {
       std::string tmp_envFile = "/tmp/dynoplan/tmp_envFile_" + gen_random(6) + ".yaml";
       create_dir_if_necessary(tmp_envFile);
       std::cout << "tmp envFile: " << tmp_envFile << std::endl;
+      // robots become integrator2_3d_res_v0
       get_moving_obstacle(envFile, /*initGuess*/tmpNode.multirobot_trajectory, /*outputFile*/tmp_envFile, max_conflict_cluster_it->first, /*moving_obs*/true);
       feasible = execute_optimizationMetaRobot(tmp_envFile,
-                              /*initialGuess*/discrete_search_sol, // always from the discrete search
+                              /*initialGuess*/discrete_search_sol_fa, // always from the discrete search with fa
                               /*solution*/tmpNode.multirobot_trajectory, // update the solution
                               DYNOBENCH_BASE,
                               max_conflict_cluster_it->first,
-                              sum_robot_cost);
+                              sum_robot_cost,
+                              /*residual force*/true);
       if(feasible){
         // iv. zero the optimized cluster's conflict, don't remove it
         max_conflict_cluster_index = tmpNode.getIndexOfSet(max_conflict_cluster_it->first);
