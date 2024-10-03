@@ -188,11 +188,11 @@ def main():
 		"drone2c",
 		"drone4c",
 		"drone8c",
-		"drone10c",
-		"drone12c",
-		"drone16c",
-		"drone24c",
-		"drone32c",
+		# "drone10c",
+		# "drone12c",
+		# "drone16c",
+		# "drone24c",
+		# "drone32c",
 	]
 
 	# # add random cases
@@ -209,7 +209,7 @@ def main():
 		# "db-cbs",
 		"db-ecbs",
 	]
-	trials = 2
+	trials = 1
 	timelimit = 30*60
 
 	tasks = []
