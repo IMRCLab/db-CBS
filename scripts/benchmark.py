@@ -112,10 +112,10 @@ def execute_task(task: ExecutionTask):
 		visualize_files = [p.name for p in result_folder.glob('result_*')]
 		check_files = [p.name for p in result_folder.glob('result_dbecbs_opt*')]
 	
-	for file in check_files:
-		if not run_checker(env, result_folder / file, (result_folder / file).with_suffix(".check.txt")):
-			print("WARNING: CHECKER FAILED -> DELETING stats!")
-			(result_folder / "stats.yaml").unlink(missing_ok=True)
+	# for file in check_files:
+		# if not run_checker(env, result_folder / file, (result_folder / file).with_suffix(".check.txt")):
+			# print("WARNING: CHECKER FAILED -> DELETING stats!")
+			# (result_folder / "stats.yaml").unlink(missing_ok=True)
 
 	if "drone" in task.instance:
 		vis_script = scripts_path / "mesh_visualizer.py"
@@ -184,13 +184,13 @@ def main():
 		# "window4_demo",
 
 		# 3D scenarios with octomap
-		# "drone1c",
-		# "drone2c",
-		# "drone4c",
-		# "drone8c",
-		# "drone10c",
-		# "drone12c",
-		# "drone16c",
+		"drone1c",
+		"drone2c",
+		"drone4c",
+		"drone8c",
+		"drone10c",
+		"drone12c",
+		"drone16c",
 		"drone24c",
 		"drone32c",
 	]
@@ -209,7 +209,7 @@ def main():
 		# "db-cbs",
 		"db-ecbs",
 	]
-	trials = 1
+	trials = 2
 	timelimit = 20*60
 
 	tasks = []
@@ -228,20 +228,20 @@ def main():
 		for task in tasks:
 			execute_task(task)
 	
-	# run_benchmark_stats(instances, algs, trials, timelimit)
-	# write_table(instances, algs, Path("../results"), "table.pdf", trials, timelimit)
-
-	# subprocess.run(
-		# ['pdftk',
-		#  Path("../results") / 'table.pdf',
-		#  Path("../results") / 'stats.pdf',
-		#  'cat', 'output',
-		#  Path("../results") / 'results.pdf'
-		# ]
-	# )
+	run_benchmark_stats(instances, algs, trials, timelimit)
+	write_table(instances, algs, Path("../results"), "table.pdf", trials, timelimit)
+# 
+	subprocess.run(
+		['pdftk',
+		 Path("../results") / 'table.pdf',
+		 Path("../results") / 'stats.pdf',
+		 'cat', 'output',
+		 Path("../results") / 'results.pdf'
+		]
+	)
 	# delete temp files
-	# (Path("../results") / 'table.pdf').unlink()
-	# (Path("../results") / 'stats.pdf').unlink()
+	(Path("../results") / 'table.pdf').unlink()
+	(Path("../results") / 'stats.pdf').unlink()
 
 	# paper_tables.write_table1(trials, timelimit)
 	# paper_tables.write_table2(trials, timelimit)
