@@ -355,7 +355,7 @@ void get_moving_obstacle(const std::string &env_file,
                         bool moving_obstacles = false,
                         bool residual_force = false){
   // custom params for the obstacle
-  double size = 0.1; // radius
+  double radius = 0.1; // radius
   Eigen::Vector3d radii = Eigen::Vector3d(.12, .12, .3); // from tro paper
   std::string type = "sphere";
   YAML::Node env = YAML::LoadFile(env_file);
@@ -432,8 +432,8 @@ void get_moving_obstacle(const std::string &env_file,
           // into vector
           Obstacle obs;
           obs.center = {state(0), state(1), state(2)};
-          obs.size = {radii(0), radii(1), radii(2)};
-          obs.type = "ellipsoid";
+          obs.size = {radius}; // {radii(0), radii(1), radii(2)};
+          obs.type = "sphere"; // "ellipsoid";
           moving_obs_per_time.push_back({obs});
         }
       }
