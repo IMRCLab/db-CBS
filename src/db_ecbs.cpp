@@ -152,11 +152,11 @@ int main(int argc, char* argv[]) {
     col_mng_robots->setup();
     size_t i = 0;
     for (const auto &robot : robots){
-      if(residual_force && robot->name == "Integrator2_3d"){
-        collision_geometries.push_back(std::make_shared<fcl::Ellipsoidd>(radii));
-      }
-      else
-        collision_geometries.insert(collision_geometries.end(), 
+      // if(residual_force && robot->name == "Integrator2_3d"){
+      //   collision_geometries.push_back(std::make_shared<fcl::Ellipsoidd>(radii));
+      // }
+      // else
+      collision_geometries.insert(collision_geometries.end(), 
                               robot->collision_geometries.begin(), robot->collision_geometries.end());
       auto robot_obj = new fcl::CollisionObject(collision_geometries[col_geom_id]);
       collision_geometries[col_geom_id]->setUserData((void*)i);
@@ -379,6 +379,7 @@ int main(int argc, char* argv[]) {
           export_solutions(P.solution, &out_db);
           // std::ofstream out_db2(optimizationFile);
           // export_solutions_joint(P.solution, &out_db2);
+          // return 0;
           auto discrete_end = std::chrono::high_resolution_clock::now();
           std::chrono::duration<double> duration = discrete_end - discrete_start;
           std::cout << "Time taken for discrete search: " << duration.count() << " seconds" << std::endl;
@@ -401,7 +402,7 @@ int main(int argc, char* argv[]) {
           options_trajopt.solver_id = 0; // 1 - no moving obstacles 
           options_trajopt.control_bounds = 1;
           options_trajopt.use_warmstart = 1;
-          options_trajopt.weight_goal = 100;
+          options_trajopt.weight_goal = 400;
           options_trajopt.max_iter = 50;
           // options_trajopt.collision_weight = 0; 
           options_trajopt.soft_control_bounds = true; 
@@ -475,10 +476,12 @@ int main(int argc, char* argv[]) {
               std::string tmp_envFile = "/tmp/dynoplan/tmp_envFile_" + gen_random(6) + ".yaml";
               create_dir_if_necessary(tmp_envFile);
               std::cout << "tmp envFile: " << tmp_envFile << std::endl;
-              get_moving_obstacle(inputFile, /*initGuess*/tmpNode.multirobot_trajectory, /*outputFile*/tmp_envFile, max_conflict_cluster_it->first, /*moving_obs*/moving_obstacles);
+              get_moving_obstacle(inputFile, /*initGuess*/tmpNode.multirobot_trajectory, /*outputFile*/tmp_envFile, 
+                                max_conflict_cluster_it->first, /*moving_obs*/moving_obstacles, residual_force);
               feasible = execute_optimizationMetaRobot(tmp_envFile,
                                       /*initialGuess*/discrete_search_sol, // can be discrete search
                                       /*solution*/tmpNode.multirobot_trajectory, // update the solution
+                                      /*residual_forces*/tmpNode.residual_forces, // only for cluster members
                                       DYNOBENCH_BASE,
                                       max_conflict_cluster_it->first,
                                       sum_robot_cost,
@@ -566,6 +569,7 @@ int main(int argc, char* argv[]) {
               feasible = execute_optimizationMetaRobot(tmp_envFile,
                                       /*initialGuess*/discrete_search_sol, // always from the discrete search
                                       /*solution*/N.multirobot_trajectory, // update the solution
+                                      N.residual_forces,
                                       DYNOBENCH_BASE,
                                       N.cluster,
                                       sum_robot_cost);

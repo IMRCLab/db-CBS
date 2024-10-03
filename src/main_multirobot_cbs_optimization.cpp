@@ -77,9 +77,9 @@ int main(int argc, char *argv[]) {
   Eigen::Vector3d radii = Eigen::Vector3d(.12, .12, .3);
   // doesn't consider car with trailer
   for (const auto &robot : robots){
-    // collision_geometries.insert(collision_geometries.end(), 
-    //                         robot->collision_geometries.begin(), robot->collision_geometries.end());
-    collision_geometries.push_back(std::make_shared<fcl::Ellipsoidd>(radii));
+    collision_geometries.insert(collision_geometries.end(), 
+                            robot->collision_geometries.begin(), robot->collision_geometries.end());
+    // collision_geometries.push_back(std::make_shared<fcl::Ellipsoidd>(radii));
     auto robot_obj = new fcl::CollisionObject(collision_geometries[col_geom_id]);
     collision_geometries[col_geom_id]->setUserData((void*)i);
     robot_objs.push_back(robot_obj);
@@ -99,7 +99,7 @@ int main(int argc, char *argv[]) {
   options_trajopt.solver_id = 0; // 1 - time optimal, no moving obstacles 
   options_trajopt.control_bounds = 1;
   options_trajopt.use_warmstart = 1;
-  options_trajopt.weight_goal = 100;
+  options_trajopt.weight_goal = 400;
   options_trajopt.max_iter = 50;
   options_trajopt.soft_control_bounds = true; 
   MultiRobotTrajectory parallel_multirobot_sol;
@@ -172,10 +172,11 @@ int main(int argc, char *argv[]) {
       create_dir_if_necessary(tmp_envFile);
       std::cout << "tmp envFile: " << tmp_envFile << std::endl;
       // robots become integrator2_3d_res_v0
-      get_moving_obstacle(envFile, /*initGuess*/tmpNode.multirobot_trajectory, /*outputFile*/tmp_envFile, max_conflict_cluster_it->first, /*moving_obs*/true);
+      get_moving_obstacle(envFile, /*initGuess*/tmpNode.multirobot_trajectory, /*outputFile*/tmp_envFile, max_conflict_cluster_it->first, /*moving_obs*/true, /*res force*/true);
       feasible = execute_optimizationMetaRobot(tmp_envFile,
                               /*initialGuess*/discrete_search_sol_fa, // always from the discrete search with fa
                               /*solution*/tmpNode.multirobot_trajectory, // update the solution
+                              /*residual_forces*/tmpNode.residual_forces, // only for the cluster members
                               DYNOBENCH_BASE,
                               max_conflict_cluster_it->first,
                               sum_robot_cost,

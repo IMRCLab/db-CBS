@@ -96,12 +96,14 @@ struct HighLevelNodeOptimization {
     std::unordered_set<size_t> cluster; // robot idx for the joint optimization
     std::vector<std::pair<std::unordered_set<size_t>, int>> clusters; // used only with greedy cbs (cluster, its conflict)
     std::vector<std::vector<int>> conflict_matrix;
+    std::vector<std::vector<float>> residual_forces; // for each robot in the final solution
     double cost; 
     int conflict;
     int id;
 
     HighLevelNodeOptimization(int rows, int cols)
         : conflict_matrix(rows, std::vector<int>(cols, 0)),
+          residual_forces(rows, std::vector<float>(rows, 0.0)), 
           cost(0.0),
           conflict(0),
           id(0) {
@@ -343,13 +345,15 @@ YAML::Node obstacle_to_yaml(const Obstacle& obs) {
     node["octomap_file"] = obs.octomap_file;
     return node;
 }
-/// for moving obstacles META-robot. Joint robots become "integrator2_3d_res_v0", and start/goal augments
+// for moving obstacles META-robot. Joint robots become "integrator2_3d_res_v0", and start/goal augments
+// moving obstacles have Ellipsoid shape
 void get_moving_obstacle(const std::string &env_file,
                         // const std::string &initial_guess_file,
                         MultiRobotTrajectory init_guess_multi_robot,
                         const std::string &out_file,
                         std::unordered_set<size_t> &cluster,
-                        bool moving_obstacles = false){
+                        bool moving_obstacles = false,
+                        bool residual_force = false){
   // custom params for the obstacle
   double size = 0.1; // radius
   Eigen::Vector3d radii = Eigen::Vector3d(.12, .12, .3); // from tro paper
@@ -368,12 +372,17 @@ void get_moving_obstacle(const std::string &env_file,
   for (size_t i = 0; i < num_robots; i++){
     if (cluster.find(i) != cluster.end()){ // robots that are within cluster
       YAML::Node robot_node;
-      // augment the start/goal
-      env["robots"][i]["start"].push_back(0);
-      env["robots"][i]["goal"].push_back(0);
+      if(residual_force){
+        // augment the start/goal
+        env["robots"][i]["start"].push_back(0);
+        env["robots"][i]["goal"].push_back(0);
+        robot_node["type"] = "integrator2_3d_res_v0"; // env["robots"][i]["type"];
+      }
+      else
+        robot_node["type"] = env["robots"][i]["type"];
+
       robot_node["start"] = env["robots"][i]["start"];
       robot_node["goal"] = env["robots"][i]["goal"];
-      robot_node["type"] = "integrator2_3d_res_v0"; // env["robots"][i]["type"];
       data["robots"].push_back(robot_node);
     }
     
@@ -543,7 +552,7 @@ void export_solutions_joint(const std::vector<LowLevelPlan<dynobench::Trajectory
   float cost = 0;
   size_t max_t = 0;
   size_t max_a = 0;
-  int k = 6; // for the state, no residual force
+  int k = 6+1; // for the state, residual force + 1
   int j = 3; // for the actions
   Eigen::VectorXd tmp_state(k*2);
   Eigen::VectorXd tmp_action(j*2);
@@ -562,14 +571,14 @@ void export_solutions_joint(const std::vector<LowLevelPlan<dynobench::Trajectory
   for (size_t t = 0; t <= max_t; ++t){
     for (size_t i = 0; i < solution.size(); ++i){ // for each robot
       if (t >= solution[i].trajectory.states.size()){
-          // tmp_state.segment(i*k,k-1) = solution[i].trajectory.states.back();    
-          tmp_state.segment(i*k,k) = solution[i].trajectory.states.back();    
+          tmp_state.segment(i*k,k-1) = solution[i].trajectory.states.back();    // res
+          // tmp_state.segment(i*k,k) = solution[i].trajectory.states.back();    
       }
       else {
-          // tmp_state.segment(i*k,k-1) = solution[i].trajectory.states[t];
-          tmp_state.segment(i*k,k) = solution[i].trajectory.states[t];
+          tmp_state.segment(i*k,k-1) = solution[i].trajectory.states[t]; // res
+          // tmp_state.segment(i*k,k) = solution[i].trajectory.states[t];
       }
-      // tmp_state((i+1)*k-1) = 0; // for the residual force
+      tmp_state((i+1)*k-1) = 0; // for the residual force
     }
     joint_states.push_back(tmp_state);
   }
