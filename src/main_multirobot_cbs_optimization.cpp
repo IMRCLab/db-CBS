@@ -176,7 +176,6 @@ int main(int argc, char *argv[]) {
       feasible = execute_optimizationMetaRobot(tmp_envFile,
                               /*initialGuess*/discrete_search_sol_fa, // always from the discrete search with fa
                               /*solution*/tmpNode.multirobot_trajectory, // update the solution
-                              /*residual_forces*/tmpNode.residual_forces, // only for the cluster members
                               DYNOBENCH_BASE,
                               max_conflict_cluster_it->first,
                               sum_robot_cost,
@@ -199,6 +198,42 @@ int main(int argc, char *argv[]) {
             fout << "cluster_tracking:" << std::endl;
             for (auto &c: cluster_tracking){
               fout << "  - " << c << std::endl;
+            }
+          }
+          bool joint_opt = true;
+          if(joint_opt){
+            MultiRobotTrajectory joint_opt_sol;
+            joint_opt_sol.trajectories.resize(num_robots);
+            joint_opt_sol.trajectories = tmpNode.multirobot_trajectory.trajectories;
+            MultiRobotTrajectory multirobot_trajectory;
+            multirobot_trajectory.trajectories.resize(num_robots);
+            multirobot_trajectory.trajectories = tmpNode.multirobot_trajectory.trajectories;
+            std::unordered_set<size_t> joint_cluster;
+            for (size_t i = 0; i < num_robots; ++i) {
+              joint_cluster.insert(i);
+              for(auto &state : multirobot_trajectory.trajectories.at(i).states){
+                state.conservativeResize(state.size() + 1); // Resize to fit new element
+                state(state.size() - 1) = 0; // add the residual
+              }
+            }
+            std::cout << "nxs: " << multirobot_trajectory.get_nxs().size() << std::endl;
+             std::string joint_opt_envFile = "/tmp/dynoplan/joint_opt_envFile.yaml";
+            std::cout << "joint_opt_envFile: " << joint_opt_envFile << std::endl;
+            get_moving_obstacle(envFile, /*initGuess*/multirobot_trajectory, /*outputFile*/joint_opt_envFile, 
+                        /*cluster*/joint_cluster, /*moving_obs*/false, /*residual force*/true);
+            auto joint_optimization_start = std::chrono::high_resolution_clock::now();
+            bool joint_feasible = execute_optimizationMetaRobot(joint_opt_envFile, //all robots with augmented state
+                                  /*initialGuess*/multirobot_trajectory, //conflict free optimized solution
+                                  /*solution*/joint_opt_sol, // expected not to be empty, proper size/no augmentation
+                                  DYNOBENCH_BASE,
+                                  joint_cluster,
+                                  sum_robot_cost,
+                                  /*residual force*/true);
+            if(joint_feasible){
+              auto joint_optimization_end = std::chrono::high_resolution_clock::now();
+              std::chrono::duration<double> joint_opt_duration = joint_optimization_end - joint_optimization_start;
+              std::cout << "Time taken for joint optimization: " << joint_opt_duration.count() << " seconds" << std::endl;
+              joint_opt_sol.to_yaml_format("/tmp/dynoplan/joint_opt_sol.yaml");
             }
           }
           return 0;

@@ -96,14 +96,14 @@ struct HighLevelNodeOptimization {
     std::unordered_set<size_t> cluster; // robot idx for the joint optimization
     std::vector<std::pair<std::unordered_set<size_t>, int>> clusters; // used only with greedy cbs (cluster, its conflict)
     std::vector<std::vector<int>> conflict_matrix;
-    std::vector<std::vector<float>> residual_forces; // for each robot in the final solution
+    // std::vector<std::vector<float>> residual_forces; // for each robot in the final solution
     double cost; 
     int conflict;
     int id;
 
     HighLevelNodeOptimization(int rows, int cols)
         : conflict_matrix(rows, std::vector<int>(cols, 0)),
-          residual_forces(rows, std::vector<float>(rows, 0.0)), 
+          // residual_forces(rows, std::vector<float>(rows, 0.0)), 
           cost(0.0),
           conflict(0),
           id(0) {

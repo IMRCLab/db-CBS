@@ -377,9 +377,6 @@ int main(int argc, char* argv[]) {
           create_dir_if_necessary(outputFile);
           std::ofstream out_db(outputFile);
           export_solutions(P.solution, &out_db);
-          // std::ofstream out_db2(optimizationFile);
-          // export_solutions_joint(P.solution, &out_db2);
-          // return 0;
           auto discrete_end = std::chrono::high_resolution_clock::now();
           std::chrono::duration<double> duration = discrete_end - discrete_start;
           std::cout << "Time taken for discrete search: " << duration.count() << " seconds" << std::endl;
@@ -481,7 +478,6 @@ int main(int argc, char* argv[]) {
               feasible = execute_optimizationMetaRobot(tmp_envFile,
                                       /*initialGuess*/discrete_search_sol, // can be discrete search
                                       /*solution*/tmpNode.multirobot_trajectory, // update the solution
-                                      /*residual_forces*/tmpNode.residual_forces, // only for cluster members
                                       DYNOBENCH_BASE,
                                       max_conflict_cluster_it->first,
                                       sum_robot_cost,
@@ -495,7 +491,7 @@ int main(int argc, char* argv[]) {
                     std::fill(row.begin(), row.end(), 0); });
                 if (!getConflicts(tmpNode.multirobot_trajectory.trajectories, robots, col_mng_robots, robot_objs, tmpNode.conflict_matrix)){
                   std::cout << "No inter-robot conflict" << std::endl;
-                  tmpNode.multirobot_trajectory.to_yaml_format(optimizationFile.c_str());
+                  // tmpNode.multirobot_trajectory.to_yaml_format(optimizationFile.c_str());
                   auto optimization_end = std::chrono::high_resolution_clock::now();
                   std::chrono::duration<double> opt_duration = optimization_end - optimization_start;
                   std::cout << "Time taken for optimization: " << opt_duration.count() << " seconds" << std::endl;
@@ -506,6 +502,42 @@ int main(int argc, char* argv[]) {
                       fout << "  - " << c << std::endl;
                     }
                   }
+                  bool joint_opt = true;
+                  if(joint_opt){
+                    MultiRobotTrajectory joint_opt_sol;
+                    joint_opt_sol.trajectories.resize(num_robots);
+                    joint_opt_sol.trajectories = tmpNode.multirobot_trajectory.trajectories;
+                    MultiRobotTrajectory multirobot_trajectory;
+                    multirobot_trajectory.trajectories.resize(num_robots);
+                    multirobot_trajectory.trajectories = tmpNode.multirobot_trajectory.trajectories;
+                    std::unordered_set<size_t> joint_cluster;
+                    for (size_t i = 0; i < num_robots; ++i) {
+                      joint_cluster.insert(i);
+                      for(auto &state : multirobot_trajectory.trajectories.at(i).states){
+                        state.conservativeResize(state.size() + 1); // Resize to fit new element
+                        state(state.size() - 1) = 0; // add the residual
+                      }
+                    }
+                    std::string joint_opt_envFile = "/tmp/dynoplan/joint_opt_envFile.yaml";
+                    std::cout << "joint_opt_envFile: " << joint_opt_envFile << std::endl;
+                    get_moving_obstacle(inputFile, /*initGuess*/multirobot_trajectory, /*outputFile*/joint_opt_envFile, 
+                                /*cluster*/joint_cluster, /*moving_obs*/false, /*residual force*/true);
+                    auto joint_optimization_start = std::chrono::high_resolution_clock::now();
+                    bool joint_feasible = execute_optimizationMetaRobot(joint_opt_envFile, //all robots with augmented state
+                                          /*initialGuess*/multirobot_trajectory, //conflict free optimized solution
+                                          /*solution*/joint_opt_sol, // expected not to be empty, proper size/no augmentation
+                                          DYNOBENCH_BASE,
+                                          joint_cluster,
+                                          sum_robot_cost,
+                                          /*residual force*/true);
+                    if(joint_feasible){
+                      auto joint_optimization_end = std::chrono::high_resolution_clock::now();
+                      std::chrono::duration<double> joint_opt_duration = joint_optimization_end - joint_optimization_start;
+                      std::cout << "Time taken for joint optimization: " << joint_opt_duration.count() << " seconds" << std::endl;
+                      joint_opt_sol.to_yaml_format(optimizationFile.c_str());
+                    }
+                  }
+
                   return 0;
                 }
                 // vi. the max conflict happening in the output, extract this pair
@@ -569,7 +601,7 @@ int main(int argc, char* argv[]) {
               feasible = execute_optimizationMetaRobot(tmp_envFile,
                                       /*initialGuess*/discrete_search_sol, // always from the discrete search
                                       /*solution*/N.multirobot_trajectory, // update the solution
-                                      N.residual_forces,
+                                      // N.residual_forces,
                                       DYNOBENCH_BASE,
                                       N.cluster,
                                       sum_robot_cost);
