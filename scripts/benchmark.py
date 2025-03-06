@@ -194,13 +194,13 @@ def main():
 
 		# 3D scenarios with octomap
 		# "drone1c",
-		# "drone2c",
-		# "drone4c",
-		# "drone8c",
-		# "drone10c",
-		# "drone12c",
+		"drone2c",
+		"drone4c",
+		"drone8c",
+		"drone10c",
+		"drone12c",
 		"drone16c",
-		# "drone24c",
+		"drone24c",
 		# "drone28c",
 		# "drone32c",
 		# "swap3_drone",
@@ -223,7 +223,7 @@ def main():
 		"db-ecbs-residual",
 		"db-ecbs-conservative",
 	]
-	trials = 1 
+	trials = 5 
 	timelimit = 3*60*60 
 
 	tasks = []
@@ -257,8 +257,8 @@ def main():
 	# (Path("../results") / 'table.pdf').unlink()
 	# (Path("../results") / 'stats.pdf').unlink()
 
-	# paper_tables.write_table6(trials, timelimit)
-	# paper_tables.write_table7(trials, timelimit) # 2D case
+	# paper_tables.write_table6(trials, timelimit) # 3D case for tro
+	# paper_tables.write_table7(trials, timelimit) # 2D case for tro
 
 if __name__ == '__main__':
 	main()

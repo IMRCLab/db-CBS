@@ -394,7 +394,7 @@ int main(int argc, char* argv[]) {
             auto iterEnd = open.ordered_end();
             for (; iter != iterEnd; ++iter) {
               auto cost = (*iter).cost;
-              if (cost > oldbest_best_cost * options_tdbastar.w && cost <= best_cost * options_tdbastar.w) { // check, LB ?
+              if (cost > oldbest_best_cost * options_tdbastar.w && cost <= best_cost * options_tdbastar.w) { 
                 const HighLevelNodeFocal& n = *iter;
                 focal.push(n.handle);
               }
@@ -407,7 +407,7 @@ int main(int argc, char* argv[]) {
 #endif
 #ifdef CHECK_FOCAL_LIST 
           bool mismatch = false;
-          auto LB_test = open.top().LB; // ? cost in Wolfgang's code
+          auto LB_test = open.top().LB; 
           auto iter_test = open.ordered_begin();
           auto iterEnd_test = open.ordered_end();
           for (; iter_test != iterEnd_test; ++iter_test) {
@@ -446,15 +446,6 @@ int main(int argc, char* argv[]) {
           create_dir_if_necessary(outputFile);
           std::ofstream out_db(outputFile);
           export_solutions(P.solution, &out_db); 
-          // if (save_expanded_trajs){
-          //   std::ofstream out2(output_folder + "/expanded_traj.yaml");
-          //   out2 << "trajs:" << std::endl;
-          //   for (auto i = 0; i < expanded_trajs_tmp.size(); i++){
-          //     auto traj = expanded_trajs_tmp.at(i);
-          //     out2 << "  - " << std::endl;
-          //     traj.to_yaml_format(out2, "    ");
-          //   }
-          // }
           auto discrete_end = std::chrono::steady_clock::now();
           duration_discrete = discrete_end - discrete_start;
           std::cout << "Time taken for discrete search: " << duration_discrete.count() << " seconds" << std::endl;
@@ -486,7 +477,7 @@ int main(int argc, char* argv[]) {
                 cost_tmp += traj.cost;
               }
               for (size_t l = 0; l < num_robots; l++){
-                upper_bounds[l] = cost_tmp; // - (hs_total - hs[l]);
+                upper_bounds[l] = cost_tmp - (hs_total - hs[l]);
               }
               if (cost_tmp < lowest_cost) {
                 lowest_cost = cost_tmp;
@@ -519,7 +510,7 @@ int main(int argc, char* argv[]) {
                   optimization_sol.to_yaml_format(tmp_File2.c_str());
                 }
               }
-              // extract motions from the solution
+              // extract motions from the solution. Lengths depend on the environment (2D-short(1,2), 3D wall-long(8 length for example))
               extract_motion_primitives(problem, optimization_sol, sub_motions, robots, /*length*/8);
               itr_cost_data["runs"].push_back(YAML::Node());
               itr_cost_data["runs"][iteration]["iteration"] = iteration;
@@ -579,7 +570,6 @@ int main(int argc, char* argv[]) {
               std::cout << "New node focal heuristic: " << newNode.focalHeuristic << std::endl;
               auto handle = open.push(newNode);
               (*handle).handle = handle;
-              // if (newNode.cost <= best_cost * options_tdbastar.w)
               if (newNode.cost <= open.top().LB * options_tdbastar.w){ 
                 focal.push(handle);
               }
