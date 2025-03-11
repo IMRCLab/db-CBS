@@ -7,7 +7,7 @@ The third and final level uses the resulting solution with discontinuities as an
 Paper on [arXiv]() and [Video](https://www.youtube.com/watch?v=OcG-59Pq3oY) are available.  
 
 
-<img align="center" src="assets/db-ecbs.gif" width="70%"/>
+<img align="center" src="assets/db-ecbs.gif" width="100%"/>
 
 
 ## Robot dynamics 
