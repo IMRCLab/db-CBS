@@ -1,28 +1,29 @@
-# db-CBS: Discontinuity-Bounded Conflict-Based Search for Multi-Robot Kinodynamic Motion Planning
-Db-CBS is a multi-robot kinodynamic motion planner that enables a team of robots with different dynamics, actuation limits, and shapes to reach their goals in challenging environments.
-It solves this problem by combining the Multi-Agent Path Finding (MAPF) optimal solver Conflict-Based Search (CBS), the single-robot kinodynamic motion planner discontinuity-bounded A* (db-A*), and non- linear trajectory optimization.
+# Interaction-Aware Multi-Robot Kinodynamic Motion Planning
+This work presents a kinodynamic motion planner for a heterogeneous team of robots that respects robot dynamics and directly reasons about interaction forces between aerial robots operating in close-proximity.
+Our method, Discontinuity-Bounded Enhanced Conflict-Based Search (db-ECBS), generalizes the multi-agent path finding method Enhanced Conflict-Based Search to the continuous domain by using the single-robot kinodynamic motion planner discontinuity-bounded A*. 
+Db-ECBS operates on three levels. Initially, individual robot trajectories are computed using a graph search that allows bounded discontinuities between precomputed motion primitives. The second level identifies inter-robot collisions, interaction force violations and resolves them by imposing constraints on the first level. 
+The third and final level uses the resulting solution with discontinuities as an initial guess for a joint space trajectory optimization. The procedure is repeated with a reduced discontinuity bound resulting in a anytime, probabilistically complete, and asymptotically bounded suboptimal planner.
 
-Paper on [arXiv](https://arxiv.org/abs/2309.16445) and [Video](https://youtu.be/1mglNQOmOLE) are available.  
-
-
-<img align="center" src="https://github.com/IMRCLab/db-CBS/assets/70643834/d371f288-00ec-443b-a5bc-8a79425fde0b" width="70%"/>
-
+Paper on [arXiv]() and [Video](https://www.youtube.com/watch?v=OcG-59Pq3oY) are available.  
 
 
-<!-- Robot dynamics such as unicycle, $2^{nd}$ order unicycle, double integrator, and car with trailer are implemented in this repository.  -->
+<img align="center" src="assets/db-ecbs.gif" width="70%"/>
+
+
+## Robot dynamics 
+
+* Unicycle 
+* Unicycle ($2^{\text{nd}}$ order)
+* Double integrator 2D
+* Double integrator 3D
+* Car with trailer
 
 ## Get primitives
 
-The primitives are on the TUB cloud. The easiest is to use a symlink:
+The primitives are on the TUB cloud, download a copy
 
 ```
-ln -s /home/${USER}/tubCloud/projects/db-cbs/motions motions
-```
-
-Alternatively, download a copy
-
-```
-wget https://tubcloud.tu-berlin.de/s/CijbRaJadf6JwH3/download
+wget https://tubcloud.tu-berlin.de/s/wezMej9ieNjwjz6/download
 unzip download
 rm download
 ```
@@ -43,4 +44,9 @@ make -j
 ```
 cd buildRelease
 python3 ../scripts/benchmark.py
+```
+## Enable/Disable Interaction-Awareness
+```
+gedit example/algorithms.yaml
+db-ecbs/default/residual_force = False
 ```
