@@ -42,7 +42,7 @@ def visualize(env_file, result_file, filename_video=None):
       else:
          print("Unknown Obstacle type!")
 
-    add_walls = True
+    add_walls = False
     if(add_walls):
         # Define boundaries, my 3D problem
       min_dim = data["environment"]["min"]

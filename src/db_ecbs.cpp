@@ -85,7 +85,7 @@ int main(int argc, char* argv[]) {
     duration duration_discrete, duration_opt;
 
     YAML::Node cfg = YAML::LoadFile(cfgFile);
-    // cfg = cfg["db-ecbs"]["default"];
+    cfg = cfg["db-ecbs"]["default"];
     float alpha = cfg["alpha"].as<float>();
     bool filter_duplicates = cfg["filter_duplicates"].as<bool>();
     fs::path output_path(outputFile);
@@ -178,6 +178,8 @@ int main(int argc, char* argv[]) {
             motionsFile = "../new_format_motions/integrator2_2d_v0/integrator2_2d_v0.msgpack";
         } else if (robotType == "integrator2_3d_v0" || robotType == "integrator2_3d_large_v0"){
             motionsFile = "../new_format_motions/integrator2_3d_v0/long_50_5000/integrator2_3d_v0.bin.im.bin.sp.bin";
+        } else if (robotType == "quad3d_v0"){
+            motionsFile = "../new_format_motions/quad3d_v0/quad3d_v0.bin.im.bin.sp1.bin.ca.bin.msgpack";
         } else if (robotType.find("_res_") != std::string::npos){
             motionsFile = "../new_format_motions/integrator2_3d_v0/residual/long_50_5000/integrator2_3d_v0.bin.im.bin.sp.bin";
         } else{
@@ -445,11 +447,12 @@ int main(int argc, char* argv[]) {
           std::cout << "Final solution from db-ecbs!" << std::endl; 
           create_dir_if_necessary(outputFile);
           std::ofstream out_db(outputFile);
-          export_solutions(P.solution, &out_db); 
+          // export_solutions(P.solution, &out_db); 
+          export_solutions_joint(P.solution, &out_db); 
           auto discrete_end = std::chrono::steady_clock::now();
           duration_discrete = discrete_end - discrete_start;
           std::cout << "Time taken for discrete search: " << duration_discrete.count() << " seconds" << std::endl;
-          // return 0;
+          return 0;
           // read the discrete search as initial guess
           MultiRobotTrajectory discrete_search_sol;
           discrete_search_sol.read_from_yaml(outputFile.c_str());

@@ -8,13 +8,11 @@
             "name": "My Debug Launch",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/buildDebug/db_cbs",
+            "program": "${workspaceFolder}/dynoplan/build/test/test_optimization",
             "args": [
-                // "-i", "/home/akmarak-laptop/IMRC/db-CBS/example/parallelpark.yaml",
-                // "-m", "/home/akmarak-laptop/IMRC/db-CBS/results/dbg/motions.msgpack",
-                // "-o", "/home/akmarak-laptop/IMRC/db-CBS/example/result/result_dbcbs.yaml"
+                "--run_test=t_empty_quadrotors_coupled",
             ],
-            "cwd": "${workspaceFolder}/buildDebug",
+            "cwd": "${workspaceFolder}/dynoplan/build",
             "externalConsole": false,
             "MIMode": "gdb",
             "setupCommands": [
