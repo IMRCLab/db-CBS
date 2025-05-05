@@ -1,0 +1,24 @@
+environment:
+  min: [-2, -2, 0]
+  max: [4, 4, 3]
+  obstacles:
+    - type: box
+      center: [1.5, 2.5, 1.5]
+      size: [0.01, 3.0, 3]
+    - type: box
+      center: [1.5, 0.5, 2.5]
+      size: [0.01, 1.0, 1.0]
+    - type: box
+      center: [1.5, 0.5, 0.25]
+      size: [0.01, 1.0, 0.5]
+    - type: box
+      center: [1.5, -1.0, 1.5]
+      size: [0.01, 2.0, 3]
+robots:
+  - type: quad3d_v0 # 1
+    start: [-1, -1, 0.5, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0] 
+    goal:  [3, 2, 1.0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0] 
+
+  - type: quad3d_v0 # 2
+    start: [0, -1.5, 0.5, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0] 
+    goal:  [3, 1, 2.0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0] 
