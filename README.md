@@ -4,7 +4,7 @@ Our method, Discontinuity-Bounded Enhanced Conflict-Based Search (db-ECBS), gene
 Db-ECBS operates on three levels. Initially, individual robot trajectories are computed using a graph search that allows bounded discontinuities between precomputed motion primitives. The second level identifies inter-robot collisions, interaction force violations and resolves them by imposing constraints on the first level. 
 The third and final level uses the resulting solution with discontinuities as an initial guess for a joint space trajectory optimization. The procedure is repeated with a reduced discontinuity bound resulting in a anytime, probabilistically complete, and asymptotically bounded suboptimal planner.
 
-Paper on [arXiv]() and [Video](https://www.youtube.com/watch?v=OcG-59Pq3oY) are available.  
+[Preprint](https://imrclab.github.io/assets/pdf/moldagalieva2025dbecbs.pdf) and [Video](https://www.youtube.com/watch?v=OcG-59Pq3oY) are available.  
 
 
 <img align="center" src="assets/db-ecbs.gif" width="100%"/>
