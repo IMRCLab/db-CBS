@@ -644,7 +644,7 @@ void export_solutions_joint(const std::vector<LowLevelPlan<dynobench::Trajectory
           // tmp_state.segment(i*k,k-1) = solution[i].trajectory.states[t]; // residual
           tmp_state.segment(i*k,k) = solution[i].trajectory.states[t];
       }
-      tmp_state((i+1)*k-1) = 0; // for the residual force
+      // tmp_state((i+1)*k-1) = 0; // for the residual force
     }
     joint_states.push_back(tmp_state);
   }
