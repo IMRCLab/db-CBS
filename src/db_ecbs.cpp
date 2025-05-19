@@ -195,7 +195,7 @@ int main(int argc, char *argv[])
     }
     else if (robotType == "quad3d_v0")
     {
-      motionsFile = "../new_format_motions/quad3d_v0/quad3d_v0.bin.im.bin.sp.bin";
+      motionsFile = "../new_format_motions/quad3d_v0/quad3d_v0.bin.im.bin.sp1.bin.ca.bin.msgpack";
     }
     else if (robotType.find("_res_") != std::string::npos)
     {
