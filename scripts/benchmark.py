@@ -130,8 +130,8 @@ def execute_task(task: ExecutionTask):
 	else:
 		vis_script = scripts_path / "visualize.py"
 
-	for file in visualize_files:
-		run_visualize(vis_script, env, result_folder / file)
+	# for file in visualize_files:
+		# run_visualize(vis_script, env, result_folder / file)
 	
 	# search_viz_script = scripts_path / "visualize_search.py"
 	# if(len(search_plot_files) > 0):
@@ -143,41 +143,39 @@ def main():
 	parallel = True
 	instances = [
 		# 1 robot cases
-		"swap1_unicycle",
-		"swap1_unicycle_sphere",
-		"swap1_trailer",
-		"swap1_unicycle2",
-		"swap1_double_integrator",
+		# "swap1_unicycle",
+		# "swap1_unicycle_sphere",
+		# "swap1_trailer",
+		# "swap1_unicycle2",
+		# "swap1_double_integrator",
 		# 2 robot cases
-		"swap2_unicycle",
-		"swap2_unicycle_sphere",
-		"swap2_unicycle_kink",
-		"swap2_double_integrator",
-		"swap2_trailer",
-		"swap2_unicycle2",
-		"swap2_hetero",
-		"makespan_vs_soc_1",
-		"makespan_vs_soc_0",
-		"alcove_unicycle",
-		"alcove_unicycle_sphere",
-		"at_goal_unicycle",
-		"at_goal_unicycle_sphere",
+		# "swap2_unicycle",
+		# "swap2_unicycle_sphere",
+		# "swap2_unicycle_kink",
+		# "swap2_double_integrator",
+		# "swap2_trailer",
+		# "swap2_unicycle2",
+		# "swap2_hetero",
+		# "makespan_vs_soc_1",
+		# "makespan_vs_soc_0",
+		# "alcove_unicycle",
+		# "alcove_unicycle_sphere",
+		# "at_goal_unicycle",
+		# "at_goal_unicycle_sphere",
 		# 3 robot cases
-		"swap3_unicycle",
-		"swap3_unicycle_sphere",
-		"swap3_double_integrator",
-		"swap3_trailer",
-		"swap3_unicycle2",
+		# "swap3_unicycle",
+		# "swap3_unicycle_sphere",
+		# "swap3_double_integrator",
+		# "swap3_trailer",
+		# "swap3_unicycle2",
 		# 4 robot cases
-		"swap4_unicycle",
-		"swap4_unicycle_sphere",
-		"swap4_double_integrator",
-		"swap4_trailer",
-		"swap4_unicycle2",
-
+		# "swap4_unicycle",
+		# "swap4_unicycle_sphere",
+		# "swap4_double_integrator",
+		# "swap4_trailer",
+		# "swap4_unicycle2",
 		# special test cases
 		# "infeasible_0",
-
 		# # windows cases
 		# "window2_unicycle",
 		# "window3_unicycle",
@@ -194,12 +192,12 @@ def main():
 
 		# 3D scenarios with octomap
 		# "drone1c",
-		# "drone2c",
-		# "drone4c",
-		# "drone8c",
-		# "drone10c",
-		# "drone12c",
-		# "drone16c",
+		"drone2c",
+		"drone4c",
+		"drone8c",
+		"drone10c",
+		"drone12c",
+		"drone16c",
 		# "drone24c",
 		# "drone28c",
 		# "drone32c",
@@ -207,24 +205,22 @@ def main():
 		# "wall_drone8c",
 		# "wall_drone10c",
 	]
-# 
-	# add random cases
-	for kind in ["unicycle_sphere", "hetero"]: 
-		for n in [2,4,8]:
-			for k in range(10):
-				instances.append("gen_p10_n{}_{}_{}".format(n,k, kind))
+	# for kind in ["unicycle_sphere", "hetero"]: 
+		# for n in [2,4,8]:
+			# for k in range(10):
+				# instances.append("gen_p10_n{}_{}_{}".format(n,k, kind))
 
 	algs = [
 		# "sst",
 		# "s2m2",
 		# "k-cbs",
-		"db-cbs",
-		"db-ecbs",
-		# "db-ecbs-residual",
+		# "db-cbs",
+		# "db-ecbs",
+		"db-ecbs-residual",
 		# "db-ecbs-conservative",
 	]
 	trials = 5 
-	timelimit = 5*60 # 3*60*60 
+	timelimit = 3*60*60 # 5 * 60 
 
 	tasks = []
 	for instance in instances:
@@ -257,8 +253,8 @@ def main():
 	# (Path("../results") / 'table.pdf').unlink()
 	# (Path("../results") / 'stats.pdf').unlink()
 
-	# paper_tables.write_table6(trials, timelimit) # 3D case for tro
-	paper_tables.write_table7(trials, timelimit) # 2D case for tro
+	paper_tables.write_table6(trials, timelimit) # 3D case for tro
+	# paper_tables.write_table7(trials, timelimit) # 2D case for tro
 
 if __name__ == '__main__':
 	main()

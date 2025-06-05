@@ -78,14 +78,14 @@ db-ecbs:
     delta_0: 0.75
     suboptimality_factor: 3.0
   '*_trailer':
-    delta_0: 0.9
-    suboptimality_factor: 2.0
+    delta_0: 0.75 # 0.9
+    suboptimality_factor: 1.3 # 2.0
   '*alcove_unicycle':
     num_primitives_0: 300 # alcove unicycle needs
   '*at_goal_unicycle_sphere':
     suboptimality_factor: 2
   '*_unicycle2':
-    num_primitives_0: 100
+    num_primitives_0: 100 # 100
   '*swap3_drone':
     num_primitives_0: 50 # 400 
     heuristic1_num_primitives_0: 100 # 300
