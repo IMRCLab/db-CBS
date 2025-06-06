@@ -39,7 +39,7 @@ def read_yaml_stats(file_path):
         return None
     
  # analysis for optimization/discrete search time   
-def time_analysis_plot_optimization(instances, itr):
+def time_analysis_plot_optimization(instances, itr, dec_var=False):
     folder = "/home/akmarak-laptop/IMRC/db-CBS/results/tro-plots/optimization_scalability/"
     time_keys = ["duration_discrete", "duration_opt"]
     labels = ["Discrete Search", "Optimization"]
@@ -47,13 +47,13 @@ def time_analysis_plot_optimization(instances, itr):
 
     means = {key: [] for key in time_keys}
     stds = {key: [] for key in time_keys}
-
+    timesteps_means = []  # mean value for several iterations for each problem instance
     instance_labels = []
 
     for instance in instances:
         instance_labels.append(instance)
         durations = {key: [] for key in time_keys}
-
+        timesteps = []
         for it in range(itr):
             yaml_path = os.path.join(folder, instance, "db-ecbs-residual", f"00{it}", "stats.yaml")
             try:
@@ -67,6 +67,8 @@ def time_analysis_plot_optimization(instances, itr):
                                 durations[key].append(stats[key])
                         else:
                             print(f"Warning: Missing one of {time_keys} in {yaml_path}")
+                        if dec_var:
+                            timesteps.append(stats["discrete cost"])    
                     else:
                         print(f"Warning: Invalid or empty stats in {yaml_path}")
 
@@ -76,10 +78,10 @@ def time_analysis_plot_optimization(instances, itr):
                 print(f"YAML error in {yaml_path}: {e}")
             except Exception as e:
                 print(f"Unexpected error reading {yaml_path}: {e}")
-
+            
         # Compute mean and std deviation
         for key in time_keys:
-            if durations[key]:
+            # if durations[key]:
                 # print(durations[key])
                 # means[key].append(np.mean(durations[key]))
                 # stds[key].append(np.std(durations[key]))
@@ -92,15 +94,19 @@ def time_analysis_plot_optimization(instances, itr):
             else:
                 means[key].append(0)
                 stds[key].append(0)
-
-    # Plotting
-    x = np.arange(len(instances))
+        if dec_var:
+            timesteps_mean = np.mean(timesteps)
+            timesteps_means.append(timesteps_mean)
+    if dec_var: 
+        timesteps_means = [round(x) for x in timesteps_means]
+        x = [value * 3 for value in timesteps_means] # assumes double integrator with u = (ax, ay, az)
+        instance_labels = [f"{a}-{b}" for a, b in zip(instance_labels, x)]
+    else:    
+        x = np.arange(len(instances))
     fig, ax = plt.subplots()
     for i, key in enumerate(time_keys):
-        # print(key)
         mean_vals = np.array(means[key])
         std_vals = np.array(stds[key])
-        # print(mean_vals)
         ax.plot(x, mean_vals, color=colors[i], label=labels[i], linewidth=2)
         ax.fill_between(
             x,
@@ -111,9 +117,8 @@ def time_analysis_plot_optimization(instances, itr):
         )
     # exit()
     ax.set_xticks(x)
-    ax.set_xticklabels(instance_labels)
+    ax.set_xticklabels(instance_labels, rotation = 45, ha='right')
     ax.set_ylabel("Time [min]")
-    # ax.set_title("Time Analysis: Optimization vs Discrete Search")
     ax.legend()
     # ax.grid(True, linestyle='dashed', alpha=0.5)
     ax.grid(which='both', axis='x', linestyle='dashed')
@@ -465,7 +470,7 @@ def main():
         "drone12c",
         "drone16c",
     ]
-    time_analysis_plot_optimization(i, itr=5) # considers average time, itr = 5
+    time_analysis_plot_optimization(i, itr=5, dec_var=True) # considers average time, itr = 5
 
     # 2. plot for always add vs. rewire
     # a = ["always_add", "rewire"]

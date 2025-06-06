@@ -627,107 +627,131 @@ def write_table9(trials, timelimit):
 		'wall_drone10c': "window10",
 	}
 	algs = [
-		# "tro-18",
+		"tro-18",
 		"db-ecbs-conservative",
 		"db-ecbs-residual",
 		
 	]
 	# map to a shorter name for the table
 	alg_names = {
-		# "tro-18": "MAPF/C+POST",
+		"tro-18": "MAPF/C+POST",
 		"db-ecbs-conservative": "db-ECBS-C",
 		"db-ecbs-residual": "db-ECBS-R",
 	}
 	result = benchmark_table.compute_results_with_std(instances, algs, Path("../results/tro-plots/results-3d-5trials/"), trials, timelimit, True)
 	
 	# manually enter results for tro-18
-	# result_d2 = result["drone2c"]
-	# result_d2["tro-18"] = {
-	# 	'success': 1.0,
-	# 	't^st_mean': 0.983,
-	# 	'tr^st_mean': None,
-	# 	'J^st_mean': 60.7,
-	# 	'Jr^st_mean': None,
-	# 	'J^f_mean': 60.7,
-	# 	'Jr^f_mean': None,
-	# }
-	# n = 4
-	# result_d4 = result["drone4c"]
-	# result_d4["tro-18"] = {
-	# 	'success': 1.0,
-	# 	't^st_mean': 1.643,
-	# 	'tr^st_mean': None,
-	# 	'J^st_mean': 147.3,
-	# 	'Jr^st_mean': None,
-	# 	'J^f_mean': 147.3,
-	# 	'Jr^f_mean': None,
-	# }
-	# # n = 8
-	# result_d8 = result["drone8c"]
-	# result_d8["tro-18"] = {
-	# 	'success': 1.0,
-	# 	't^st_mean': 3.187,
-	# 	'tr^st_mean': None,
-	# 	'J^st_mean': 297.11,
-	# 	'Jr^st_mean': None,
-	# 	'J^f_mean': 297.11,
-	# 	'Jr^f_mean': None,
-	# }
-	# # n = 10
-	# result_d10 = result["drone10c"]
-	# result_d10["tro-18"] = {
-	# 	'success': 1.0,
-	# 	't^st_mean': 3.969,
-	# 	'tr^st_mean': None,
-	# 	'J^st_mean': 373,
-	# 	'Jr^st_mean': None,
-	# 	'J^f_mean': 373,
-	# 	'Jr^f_mean': None,
-	# }
-	# # n = 12
-	# result_d12 = result["drone12c"]
-	# result_d12["tro-18"] = {
-	# 	'success': 1.0,
-	# 	't^st_mean': 4.894,
-	# 	'tr^st_mean': None,
-	# 	'J^st_mean': 439.8,
-	# 	'Jr^st_mean': None,
-	# 	'J^f_mean': 439.8,
-	# 	'Jr^f_mean': None,
-	# }
-	# # n = 16
-	# result_d16 = result["drone16c"]
-	# result_d16["tro-18"] = {
-	# 	'success': 1.0,
-	# 	't^st_mean': 7.727,
-	# 	'tr^st_mean': None,
-	# 	'J^st_mean': 657.4,
-	# 	'Jr^st_mean': None,
-	# 	'J^f_mean': 657.4,
-	# 	'Jr^f_mean': None,
-	# }
-	# # wall8
-	# result_wall8 = result["wall_drone8c"]
-	# result_wall8["tro-18"] = {
-	# 	'success': '*',
-	# 	't^st_mean': '*',
-	# 	'tr^st_mean': '*',
-	# 	'J^st_mean': '*',
-	# 	'Jr^st_mean': '*',
-	# 	'J^f_mean': '*',
-	# 	'Jr^f_mean': '*',
-	# }
-	# # wall10
-	# result_wall10 = result["wall_drone10c"]
-	# result_wall10["tro-18"] = {
-	# 	'success': '*',
-	# 	't^st_mean': '*',
-	# 	'tr^st_mean': '*',
-	# 	'J^st_mean': '*',
-	# 	'Jr^st_mean': '*',
-	# 	'J^f_mean': '*',
-	# 	'Jr^f_mean': '*',
-	# }
+	result_d2 = result["drone2c"]
+	result_d2["tro-18"] = {
+		'success': 1.0,
+		't^st_mean': 0.983,
+		't^st_std': 0.0,
+		'tr^st_mean': None,
+		'J^st_mean': 60.7,
+		'J^st_std': 0.0,
+		'Jr^st_mean': None,
+		'J^f_mean': 60.7,
+		'J^f_std': 0.0,
+		'Jr^f_mean': None,
+	}
+	n = 4
+	result_d4 = result["drone4c"]
+	result_d4["tro-18"] = {
+		'success': 1.0,
+		't^st_mean': 1.643,
+		't^st_std': 0.01,
+		'tr^st_mean': None,
+		'J^st_mean': 147.3,
+		'J^st_std': 0.0,
+		'Jr^st_mean': None,
+		'J^f_mean': 147.3,
+		'J^f_std': 0.0,
+		'Jr^f_mean': None,
+	}
+	# n = 8
+	result_d8 = result["drone8c"]
+	result_d8["tro-18"] = {
+		'success': 1.0,
+		't^st_mean': 3.187,
+		't^st_std': 0.01,
+		'tr^st_mean': None,
+		'J^st_mean': 297.11,
+		'J^st_std': 0.0,
+		'Jr^st_mean': None,
+		'J^f_mean': 297.11,
+		'J^f_std': 0.0,
+		'Jr^f_mean': None,
+	}
+	# n = 10
+	result_d10 = result["drone10c"]
+	result_d10["tro-18"] = {
+		'success': 1.0,
+		't^st_mean': 3.969,
+		't^st_std': 0.02,
+		'tr^st_mean': None,
+		'J^st_mean': 373,
+		'J^st_std': 0.0,
+		'Jr^st_mean': None,
+		'J^f_mean': 373,
+		'J^f_std': 0.0,
+		'Jr^f_mean': None,
+	}
+	# n = 12
+	result_d12 = result["drone12c"]
+	result_d12["tro-18"] = {
+		'success': 1.0,
+		't^st_mean': 4.894,
+		't^st_std': 0.01,
+		'tr^st_mean': None,
+		'J^st_mean': 439.8,
+		'J^st_std': 0.0,
+		'Jr^st_mean': None,
+		'J^f_mean': 439.8,
+		'J^f_std': 0.0,
+		'Jr^f_mean': None,
+	}
+	# n = 16
+	result_d16 = result["drone16c"]
+	result_d16["tro-18"] = {
+		'success': 1.0,
+		't^st_mean': 7.727,
+		't^st_std': 0.01,
+		'tr^st_mean': None,
+		'J^st_mean': 657.4,
+		'J^st_std': 0.0,
+		'Jr^st_mean': None,
+		'J^f_mean': 657.4,
+		'J^f_std': 0.0,
+		'Jr^f_mean': None,
+	}
+	# wall8
+	result_wall8 = result["wall_drone8c"]
+	result_wall8["tro-18"] = {
+		'success': '*',
+		't^st_mean': '*',
+		't^st_std': '-',
+		'tr^st_mean': '*',
+		'J^st_mean': '*',
+		'J^st_std': '-',
+		'Jr^st_mean': '*',
+		'J^f_mean': '*',
+		'J^f_std': '-',
+		'Jr^f_mean': '*',
+	}
+	# wall10
+	result_wall10 = result["wall_drone10c"]
+	result_wall10["tro-18"] = {
+		'success': '*',
+		't^st_mean': '*',
+		't^st_std': '-',
+		'tr^st_mean': '*',
+		'J^st_mean': '*',
+		'J^st_std': '-',
+		'Jr^st_mean': '*',
+		'J^f_mean': '*',
+		'J^f_std': '-',
+		'Jr^f_mean': '*',
+	}
 
 	output_path = Path("../results/paper_table_std.pdf")
 	with open(output_path.with_suffix(".tex"), "w") as f:
@@ -739,8 +763,9 @@ def write_table9(trials, timelimit):
 		f.write(r"\begin{document}")
 		f.write("\n")
 		f.write(r"% GENERATED - DO NOT EDIT - " + output_path.name + "\n")
-
-		out = r"\begin{tabular}{c | c"
+ 
+		# out = r"\begin{tabular}{c | c"
+		out = r"\begin{tabular}{l"
 		for alg in algs:
 			if not regret:
 				out += r" | r|r|r|r"
@@ -748,7 +773,8 @@ def write_table9(trials, timelimit):
 				out += r" | r|r|r"
 		out += "}\n"
 		f.write(out)
-		out = r"\# & Instance"
+		# out = r"\# & Instance"
+		out = r"Instance"
 		for k, alg in enumerate(algs):
 			if k == len(algs) - 1:
 				if not regret:
@@ -764,7 +790,8 @@ def write_table9(trials, timelimit):
 			out += r"}"
 		out += r"\\"
 		f.write(out)
-		out = r"& "
+		# out = r"& "
+		out = ""
 		if not regret:
 			for alg in algs:
 				out += r" & $p$ & $t^{\mathrm{st}} [s]$ & $J^{\mathrm{st}} [s]$ & $J^{f} [s]$"
@@ -773,22 +800,23 @@ def write_table9(trials, timelimit):
 				out += r" & $p$ & $t_r^{\mathrm{st}} [\%]$ & $J_r^{f} [\%]$"
 		out += r"\\"
 		f.write(out)
-		f.write(r"\hline")
+		# f.write(r"\hline")
 
 		for r_number, row in enumerate(instances): 
 
 			out = ""
 			out += r"\hline"
 			out += "\n"
-			out += "{} & ".format(r_number+1)
+			# out += "{} & ".format(r_number+1) # enumeration
 			if row in instance_names:
 				out += instance_names[row]
 			else:
-				out += "{} ".format(row.replace("_", "\_"))
+				# out += "{} ".format(row.replace("_", "\_"))
+				out += row.replace("_", "\_")
 
 			for alg in algs:
 				out = benchmark_table.print_and_highlight_best_max(out, 'success', result[row], alg, algs)
-				out = benchmark_table.print_and_highlight_best_std(out, 't^st_mean', result[row], alg, algs)
+				out = benchmark_table.print_and_highlight_best_std(out, 't^st_mean', result[row], alg, algs, skip_std_for_time=True)
 				out = benchmark_table.print_and_highlight_best_std(out, 'J^st_mean', result[row], alg, algs)
 				out = benchmark_table.print_and_highlight_best_std(out, 'J^f_mean', result[row], alg, algs)
 				if regret:
