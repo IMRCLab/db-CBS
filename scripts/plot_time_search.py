@@ -24,50 +24,103 @@ def read_yaml(file_path):
     except KeyError as e:
         print(f"Error: Missing expected key {e} in the YAML data.")
         return None
-
-def time_analysis_plot(data_iterations):
-    instance_names = {
-    "alcove_unicycle_sphere": "alcove-u1",
-    "gen_p10_n8_4_hetero": "hetero8",
-    "drone4-C": "drone4-C",
-    "drone4-R": "drone4-R",
-    "drone8-C": "drone8-C",
-    "drone8-R": "drone8-R",
-    #  "wall8-C": "wall8-C-0.5",
-    #  "wall8-R": "wall8-R-0.5",
-    }
-
-    # Data for plotting
-    categories = {
-        'Search-FH': 'time_collision_heuristic',
-        'Search-Update FS': 'time_rebuild_focal_set',
-        'Search-Collision': 'time_collisions',
-        'Search-NN': 'time_nearestNode'
-    }
-    colors = ['skyblue', 'orange', 'grey', 'red']
-    # labels = [f'Iteration {i + 1}' for i in range(len(data_iterations))] # to do: isntance name
-    labels = list(instance_names.values())
-    # Initialize plot
-    fig, ax = plt.subplots()
-    width = 0.4  # Bar width
-    x_positions = range(len(data_iterations))  # Positions for each bar
-    # Create stacked bars for each iteration
-    for category_index, (category, key) in enumerate(categories.items()):
-        bottoms = [sum(data[categories[c]] for c in list(categories.keys())[:category_index]) for data in data_iterations]
-        values = [data[key] for data in data_iterations]
-        ax.bar(x_positions, values, width, label=category, color=colors[category_index], bottom=bottoms)
+# read stats file, used for optimization/discrete time plot 
+def read_yaml_stats(file_path):
+    # Read and parse the YAML file
+    with open(file_path, 'r') as file:
+        data = yaml.safe_load(file)
+    try:
+        return {
+            "discrete-search": data['stats']['duration_discrete'],
+            "optimization": data['stats']['duration_opt'],
+        }
+    except KeyError as e:
+        print(f"Error: Missing expected key {e} in the YAML data.")
+        return None
     
-    # Add legend, title, and labels
+ # analysis for optimization/discrete search time   
+def time_analysis_plot_optimization(instances, itr):
+    folder = "/home/akmarak-laptop/IMRC/db-CBS/results/tro-plots/optimization_scalability/"
+    time_keys = ["duration_discrete", "duration_opt"]
+    labels = ["Discrete Search", "Optimization"]
+    colors = ['orange', 'grey']
+
+    means = {key: [] for key in time_keys}
+    stds = {key: [] for key in time_keys}
+
+    instance_labels = []
+
+    for instance in instances:
+        instance_labels.append(instance)
+        durations = {key: [] for key in time_keys}
+
+        for it in range(itr):
+            yaml_path = os.path.join(folder, instance, "db-ecbs-residual", f"00{it}", "stats.yaml")
+            try:
+                with open(yaml_path, 'r') as file:
+                    data = yaml.safe_load(file)
+
+                    if isinstance(data, dict) and "stats" in data and isinstance(data["stats"], list) and data["stats"]:
+                        stats = data["stats"][0]
+                        if all(key in stats for key in time_keys):
+                            for key in time_keys:
+                                durations[key].append(stats[key])
+                        else:
+                            print(f"Warning: Missing one of {time_keys} in {yaml_path}")
+                    else:
+                        print(f"Warning: Invalid or empty stats in {yaml_path}")
+
+            except FileNotFoundError:
+                print(f"Error: File not found: {yaml_path}")
+            except yaml.YAMLError as e:
+                print(f"YAML error in {yaml_path}: {e}")
+            except Exception as e:
+                print(f"Unexpected error reading {yaml_path}: {e}")
+
+        # Compute mean and std deviation
+        for key in time_keys:
+            if durations[key]:
+                # print(durations[key])
+                # means[key].append(np.mean(durations[key]))
+                # stds[key].append(np.std(durations[key]))
+            # to get stats in [minute]
+            if durations[key]:
+                mean_minutes = np.mean(durations[key]) / 60
+                std_minutes = np.std(durations[key]) / 60
+                means[key].append(mean_minutes)
+                stds[key].append(std_minutes)
+            else:
+                means[key].append(0)
+                stds[key].append(0)
+
+    # Plotting
+    x = np.arange(len(instances))
+    fig, ax = plt.subplots()
+    for i, key in enumerate(time_keys):
+        # print(key)
+        mean_vals = np.array(means[key])
+        std_vals = np.array(stds[key])
+        # print(mean_vals)
+        ax.plot(x, mean_vals, color=colors[i], label=labels[i], linewidth=2)
+        ax.fill_between(
+            x,
+            mean_vals - std_vals,
+            mean_vals + std_vals,
+            color=colors[i],
+            alpha=0.3
+        )
+    # exit()
+    ax.set_xticks(x)
+    ax.set_xticklabels(instance_labels)
+    ax.set_ylabel("Time [min]")
+    # ax.set_title("Time Analysis: Optimization vs Discrete Search")
+    ax.legend()
+    # ax.grid(True, linestyle='dashed', alpha=0.5)
     ax.grid(which='both', axis='x', linestyle='dashed')
-    ax.grid(which='major', axis='y', linestyle='dashed')
-    ax.set_ylabel("Time [s]")
-    ax.set_xticks(x_positions)
-    ax.set_xticklabels(labels)
-    ax.legend(loc='upper left')
+    ax.grid(which='both', axis='y', linestyle='dashed')
     plt.tight_layout()
-    plt.grid(True)
-    # Show the plot
     plt.show()
+
 
 
 def delta_time_analysis_plot(data_iterations):
@@ -152,9 +205,9 @@ def add_node_rewire_bar_chart(a, i):
                 t_values[a_instance].append(None)
                 cost_values[a_instance].append(None)
     
-    # fig, ax = plt.subplots(2, 1, figsize=(8, 6), sharex=True)
+    # fig, ax = plt.subplots(2, 1, sharex='all', sharey='none')
     fig, ax = plt.subplots(2, 1, sharex='all', sharey='none')
-    bar_width = 0.4  # Width of each bar
+    bar_width = 0.3  # Width of each bar
 
     parameters = {'Cost': cost_values, 'Time': t_values}
     
@@ -403,28 +456,16 @@ def plot(filename_env, filename_res):
 
 def main():
    
-    # 1. Time analysis plot
-    # path = "/home/akmarak-laptop/IMRC/db-CBS/results/tro-plots/time/"
-    # instances = ["alcove_unicycle_sphere", "gen_p10_n8_4_hetero", "drone4-C", "drone4-R","wall8-C", "wall8-R" ] 
-    # algorithms = [
-    #     "db-ecbs-residual",
-    #     "db-ecbs-conservative"
-    # ]
-    # file_name = "time_search.yaml"
-    # file_paths = []
-    # # Generate paths by combining the base path, instance, and algorithm
-    # for algo in algorithms:
-    #     for instance in instances:
-    #         file_paths.append(path + instance + "/" + algo + "/000/" + file_name)
-    # # Read data from each YAML file
-    # data_iterations = []
-    # for file_path in file_paths:
-    #     if os.path.exists(file_path):
-    #         data = read_yaml(file_path)
-    #         if data:
-    #             data_iterations.append(data)
-
-    # time_analysis_plot(data_iterations)
+    # 1. Time analysis plot for optimization/discrete time
+    i = [
+        "drone2c",
+        "drone4c",
+        "drone8c",
+        "drone10c",
+        "drone12c",
+        "drone16c",
+    ]
+    time_analysis_plot_optimization(i, itr=5) # considers average time, itr = 5
 
     # 2. plot for always add vs. rewire
     # a = ["always_add", "rewire"]
@@ -447,7 +488,6 @@ def main():
     #     "drone12c",
     #     "drone16c",
     # ]
-    # # add_cost_and_time_over_robots_plot_itr(a, i, 2)
     # add_cost_and_time_over_robots_plot_itr_stem(a, i, 2)
 
     # 3. NeuralSwarm2 plot

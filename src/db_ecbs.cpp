@@ -571,7 +571,7 @@ int main(int argc, char *argv[])
                   std::cerr << "Failed to create the time stats file." << std::endl;
                 }
               }
-              return 0;
+              // return 0;
               if (check_anytime)
               {
                 std::string tmp_File1 = output_folder + "/discrete_" + std::to_string(iteration) + ".yaml";
@@ -581,7 +581,7 @@ int main(int argc, char *argv[])
                 optimization_sol.to_yaml_format(tmp_File2.c_str());
               }
             }
-            return 0;
+            // return 0;
             // extract motions from the solution. Lengths depend on the environment (2D-short(1,2), 3D wall-long(8 length for example))
             extract_motion_primitives(problem, optimization_sol, sub_motions, robots, /*length*/ 8);
             itr_cost_data["runs"].push_back(YAML::Node());
@@ -600,7 +600,7 @@ int main(int argc, char *argv[])
               std::cerr << "Error: Unable to open file for writing." << std::endl;
             }
           }
-          return 0;
+          // return 0;
           break; // continue with the next iteration
         }
       } // if no collision

@@ -217,7 +217,7 @@ def main():
 		# "db-cbs",
 		# "db-ecbs",
 		"db-ecbs-residual",
-		# "db-ecbs-conservative",
+		"db-ecbs-conservative",
 	]
 	trials = 5 
 	timelimit = 3*60*60 # 5 * 60 
@@ -253,7 +253,8 @@ def main():
 	# (Path("../results") / 'table.pdf').unlink()
 	# (Path("../results") / 'stats.pdf').unlink()
 
-	paper_tables.write_table6(trials, timelimit) # 3D case for tro
+	# paper_tables.write_table6(trials, timelimit) # 3D case for tro
+	paper_tables.write_table9(trials, timelimit) # 3D case for tro with std
 	# paper_tables.write_table7(trials, timelimit) # 2D case for tro
 
 if __name__ == '__main__':
