@@ -517,12 +517,13 @@ def write_table7(trials, timelimit):
 		"db-ecbs": "db-ECBS",
 	}
 
-	result = benchmark_table.compute_results(instances, algs, Path("../results"), trials, timelimit, True)
-	
-	output_path = Path("../results/paper_table1.pdf")
+	result = benchmark_table.compute_results_with_std(instances, algs, Path("../results"), trials, timelimit, True)
+	output_path = Path("../results/paper_table7_std.pdf")
 	with open(output_path.with_suffix(".tex"), "w") as f:
 
 		f.write(r"\documentclass{standalone}")
+		f.write("\n")
+		f.write(r"\usepackage{xcolor}") 
 		f.write("\n")
 		f.write(r"\begin{document}")
 		f.write("\n")
@@ -573,12 +574,18 @@ def write_table7(trials, timelimit):
 			else:
 				out += "{} ".format(instance.replace("_", "\_"))
 
+			# for alg in algs:
+				# out = benchmark_table.print_and_highlight_best_max(out, 'success', result[instance], alg, algs)
+				# out = benchmark_table.print_and_highlight_best(out, 't^st_median', result[instance], alg, algs)
+				# out = benchmark_table.print_and_highlight_best(out, 'J^st_median', result[instance], alg, algs)
+				# if(alg != "db-ecbs"):
+					# out = benchmark_table.print_and_highlight_best(out, 'Jr^st_median', result[instance], alg, algs, digits=0) 
 			for alg in algs:
 				out = benchmark_table.print_and_highlight_best_max(out, 'success', result[instance], alg, algs)
-				out = benchmark_table.print_and_highlight_best(out, 't^st_median', result[instance], alg, algs)
-				out = benchmark_table.print_and_highlight_best(out, 'J^st_median', result[instance], alg, algs)
+				out = benchmark_table.print_and_highlight_best_std(out, 't^st_mean', result[instance], alg, algs)
+				out = benchmark_table.print_and_highlight_best_std(out, 'J^st_mean', result[instance], alg, algs)
 				if(alg != "db-ecbs"):
-					out = benchmark_table.print_and_highlight_best(out, 'Jr^st_median', result[instance], alg, algs, digits=0) 
+					out = benchmark_table.print_and_highlight_best_std(out, 'Jr^st_mean', result[instance], alg, algs, digits=0) 
 
 			out += r"\\"
 			f.write(out)
@@ -833,17 +840,17 @@ def write_table9(trials, timelimit):
 	# run pdflatex
 	benchmark_table.gen_pdf(output_path)
 if __name__ == '__main__':
-	trials = 5
-	timelimit = 3*60*60
+	trials = 10
+	timelimit = 5*60
 	# write_table1(trials, timelimit)
 	# write_table2(trials, timelimit)
 	# write_table3(trials, timelimit)
 	# write_table4(trials, timelimit)
 	# write_table5(trials, timelimit)
 	# write_table6(trials, timelimit) # window, wall together
-	# write_table7(trials, timelimit)
+	write_table7(trials, timelimit) # hast std
 	# write_table8(trials, timelimit)
-	write_table9(trials, timelimit) # window, wall together. As table6, but has std
+	# write_table9(trials, timelimit) # window, wall together. As table6, but has std
 
 
 

@@ -98,8 +98,10 @@ def time_analysis_plot_optimization(instances, itr, dec_var=False):
             timesteps_mean = np.mean(timesteps)
             timesteps_means.append(timesteps_mean)
     if dec_var: 
+        nx = 3
+        nu = 3
         timesteps_means = [round(x) for x in timesteps_means]
-        x = [value * 3 for value in timesteps_means] # assumes double integrator with u = (ax, ay, az)
+        x = [value * (nx + nu) for value in timesteps_means] # assumes double integrator with u = (ax, ay, az)
         instance_labels = [f"{a}-{b}" for a, b in zip(instance_labels, x)]
     else:    
         x = np.arange(len(instances))
@@ -462,15 +464,15 @@ def plot(filename_env, filename_res):
 def main():
    
     # 1. Time analysis plot for optimization/discrete time
-    i = [
-        "drone2c",
-        "drone4c",
-        "drone8c",
-        "drone10c",
-        "drone12c",
-        "drone16c",
-    ]
-    time_analysis_plot_optimization(i, itr=5, dec_var=True) # considers average time, itr = 5
+    # i = [
+        # "drone2c",
+        # "drone4c",
+        # "drone8c",
+        # "drone10c",
+        # "drone12c",
+        # "drone16c",
+    # ]
+    # time_analysis_plot_optimization(i, itr=5, dec_var=True) # considers average time, itr = 5
 
     # 2. plot for always add vs. rewire
     # a = ["always_add", "rewire"]

@@ -583,7 +583,7 @@ int main(int argc, char *argv[])
             }
             // return 0;
             // extract motions from the solution. Lengths depend on the environment (2D-short(1,2), 3D wall-long(8 length for example))
-            extract_motion_primitives(problem, optimization_sol, sub_motions, robots, /*length*/ 8);
+            extract_motion_primitives(problem, optimization_sol, sub_motions, robots, /*length*/ 2);
             itr_cost_data["runs"].push_back(YAML::Node());
             itr_cost_data["runs"][iteration]["iteration"] = iteration;
             itr_cost_data["runs"][iteration]["lowest_cost"] = lowest_cost;
