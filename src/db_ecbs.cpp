@@ -571,7 +571,7 @@ int main(int argc, char *argv[])
                   std::cerr << "Failed to create the time stats file." << std::endl;
                 }
               }
-              // return 0;
+              return 0;
               if (check_anytime)
               {
                 std::string tmp_File1 = output_folder + "/discrete_" + std::to_string(iteration) + ".yaml";
