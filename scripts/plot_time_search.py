@@ -37,7 +37,60 @@ def read_yaml_stats(file_path):
     except KeyError as e:
         print(f"Error: Missing expected key {e} in the YAML data.")
         return None
-    
+
+# analysis for optimization complexity, which we believe is O(K(nx+nu))^3
+def analysis_optimization_complexity(itr = 5):
+    folder = "/home/akmarak-laptop/IMRC/db-CBS/results/tro-plots/optimization_complexity/"
+    file_name = "result_dbecbs.yaml" # only discrete search is of interest
+    stats_name = "stats.yaml"
+    mean_max_timesteps = []
+    mean_duration_opts = []
+    for i in range(10):
+        max_timesteps = []
+        duration_opts = []
+        for it in range(itr):
+            yaml_path = os.path.join(folder, f"gen_p10_n2_{i}_hetero", "db-ecbs", f"00{it}", file_name)
+            stats_path = os.path.join(folder, f"gen_p10_n2_{i}_hetero", "db-ecbs", f"00{it}", stats_name)
+            try:
+                with open(yaml_path, 'r') as file:
+                    data = yaml.safe_load(file)
+                with open(stats_path, 'r') as stats_file:
+                    stats = yaml.safe_load(stats_file)    
+                stats = stats["stats"][0]
+                duration_opt = stats["duration_opt"]
+
+                max_timestep = 0
+                for res_i in range(len(data["result"])):
+                    max_timestep = max(max_timestep, len(data["result"][res_i]["actions"]))
+
+                max_timesteps.append(max_timestep)
+                duration_opts.append(duration_opt)
+            except FileNotFoundError:
+                print(f"Error: File not found: {yaml_path}")
+
+        # Compute means for this i
+        mean_max_timestep = np.mean(max_timesteps) if max_timesteps else float('nan')
+        mean_duration_opt = np.mean(duration_opts) if duration_opts else float('nan')
+
+        print(f"i={i}: Mean max_timestep = {mean_max_timestep:.2f}, Mean duration_opt = {mean_duration_opt:.2f}")
+        mean_max_timesteps.append(mean_max_timestep)
+        mean_duration_opts.append(mean_duration_opt)
+
+    # Now sort mean_max_timesteps and reorder mean_duration_opts accordingly
+    sorted_pairs = sorted(zip(mean_max_timesteps, mean_duration_opts), key=lambda x: x[0])
+    mean_max_timesteps_sorted, mean_duration_opts_sorted = zip(*sorted_pairs)
+
+    # Convert back to list if needed
+    mean_max_timesteps_sorted = list(mean_max_timesteps_sorted)
+    mean_duration_opts_sorted = list(mean_duration_opts_sorted)
+
+    print("Sorted mean_max_timesteps:", mean_max_timesteps_sorted)
+    print("Reordered mean_duration_opts:", mean_duration_opts_sorted)    
+    plt.plot(mean_max_timesteps_sorted[:8], mean_duration_opts_sorted[:8])
+    plt.xlabel('Time Steps')
+    plt.ylabel('Optimization Runtime [s]')
+    plt.show()
+
  # analysis for optimization/discrete search time   
 def time_analysis_plot_optimization(instances, itr, dec_var=False):
     folder = "/home/akmarak-laptop/IMRC/db-CBS/results/tro-plots/optimization_scalability/"
@@ -527,6 +580,9 @@ def main():
     #     else: 
     #         print(file_path)
     # delta_time_analysis_plot(data_iterations)
+
+    # 5. optimization complexity anaylsis
+    analysis_optimization_complexity(3)
 
     
 if __name__ == "__main__":

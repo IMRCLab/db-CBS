@@ -468,7 +468,7 @@ def write_table6(trials, timelimit):
   benchmark_table.gen_pdf(output_path)
   
 
-# table for tro. It has the notion of regret w.r.t db-ecbs, and skips it in the table since it's always 0
+# table for tro. It has the notion of regret w.r.t db-ecbs, and energy cost, all with std value
 def write_table7(trials, timelimit):
   instances = [
     "swap2_unicycle_sphere",
@@ -517,8 +517,10 @@ def write_table7(trials, timelimit):
     "db-ecbs": "db-ECBS",
   }
 
-  result = benchmark_table.compute_results_with_std(instances, algs, Path("../results/tro-plots/2d-10/"), trials, timelimit, True)
+  result = benchmark_table.compute_results_with_std(instances, algs, Path("../results/tro-plots/2d-5/"), trials, timelimit, True)
   output_path = Path("../results/paper_table7_std.pdf")
+  add_std = True
+  energy_cost = True
   with open(output_path.with_suffix(".tex"), "w") as f:
 
     f.write(r"\documentclass{standalone}")
@@ -532,9 +534,9 @@ def write_table7(trials, timelimit):
     out = r"\begin{tabular}{l"
     for alg in algs:
       if(alg == "db-ecbs"):
-        out += r" |r|r|r"
+        out += r" |l|l|l"
       else:
-        out += r" |r|r|r|r"
+        out += r" |l|l|l|l"
     out += "}\n"
     f.write(out)
     out = r"Instance"
@@ -550,49 +552,52 @@ def write_table7(trials, timelimit):
       out += r"}"
     out += r"\\"
     f.write(out)
-    # out = r"& "
     out = ""
     for alg in algs:
       if(alg == "db-ecbs"):
-        out += r" & $p$ & $t [s]$ & $J [s] $"
+        out += r" & $p$ & $t [s]$ & $J^{\mathrm{st}} [s]$"
       else:
-        out += r" & $p$ & $t [s]$ & $J [s]$ & $r [\%]$"
+        out += r" & $p$ & $t [s]$ & $J^{\mathrm{st}} | J_{\mathrm{e}} [s]$ & $r | r_{\mathrm{e}} [\%]$"
     out += r"\\"
     f.write(out)
-    # f.write(r"\hline")
 
     r_number = 0
     for instance in instances:
 
       if instance == "<<HLINE>>":
-        # f.write(r"\hline")
-        # f.write("\n")
         continue
 
       out = ""
       out += r"\hline"
       out += "\n"
-      # out += "{} & ".format(r_number+1)
       if instance in instance_names:
         out += instance_names[instance]
       else:
         out += "{} ".format(instance.replace("_", "\_"))
 
-      # for alg in algs:
-        # out = benchmark_table.print_and_highlight_best_max(out, 'success', result[instance], alg, algs)
-        # out = benchmark_table.print_and_highlight_best(out, 't^st_median', result[instance], alg, algs)
-        # out = benchmark_table.print_and_highlight_best(out, 'J^st_median', result[instance], alg, algs)
-        # if(alg != "db-ecbs"):
-          # out = benchmark_table.print_and_highlight_best(out, 'Jr^st_median', result[instance], alg, algs, digits=0) 
-      for alg in algs:
-        out = benchmark_table.print_and_highlight_best_max(out, 'success', result[instance], alg, algs)
-        out = benchmark_table.print_and_highlight_best_std(out, 't^st_mean', result[instance], alg, algs)
-        out = benchmark_table.print_and_highlight_best_std(out, 'J^st_mean', result[instance], alg, algs)
-        if(alg != "db-ecbs"):
-          out = benchmark_table.print_and_highlight_best_std(out, 'Jr^st_mean', result[instance], alg, algs, digits=0) 
+      if instance.startswith("gen_"):
+        add_std = False
+      if energy_cost:
+        for alg in algs:
+          if alg == "db-ecbs":
+              keys = ['success', 't^st_mean', 'J^st_mean']
+          else:
+              keys = ['success', 't^st_mean', 'J^st_mean', 'Jr^st_mean']
+            
+          out += benchmark_table.generate_latex_row_cells(result[instance], alg, algs, keys, digits=1, show_std=add_std)
+        out += r"\\"
+        f.write(out + "\n")
+      else: 
+        for alg in algs:
+          out = benchmark_table.print_and_highlight_best_max(out, 'success', result[instance], alg, algs)
+          out = benchmark_table.print_and_highlight_best(out, 't^st_mean', result[instance], alg, algs)
+          out = benchmark_table.print_and_highlight_best(out, 'J^f_mean', result[instance], alg, algs)
+          if alg != "db-ecbs":
+            out = benchmark_table.print_and_highlight_best(out, 'Jr^f_mean', result[instance], alg, algs)
+            
+        out += r"\\"
+        f.write(out)
 
-      out += r"\\"
-      f.write(out)
       r_number += 1
 
     f.write("\n")
@@ -617,6 +622,7 @@ def write_table8(trials, timelimit):
 # table 6 with std
 def write_table9(trials, timelimit):
   regret = False
+  energy_cost_bool = True
   instances = [
     "drone2c",
     "drone4c",
@@ -649,7 +655,7 @@ def write_table9(trials, timelimit):
     "db-ecbs-conservative": "db-ECBS-C",
     "db-ecbs-residual": "db-ECBS-R",
   }
-  result = benchmark_table.compute_results_with_std(instances, algs, Path("../results/tro-plots/results-3d-5trials/"), trials, timelimit, True)
+  result = benchmark_table.compute_results_with_std(instances, algs, Path("../results/tro-plots/results-3d-5trials/"), trials, timelimit, True, energy_cost=energy_cost_bool)
   
   # manually enter results for tro-18
   result_d2 = result["drone2c"]
@@ -665,7 +671,7 @@ def write_table9(trials, timelimit):
     'J^f_std': 0.0,
     'Jr^f_mean': None,
   }
-  n = 4
+  # n = 4
   result_d4 = result["drone4c"]
   result_d4["tro-18"] = {
     'success': 1.0,
@@ -805,7 +811,10 @@ def write_table9(trials, timelimit):
     out = ""
     if not regret:
       for alg in algs:
-        out += r" & $p$ & $t^{\mathrm{st}} [s]$ & $J^{\mathrm{st}} [s]$ & $J^{f} [s]$"
+        if energy_cost_bool:
+          out += r" & $p$ & $t^{\mathrm{st}} [s]$ & $J^{\mathrm{st}} [s]$ & $J^{f} | J_{\mathrm{e}}^{f} [s]$"
+        else: 
+          out += r" & $p$ & $t^{\mathrm{st}} [s]$ & $J^{\mathrm{st}} [s]$ & $J^{f} [s]$"
     else:
       for alg in algs:
         out += r" & $p$ & $t_r^{\mathrm{st}} [\%]$ & $J_r^{f} [\%]$"
@@ -818,23 +827,28 @@ def write_table9(trials, timelimit):
       out = ""
       out += r"\hline"
       out += "\n"
-      # out += "{} & ".format(r_number+1) # enumeration
       if row in instance_names:
         out += instance_names[row]
       else:
-        # out += "{} ".format(row.replace("_", "\_"))
         out += row.replace("_", "\_")
 
-      for alg in algs:
-        out = benchmark_table.print_and_highlight_best_max(out, 'success', result[row], alg, algs)
-        out = benchmark_table.print_and_highlight_best_std(out, 't^st_mean', result[row], alg, algs, skip_std_for_time=True)
-        out = benchmark_table.print_and_highlight_best_std(out, 'J^st_mean', result[row], alg, algs)
-        out = benchmark_table.print_and_highlight_best_std(out, 'J^f_mean', result[row], alg, algs)
-        if regret:
-          out = benchmark_table.print_and_highlight_best_std(out, 'Jr^f_mean', result[row], alg, algs)
+      if energy_cost_bool:
+        for alg in algs:
+          keys = ['success', 't^st_mean', 'J^st_mean', 'J^f_mean']
+          out += benchmark_table.generate_latex_row_cells(result[row], alg, algs, keys, digits=1, show_std=True, is_anytime=True)
+        out += r"\\"
+        f.write(out + "\n")
+      else:
+        for alg in algs:
+          out = benchmark_table.print_and_highlight_best_max(out, 'success', result[row], alg, algs)
+          out = benchmark_table.print_and_highlight_best_std(out, 't^st_mean', result[row], alg, algs)
+          out = benchmark_table.print_and_highlight_best_std(out, 'J^st_mean', result[row], alg, algs)
+          out = benchmark_table.print_and_highlight_best_std(out, 'J^f_mean', result[row], alg, algs)
+          if regret:
+            out = benchmark_table.print_and_highlight_best_std(out, 'Jr^f_mean', result[row], alg, algs)
 
-      out += r"\\"
-      f.write(out)
+        out += r"\\"
+        f.write(out)
 
     f.write("\n")
     f.write(r"\end{tabular}")
@@ -845,16 +859,16 @@ def write_table9(trials, timelimit):
   benchmark_table.gen_pdf(output_path)
 if __name__ == '__main__':
   trials = 5
-  timelimit = 5*60
+  timelimit = 5*60*60
   # write_table1(trials, timelimit)
   # write_table2(trials, timelimit)
   # write_table3(trials, timelimit)
   # write_table4(trials, timelimit)
   # write_table5(trials, timelimit)
   # write_table6(trials, timelimit) # window, wall together
-  write_table7(trials, timelimit) # hast std
+  # write_table7(trials, timelimit) # has std, energy_cost
   # write_table8(trials, timelimit)
-  # write_table9(trials, timelimit) # window, wall together. As table6, but has std
+  write_table9(trials, timelimit) # window, wall together. As table6, but has std
 
 
 
