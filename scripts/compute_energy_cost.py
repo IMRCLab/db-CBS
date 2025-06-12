@@ -52,13 +52,10 @@ def process_all_runs(root_dir, problems, algorithms, file_name_options):
         # if the computation was succesfull, then do the energy cost estimation 
         else:
            energy_cost = 0 # for each robot
-           for i in range(len(result_data)):
+           for i in range(len(result_data["result"])):
               actions = result_data["result"][i]["actions"]
               actions = np.array(actions)
-              # Compute squared norm for each action (||u||^2)
-              squared_norms = np.sum(actions**2, axis=1)
-              # Sum over all time steps
-              energy_cost += np.sum(squared_norms)
+              energy_cost += np.sum(np.linalg.norm(actions, axis=1)**2)
         
         stats_data["stats"][len(stats_data["stats"])-1]["energy_cost"] = float(energy_cost) # append to the end,
         # since for sst we might have anytime solutions, but always keep the best
