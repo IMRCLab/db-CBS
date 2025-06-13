@@ -318,6 +318,7 @@ int main(int argc, char *argv[])
   options_tdbastar.max_motions = cfg["num_primitives_0"].as<size_t>();
   // options_tdbastar.max_expands = 8000; // limit the low-level node expansion
   stats << "stats: " << "\n";
+  int success_run = 0;
   for (size_t iteration = 0;; ++iteration)
   {
     std::cout << "iteration: " << iteration << std::endl;
@@ -521,6 +522,7 @@ int main(int argc, char *argv[])
                                                    sum_robot_cost);
           if (feasible)
           {
+            success_run++;
             solved_db = true;
             std::cout << "Joint optimization is done" << std::endl;
             auto end = std::chrono::steady_clock::now();
@@ -571,7 +573,7 @@ int main(int argc, char *argv[])
                 }
               }
               // return 0;
-              if (check_anytime)
+              if (check_anytime && success_run == 1)
               {
                 std::string tmp_File1 = output_folder + "/discrete_" + std::to_string(iteration) + ".yaml";
                 discrete_search_sol.to_yaml_format(tmp_File1.c_str());
