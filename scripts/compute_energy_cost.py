@@ -53,6 +53,7 @@ def process_all_runs(root_dir, problems, algorithms, file_name_options):
         else:
            energy_cost = 0 # for each robot
            for i in range(len(result_data["result"])):
+              print(f"robot:  {i}")
               actions = result_data["result"][i]["actions"]
               actions = np.array(actions)
               energy_cost += np.sum(np.linalg.norm(actions, axis=1)**2)
@@ -67,7 +68,6 @@ def process_all_runs(root_dir, problems, algorithms, file_name_options):
         print(f"  Result keys: {list(result_data.keys()) if result_data else 'None'}")
         print(f"  Has cost in stats: {has_cost}")
         print(f"  Energy cost: {energy_cost}")
-
 
 def main():
   # 2D case

@@ -65,6 +65,7 @@ def compute_results(instances, algs, results_path, trials, T, regret=False):
             final_costs.append(last_cost)
           if last_cost is not None and final_cost_base is not None:
             final_regrets.append((last_cost - final_cost_base)/last_cost * 100)
+      # compute for the currently considered algorithm      
       result[alg] = {
         'success': len(initial_times)/itrials,
         't^st_mean': np.mean(initial_times) if len(initial_times) > 0 else None,
@@ -83,7 +84,7 @@ def compute_results(instances, algs, results_path, trials, T, regret=False):
   return all_result
 
 # supports std, energy cost also
-def compute_results_with_std(instances, algs, results_path, trials, T, regret=False, energy_cost=True):
+def compute_results_with_std(instances, algs, results_path, trials, T, regret=False, energy_cost=True, anytime=False):
   all_result = dict()
 
   if isinstance(trials, int):
@@ -108,8 +109,9 @@ def compute_results_with_std(instances, algs, results_path, trials, T, regret=Fa
       final_costs = []
       final_regrets = []
 
-      all_energy_costs = []
+      initial_energy_costs = []
       initial_energy_regrets = []
+      final_energy_costs = []
       final_energy_costs = []
       final_energy_regrets = []
 
@@ -130,8 +132,8 @@ def compute_results_with_std(instances, algs, results_path, trials, T, regret=Fa
                 if k == 0:
                   initial_time_base = d["t"]
                 final_cost_base = d["cost"]
-                if energy_cost:
-                  final_energy_cost_base = d["energy_cost"]
+              if energy_cost:
+                final_energy_cost_base = stats["stats"][len(stats["stats"])-1]["energy_cost"] # if stats, then there is energy_cost
         
         with open(stat_file) as sf:
           stats = yaml.safe_load(sf)
@@ -145,18 +147,20 @@ def compute_results_with_std(instances, algs, results_path, trials, T, regret=Fa
             if k == 0:
               initial_times.append(d["t"])
               initial_costs.append(d["cost"])
+              if energy_cost and anytime:
+                initial_energy_costs.append(d["energy_cost"])
               if initial_time_base is not None:
                 initial_time_regrets.append((d["t"] - initial_time_base)/d["t"] * 100)
                 initial_regrets.append((d["cost"] - final_cost_base)/d["cost"] * 100)
-                # if energy_cost :
-                  # initial_energy_regrets.append((d["energy_cost"] - final_energy_cost_base)/d["energy_cost"] * 100)
+                if energy_cost and anytime:
+                  initial_energy_regrets.append((d["energy_cost"] - final_energy_cost_base)/d["energy_cost"] * 100)
 
 
             last_cost = d["cost"]
           
-          # i have energy cost for the final solution. If it's not anytime, then anyway stats has length 1.
+          # anytime/not anytime the last stats is the best solution cost, thus the energy_cost is computed for this
           if energy_cost:
-            all_energy_costs.append(stats["stats"][len(stats["stats"])-1]["energy_cost"])
+            final_energy_costs.append(stats["stats"][len(stats["stats"])-1]["energy_cost"])
 
           if last_cost is not None:
             final_costs.append(last_cost)
@@ -165,8 +169,7 @@ def compute_results_with_std(instances, algs, results_path, trials, T, regret=Fa
             final_regrets.append((last_cost - final_cost_base)/last_cost * 100)  
 
           if energy_cost:
-
-            last_energy_cost = all_energy_costs[-1] # take the final one
+            last_energy_cost = final_energy_costs[-1] # take the last one
 
             if last_energy_cost is not None:
               final_energy_costs.append(last_energy_cost)
@@ -189,13 +192,20 @@ def compute_results_with_std(instances, algs, results_path, trials, T, regret=Fa
         'Jr^f_mean': np.mean(final_regrets) if len(final_regrets) > 0 else None,
 
       }
-      # no final, no initial, the only one that the final solution is saved for.
+      # if anytime - first, final. If not - final, since it goes in the end of stats. E - stands for Je
       if energy_cost:
         result[alg].update({
-          'J_e_mean': np.mean(final_energy_costs) if len(final_energy_costs) > 0 else None,
-          'J_e_std': np.std(final_energy_costs) if len(final_energy_costs) > 0 else None,
-          'J_er_mean': np.mean(final_energy_regrets) if len(final_energy_regrets) > 0 else None,
+          'E^f_mean': np.mean(final_energy_costs) if len(final_energy_costs) > 0 else None,
+          'E^f_std': np.std(final_energy_costs) if len(final_energy_costs) > 0 else None,
+          'Er^f_mean': np.mean(final_energy_regrets) if len(final_energy_regrets) > 0 else None,
         })
+        if anytime:
+          result[alg].update({
+            'E^st_mean': np.mean(initial_energy_costs) if len(initial_energy_costs) > 0 else None,
+            'E^st_std': np.std(initial_energy_costs) if len(initial_energy_costs) > 0 else None,
+            'Er^st_mean': np.mean(initial_energy_regrets) if len(initial_energy_regrets) > 0 else None,
+          })
+        
 
       if alg == "s2m2" and len(initial_times) == 0 and "unicycle_sphere" not in instance:
         for key in result[alg].keys():
@@ -280,7 +290,7 @@ def generate_latex_row_cells(result, alg, algs, keys, digits=1, show_std=True, i
     row = ""
     for key in keys:
       row += " & "
-      if key == 'J^st_mean' and is_anytime==False: # only for 2D case we have no anytime
+      if key == 'J^st_mean': 
         val = result[alg].get(key)
         std = result[alg].get(key.replace('_mean', '_std'))
         is_best = val is not None and val != "*" and all(
@@ -288,14 +298,16 @@ def generate_latex_row_cells(result, alg, algs, keys, digits=1, show_std=True, i
             for a in algs if result[a].get(key) not in [None, "*"]
         )
         top = format_val_std(val, std, is_best)
-        key2 = 'J_e_mean'
+        key2 = 'E^f_mean' # if non-anytime, then the final stats=initial,final stats
+        if is_anytime: 
+          key2 = 'E^st_mean'
         val2 = result[alg].get(key2)
         std2 = result[alg].get(key2.replace('_mean', '_std'))
-        # Skip best check for J_e
+        # Skip best check for E, don't bold it
         bottom = format_val_std(val2, std2, is_best=False)
         row += r"\begin{tabular}[t]{@{}l@{}}" + top + r" \\" + bottom + r"\end{tabular}"
 
-      elif key == 'J^f_mean' and is_anytime==True: # 3D case where we have final solution
+      elif key == 'J^f_mean': # 3D case where we have final solution
         val = result[alg].get(key)
         std = result[alg].get(key.replace('_mean', '_std'))
         is_best = val is not None and val != "*" and all(
@@ -303,12 +315,15 @@ def generate_latex_row_cells(result, alg, algs, keys, digits=1, show_std=True, i
             for a in algs if result[a].get(key) not in [None, "*"]
         )
         top = format_val_std(val, std, is_best)
-        key2 = 'J_e_mean'
+        key2 = 'E^f_mean'
         val2 = result[alg].get(key2)
         std2 = result[alg].get(key2.replace('_mean', '_std'))
-        # Skip best check for J_e
-        bottom = format_val_std(val2, std2, is_best=False)
-        row += r"\begin{tabular}[t]{@{}l@{}}" + top + r" \\" + bottom + r"\end{tabular}"
+        if val2 is not None: # some problems has not been tested (tro-18 with window)
+          # Skip best check for E, do not bold it
+          bottom = format_val_std(val2, std2, is_best=False)
+          row += r"\begin{tabular}[t]{@{}l@{}}" + top + r" \\" + bottom + r"\end{tabular}"
+        else:
+          row += r"\begin{tabular}[t]{@{}l@{}}" + top + r"\end{tabular}"
 
       elif key == 'Jr^st_mean':
         val = result[alg].get(key)
@@ -318,7 +333,23 @@ def generate_latex_row_cells(result, alg, algs, keys, digits=1, show_std=True, i
             for a in algs if result[a].get(key) not in [None, "*"]
         )
         top = format_val_std(val, std, is_best)
-        key2 = 'J_er_mean'
+        key2 = 'Er^f_mean'
+        if is_anytime:
+          key2 = 'Er^st_mean'
+        val2 = result[alg].get(key2)
+        std2 = result[alg].get(key2.replace('_mean', '_std'))
+        bottom = format_val_std(val2, std2, is_best=False)
+        row += r"\begin{tabular}[t]{@{}l@{}}" + top + r" \\" + bottom + r"\end{tabular}"
+
+      elif key == 'Jr^f_mean':
+        val = result[alg].get(key)
+        std = result[alg].get(key.replace('_mean', '_std'))
+        is_best = val is not None and val != "*" and all(
+            round(val, digits) <= round(result[a].get(key), digits)
+            for a in algs if result[a].get(key) not in [None, "*"]
+        )
+        top = format_val_std(val, std, is_best)
+        key2 = 'Er^f_mean'
         val2 = result[alg].get(key2)
         std2 = result[alg].get(key2.replace('_mean', '_std'))
         bottom = format_val_std(val2, std2, is_best=False)
