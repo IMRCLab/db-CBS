@@ -4,7 +4,7 @@ from pathlib import Path
 import numpy as np
 
 
-def process_all_runs(root_dir, problems, algorithms, file_name_options):
+def process_all_runs(root_dir, problems, algorithms, file_name_options, anytime=False):
   for problem in problems:
     for alg in algorithms:
       if problem.endswith("hetero") and alg == "s2m2":
@@ -59,7 +59,22 @@ def process_all_runs(root_dir, problems, algorithms, file_name_options):
               energy_cost += np.sum(np.linalg.norm(actions, axis=1)**2)
         
         stats_data["stats"][len(stats_data["stats"])-1]["energy_cost"] = float(energy_cost) # append to the end,
-        # since for sst we might have anytime solutions, but always keep the best
+        # since we might have anytime solutions, but always keep the best
+        # check if you have solution from the first successful run
+        if anytime: 
+          for file in os.listdir(run_dir):
+              if file.startswith('optimization_') and file.endswith('.yaml'): # solution of the first successful run
+                  file_path = os.path.join(run_dir, file)
+                  with open(file_path, 'r') as f:
+                    first_result_data = yaml.safe_load(f)
+                  first_energy_cost = 0 # for each robot
+                  for i in range(len(first_result_data["result"])):
+                     print(f"robot:  {i}")
+                     actions = first_result_data["result"][i]["actions"]
+                     actions = np.array(actions)
+                     first_energy_cost += np.sum(np.linalg.norm(actions, axis=1)**2)
+          stats_data["stats"][0]["energy_cost"] = float(first_energy_cost) # append to the first successful itr.
+        # now dump all and save
         with open(stats_path, "w") as f:
             yaml.safe_dump(stats_data, f, default_flow_style=False, sort_keys=False)
         print(f"Updated energy cost in {stats_path}")
@@ -108,14 +123,14 @@ def main():
   # ]
 # 
 # 3D cases - Wall, Window examples
-  results_path = Path("../results/tro-plots/results-3d-5trials/")
+  results_path = Path("../results/tro-plots/3d-test/")
   instances = [
-    "drone2c",
-    "drone4c",
-    "drone8c",
-    "drone10c",
-    "drone12c",
-    "drone16c",   
+    # "drone2c",
+    # "drone4c",
+    # "drone8c",
+    # "drone10c",
+    # "drone12c",
+    # "drone16c",   
     "wall_drone8c",
     "wall_drone10c",
   ]
@@ -127,7 +142,7 @@ def main():
      "db-ecbs-conservative",
      "db-ecbs-residual",
   ]
-  process_all_runs(results_path, instances, algs, file_names)
+  process_all_runs(results_path, instances, algs, file_names, anytime=False)
 
 if __name__ == '__main__':
   main()

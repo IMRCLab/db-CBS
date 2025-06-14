@@ -281,7 +281,6 @@ def generate_latex_row_cells(result, alg, algs, keys, digits=1, show_std=True, i
       if show_std and std is not None:
         try:
             std_f = float(std)
-            # out += r" {\tiny\textcolor{gray}{$\pm" + f"{std_f:.{digits}f}" + r"$}}"
             out += r" {\scriptsize\textcolor{gray}{$\pm" + f"{std_f:.{digits}f}" + r"$}}"
         except:
             pass
@@ -301,11 +300,14 @@ def generate_latex_row_cells(result, alg, algs, keys, digits=1, show_std=True, i
         key2 = 'E^f_mean' # if non-anytime, then the final stats=initial,final stats
         if is_anytime: 
           key2 = 'E^st_mean'
-        val2 = result[alg].get(key2)
         std2 = result[alg].get(key2.replace('_mean', '_std'))
-        # Skip best check for E, don't bold it
-        bottom = format_val_std(val2, std2, is_best=False)
-        row += r"\begin{tabular}[t]{@{}l@{}}" + top + r" \\" + bottom + r"\end{tabular}"
+        val2 = result[alg].get(key2)
+        if val2 is not None: # some problems has not been tested (tro-18 with window)
+          # Skip best check for E, do not bold it
+          bottom = format_val_std(val2, std2, is_best=False)
+          row += r"\begin{tabular}[t]{@{}l@{}}" + top + r" \\" + bottom + r"\end{tabular}"
+        else:
+          row += r"\begin{tabular}[t]{@{}l@{}}" + top + r"\end{tabular}"
 
       elif key == 'J^f_mean': # 3D case where we have final solution
         val = result[alg].get(key)

@@ -557,7 +557,7 @@ def write_table7(trials, timelimit):
       if(alg == "db-ecbs"):
         out += r" & $p$ & $t [s]$ & $J^{\mathrm{st}} [s]$"
       else:
-        out += r" & $p$ & $t [s]$ & $J^{\mathrm{st}}[s] | E$ & $r | r_{\mathrm{e}} [\%]$"
+        out += r" & $p$ & $t [s]$ & $J^{\mathrm{st}}[s] | E^{\mathrm{st}}$ & $r | r_{\mathrm{e}} [\%]$"
     out += r"\\"
     f.write(out)
 
@@ -621,7 +621,6 @@ def write_table8(trials, timelimit):
 
   write_table(instances, algs, Path("../results/"), "paper_table3.pdf", trials, timelimit)
 
-# table 6 with std
 def write_table9(trials, timelimit):
   regret = False
   energy_cost_bool = True
@@ -658,7 +657,7 @@ def write_table9(trials, timelimit):
     "db-ecbs-conservative": "db-ECBS-C",
     "db-ecbs-residual": "db-ECBS-R",
   }
-  result = benchmark_table.compute_results_with_std(instances, algs, Path("../results/tro-plots/results-3d-5trials/"), trials, timelimit, True, energy_cost=energy_cost_bool, anytime=True)
+  result = benchmark_table.compute_results_with_std(instances, algs, Path("../results/tro-plots/3d-test/"), trials, timelimit, True, energy_cost=energy_cost_bool, anytime=True)
   
   # manually enter results for tro-18
   result_d2 = result["drone2c"]
@@ -676,9 +675,13 @@ def write_table9(trials, timelimit):
   }
   if energy_cost_bool:
     result_d2["tro-18"].update({
-      'J_e_mean': 5.68,
-      'J_e_std': 0.0,
-      'J_er_mean': None,
+      'E^st_mean': 5.68,
+      'E^st_std': 0.0,
+      'Er^st_mean': None,
+      'E^f_mean': 5.68,
+      'E^f_std': 0.0,
+      'Er^f_mean': None,
+
     })
   # n = 4
   result_d4 = result["drone4c"]
@@ -696,9 +699,13 @@ def write_table9(trials, timelimit):
   }
   if energy_cost_bool:
     result_d4["tro-18"].update({
-      'J_e_mean': 5.28,
-      'J_e_std': 0.0,
-      'J_er_mean': None,
+      'E^st_mean': 5.28,
+      'E^st_std': 0.0,
+      'Er^st_mean': None,
+      'E^f_mean': 5.28,
+      'E^f_std': 0.0,
+      'Er^f_mean': None,
+
     })
   # n = 8
   result_d8 = result["drone8c"]
@@ -716,9 +723,13 @@ def write_table9(trials, timelimit):
   }
   if energy_cost_bool:
     result_d8["tro-18"].update({
-      'J_e_mean': 11.85,
-      'J_e_std': 0.0,
-      'J_er_mean': None,
+      'E^st_mean': 11.85,
+      'E^st_std': 0.0,
+      'Er^st_mean': None,
+      'E^f_mean': 11.85,
+      'E^f_std': 0.0,
+      'Er^f_mean': None,
+
     })
   # n = 10
   result_d10 = result["drone10c"]
@@ -736,9 +747,13 @@ def write_table9(trials, timelimit):
   }
   if energy_cost_bool:
     result_d10["tro-18"].update({
-      'J_e_mean': 13.51,
-      'J_e_std': 0.0,
-      'J_er_mean': None,
+      'E^st_mean': 13.51,
+      'E^st_std': 0.0,
+      'Er^st_mean': None,
+      'E^f_mean': 13.51,
+      'E^f_std': 0.0,
+      'Er^f_mean': None,
+
     })
   # n = 12
   result_d12 = result["drone12c"]
@@ -756,9 +771,13 @@ def write_table9(trials, timelimit):
   }
   if energy_cost_bool:
     result_d12["tro-18"].update({
-      'J_e_mean': 17.13,
-      'J_e_std': 0.0,
-      'J_er_mean': None,
+      'E^st_mean': 17.13,
+      'E^st_std': 0.0,
+      'Er^st_mean': None,
+      'E^f_mean': 17.13,
+      'E^f_std': 0.0,
+      'Er^f_mean': None,
+
     })
   # n = 16
   result_d16 = result["drone16c"]
@@ -776,9 +795,13 @@ def write_table9(trials, timelimit):
   }
   if energy_cost_bool:
     result_d16["tro-18"].update({
-      'J_e_mean': 33.1,
-      'J_e_std': 0.0,
-      'J_er_mean': None,
+      'E^st_mean': 33.1,
+      'E^st_std': 0.0,
+      'Er^st_mean': None,
+      'E^f_mean': 33.1,
+      'E^f_std': 0.0,
+      'Er^f_mean': None,
+
     })
   # wall8
   result_wall8 = result["wall_drone8c"]
@@ -796,9 +819,12 @@ def write_table9(trials, timelimit):
   }
   if energy_cost_bool:
     result_wall8["tro-18"].update({
-      'J_e_mean': None,
-      'J_e_std': 0.0,
-      'J_er_mean': None,
+      'E^st_mean': None,
+      'E^st_std': 0.0,
+      'Er^st_mean': None,
+      'E^f_mean': None,
+      'E^f_std': 0.0,
+      'Er^f_mean': None,
     })
   # wall10
   result_wall10 = result["wall_drone10c"]
@@ -816,9 +842,12 @@ def write_table9(trials, timelimit):
   }
   if energy_cost_bool:
     result_wall10["tro-18"].update({
-      'J_e_mean': None,
-      'J_e_std': 0.0,
-      'J_er_mean': None,
+      'E^st_mean': None,
+      'E^st_std': 0.0,
+      'Er^st_mean': None,
+      'E^f_mean': None,
+      'E^f_std': 0.0,
+      'Er^f_mean': None,
     })
   output_path = Path("../results/3d_paper_table.pdf")
   with open(output_path.with_suffix(".tex"), "w") as f:
@@ -862,9 +891,9 @@ def write_table9(trials, timelimit):
     if not regret:
       for alg in algs:
         if energy_cost_bool:
-          out += r" & $p$ & $t^{\mathrm{st}} [s]$ & $J^{\mathrm{st}} [s]$ & $J^{f} | J_{\mathrm{e}}^{f} [s]$"
+          out += r" & $p$ & $t^{\mathrm{st}} [s]$ & $J^{\mathrm{st}} [s] | E^{\mathrm{st}}$ & $J^{f} [s] | E^{f}$"
         else: 
-          out += r" & $p$ & $t^{\mathrm{st}} [s]$ & $J^{\mathrm{st}} [s]$ & $J^{f} [s]$"
+          out += r" & $p$ & $t^{\mathrm{st}} [s]$ & $J^{\mathrm{st}} [s] | E^{\mathrm{st}}$ & $J^{f} [s] | E^{f}$"
     else:
       for alg in algs:
         out += r" & $p$ & $t_r^{\mathrm{st}} [\%]$ & $J_r^{f} [\%]$"
@@ -919,9 +948,9 @@ if __name__ == '__main__':
   # write_table4(trials, timelimit)
   # write_table5(trials, timelimit)
   # write_table6(trials, timelimit) # window, wall together
-  write_table7(trials, timelimit) # has std, energy_cost
+  # write_table7(trials, timelimit) # has std, energy_cost
   # write_table8(trials, timelimit)
-  # write_table9(trials, timelimit) # window, wall together. As table6, but has std
+  write_table9(trials, timelimit) # window, wall together. As table6, but has std
 
 
 
