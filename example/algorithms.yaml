@@ -118,10 +118,10 @@ db-ecbs-residual:
     heuristic1_num_primitives_0: 100 
   '*wall_drone8c':
     heuristic1_num_primitives_0: 500  
-    suboptimality_factor: 2.0
+    suboptimality_factor: 1.5 # 2.0
   '*wall_drone10c':
     heuristic1_num_primitives_0: 500  
-    suboptimality_factor: 2.3
+    suboptimality_factor: 2.0 # 2.3
 
 db-ecbs-conservative:
   default:
@@ -146,8 +146,8 @@ db-ecbs-conservative:
     heuristic1_num_primitives_0: 100 
   '*wall_drone8c':
     heuristic1_num_primitives_0: 500  
-    suboptimality_factor: 2.0
+    suboptimality_factor: 1.5 # 2.0
   '*wall_drone10c':
     heuristic1_num_primitives_0: 500  
-    suboptimality_factor: 2.3
+    suboptimality_factor: 2.0 # 2.3
 

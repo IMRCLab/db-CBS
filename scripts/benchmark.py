@@ -202,7 +202,7 @@ def main():
 		# "drone28c",
 		# "drone32c",
 		# "swap3_drone",
-		# "wall_drone8c",
+		"wall_drone8c",
 		"wall_drone10c",
 	]
 	# for kind in ["unicycle_sphere", "hetero"]: 
