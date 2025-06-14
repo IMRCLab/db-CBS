@@ -202,7 +202,7 @@ def main():
 		# "drone28c",
 		# "drone32c",
 		# "swap3_drone",
-		"wall_drone8c",
+		# "wall_drone8c",
 		"wall_drone10c",
 	]
 	# for kind in ["unicycle_sphere", "hetero"]: 
@@ -220,7 +220,7 @@ def main():
 		"db-ecbs-conservative",
 	]
 	trials = 5 
-	timelimit = 15 * 60 #2 * 60 * 60 
+	timelimit = 10 * 60 #2 * 60 * 60 
 
 	tasks = []
 	for instance in instances:
