@@ -150,7 +150,7 @@ def main():
 		# "swap1_double_integrator",
 		# 2 robot cases
 		# "swap2_unicycle",
-		# "swap2_unicycle_sphere",
+		"swap2_unicycle_sphere",
 		# "swap2_unicycle_kink",
 		# "swap2_double_integrator",
 		# "swap2_trailer",
@@ -159,9 +159,9 @@ def main():
 		# "makespan_vs_soc_1",
 		# "makespan_vs_soc_0",
 		# "alcove_unicycle",
-		# "alcove_unicycle_sphere",
+		"alcove_unicycle_sphere",
 		# "at_goal_unicycle",
-		# "at_goal_unicycle_sphere",
+		"at_goal_unicycle_sphere",
 		# 3 robot cases
 		# "swap3_unicycle",
 		# "swap3_unicycle_sphere",
@@ -197,7 +197,7 @@ def main():
 		# "drone8c",
 		# "drone10c",
 		# "drone12c",
-		"drone16c",
+		# "drone16c",
 		# "drone24c",
 		# "drone28c",
 		# "drone32c",
@@ -205,22 +205,22 @@ def main():
 		# "wall_drone8c",
 		# "wall_drone10c",
 	]
-	# for kind in ["unicycle_sphere", "hetero"]: 
-		# for n in [2,4,8]:
-			# for k in range(10):
-				# instances.append("gen_p10_n{}_{}_{}".format(n,k, kind))
+	for kind in ["unicycle_sphere", "hetero"]: 
+		for n in [2,4,8]:
+			for k in range(10):
+				instances.append("gen_p10_n{}_{}_{}".format(n,k, kind))
 
 	algs = [
-		# "sst",
-		# "s2m2",
-		# "k-cbs",
-		# "db-cbs",
-		# "db-ecbs",
-		"db-ecbs-residual",
-		"db-ecbs-conservative",
+		"sst",
+		"s2m2",
+		"k-cbs",
+		"db-cbs",
+		"db-ecbs",
+		# "db-ecbs-residual",
+		# "db-ecbs-conservative",
 	]
-	trials = 5 
-	timelimit = 2.5 * 60 * 60 
+	trials = 10
+	timelimit = 5 * 60 # 2.5 * 60 * 60 
 
 	tasks = []
 	for instance in instances:

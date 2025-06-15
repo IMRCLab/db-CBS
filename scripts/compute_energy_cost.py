@@ -130,9 +130,9 @@ def main():
     # "drone8c",
     # "drone10c",
     # "drone12c",
-    # "drone16c",   
-    "wall_drone8c",
-    "wall_drone10c",
+    "drone16c",   
+    # "wall_drone8c",
+    # "wall_drone10c",
   ]
   
   file_names = [
@@ -142,7 +142,7 @@ def main():
      "db-ecbs-conservative",
      "db-ecbs-residual",
   ]
-  process_all_runs(results_path, instances, algs, file_names, anytime=False)
+  process_all_runs(results_path, instances, algs, file_names, anytime=True)
 
 if __name__ == '__main__':
   main()
