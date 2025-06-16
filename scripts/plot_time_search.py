@@ -260,7 +260,8 @@ def combined_optimization_analysis(
         instance_labels = []
 
         for instance in scaling_instances:
-            instance_labels.append(instance)
+            # instance_labels.append(instance)
+            instance_labels.append(instance[:-1])
             durations = {key: [] for key in time_keys}
             timesteps = []
             for it in range(scaling_itr):

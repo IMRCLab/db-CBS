@@ -912,10 +912,6 @@ def write_table9(trials, timelimit):
 
       if energy_cost_bool:
         for alg in algs:
-          if alg == 'tro-18':
-            show_std_bool = False
-          else:
-            show_std_bool = True
           keys = ['success', 't^st_mean', 'J^st_mean', 'J^f_mean']
           out += benchmark_table.generate_latex_row_cells(result[row], alg, algs, keys, digits=1, show_std=show_std_bool, is_anytime=True)
         out += r"\\"
