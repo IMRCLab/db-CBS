@@ -134,7 +134,7 @@ def compute_results_with_std(instances, algs, results_path, trials, T, regret=Fa
                 final_cost_base = d["cost"]
               if energy_cost:
                 final_energy_cost_base = stats["stats"][len(stats["stats"])-1]["energy_cost"] # if stats, then there is energy_cost
-        
+
         with open(stat_file) as sf:
           stats = yaml.safe_load(sf)
         if stats is not None and "stats" in stats and stats["stats"] is not None:
@@ -176,34 +176,35 @@ def compute_results_with_std(instances, algs, results_path, trials, T, regret=Fa
 
             if last_energy_cost is not None and final_energy_cost_base is not None:
               final_energy_regrets.append((last_energy_cost - final_energy_cost_base)/last_energy_cost * 100) 
-
+      
+      success_rate = len(initial_times)/itrials # success rate is rounded up. Numbers < 0.5 are zeroed for the table
       result[alg] = {
         'success': len(initial_times)/itrials,
-        't^st_mean': np.mean(initial_times) if len(initial_times) > 0 else None,
-        't^st_std': np.std(initial_times) if len(initial_times) > 0 else None,
-        'tr^st_mean': np.mean(initial_time_regrets) if len(initial_time_regrets) > 0 else None,
+        't^st_mean': np.mean(initial_times) if success_rate > 0.05 else None,
+        't^st_std': np.std(initial_times) if success_rate > 0.05 else None,
+        'tr^st_mean': np.mean(initial_time_regrets) if success_rate > 0.05 else None,
 
-        'J^st_mean': np.mean(initial_costs) if len(initial_costs) > 0 else None,
-        'J^st_std': np.std(initial_costs) if len(initial_costs) > 0 else None,
-        'Jr^st_mean': np.mean(initial_regrets) if len(initial_regrets) > 0 else None,
+        'J^st_mean': np.mean(initial_costs) if success_rate > 0.05 else None,
+        'J^st_std': np.std(initial_costs) if success_rate > 0.05 else None,
+        'Jr^st_mean': np.mean(initial_regrets) if success_rate > 0.05 else None,
 
-        'J^f_mean': np.mean(final_costs) if len(final_costs) > 0 else None,
-        'J^f_std': np.std(final_costs) if len(final_costs) > 0 else None,
-        'Jr^f_mean': np.mean(final_regrets) if len(final_regrets) > 0 else None,
+        'J^f_mean': np.mean(final_costs) if success_rate > 0.05 else None,
+        'J^f_std': np.std(final_costs) if success_rate > 0.05 else None,
+        'Jr^f_mean': np.mean(final_regrets) if success_rate > 0.05 else None,
 
       }
       # if anytime - first, final. If not - final, since it goes in the end of stats. E - stands for Je
       if energy_cost:
         result[alg].update({
-          'E^f_mean': np.mean(final_energy_costs) if len(final_energy_costs) > 0 else None,
-          'E^f_std': np.std(final_energy_costs) if len(final_energy_costs) > 0 else None,
-          'Er^f_mean': np.mean(final_energy_regrets) if len(final_energy_regrets) > 0 else None,
+          'E^f_mean': np.mean(final_energy_costs) if success_rate > 0.05 else None,
+          'E^f_std': np.std(final_energy_costs) if success_rate > 0.05 else None,
+          'Er^f_mean': np.mean(final_energy_regrets) if success_rate > 0.05 else None,
         })
         if anytime:
           result[alg].update({
-            'E^st_mean': np.mean(initial_energy_costs) if len(initial_energy_costs) > 0 else None,
-            'E^st_std': np.std(initial_energy_costs) if len(initial_energy_costs) > 0 else None,
-            'Er^st_mean': np.mean(initial_energy_regrets) if len(initial_energy_regrets) > 0 else None,
+            'E^st_mean': np.mean(initial_energy_costs) if success_rate > 0.05 else None,
+            'E^st_std': np.std(initial_energy_costs) if success_rate > 0.05 else None,
+            'Er^st_mean': np.mean(initial_energy_regrets) if success_rate > 0.05 else None,
           })
         
 
@@ -340,8 +341,15 @@ def generate_latex_row_cells(result, alg, algs, keys, digits=1, show_std=True, i
           key2 = 'Er^st_mean'
         val2 = result[alg].get(key2)
         std2 = result[alg].get(key2.replace('_mean', '_std'))
-        bottom = format_val_std(val2, std2, is_best=False)
-        row += r"\begin{tabular}[t]{@{}l@{}}" + top + r" \\" + bottom + r"\end{tabular}"
+        if val2 is not None: # some problems has not been tested (tro-18 with window)
+          # Skip best check for E, do not bold it
+          bottom = format_val_std(val2, std2, is_best=False)
+          row += r"\begin{tabular}[t]{@{}l@{}}" + top + r" \\" + bottom + r"\end{tabular}"
+        else:
+          row += r"\begin{tabular}[t]{@{}l@{}}" + top + r"\end{tabular}"
+
+        # bottom = format_val_std(val2, std2, is_best=False)
+        # row += r"\begin{tabular}[t]{@{}l@{}}" + top + r" \\" + bottom + r"\end{tabular}"
 
       elif key == 'Jr^f_mean':
         val = result[alg].get(key)
@@ -354,8 +362,15 @@ def generate_latex_row_cells(result, alg, algs, keys, digits=1, show_std=True, i
         key2 = 'Er^f_mean'
         val2 = result[alg].get(key2)
         std2 = result[alg].get(key2.replace('_mean', '_std'))
-        bottom = format_val_std(val2, std2, is_best=False)
-        row += r"\begin{tabular}[t]{@{}l@{}}" + top + r" \\" + bottom + r"\end{tabular}"
+        if val2 is not None: # some problems has not been tested (tro-18 with window)
+          # Skip best check for E, do not bold it
+          bottom = format_val_std(val2, std2, is_best=False)
+          row += r"\begin{tabular}[t]{@{}l@{}}" + top + r" \\" + bottom + r"\end{tabular}"
+        else:
+          row += r"\begin{tabular}[t]{@{}l@{}}" + top + r"\end{tabular}"
+
+        # bottom = format_val_std(val2, std2, is_best=False)
+        # row += r"\begin{tabular}[t]{@{}l@{}}" + top + r" \\" + bottom + r"\end{tabular}"
 
       else:
         val = result[alg].get(key)
@@ -409,7 +424,6 @@ def get_alg_name(alg_key):
 def write_table(rows, algs, results_path, fname, trials, T, regret=False):
 
   result = compute_results(rows, algs, results_path, trials, T, regret)
-  print(result)
   output_path = Path(results_path) / Path(fname)
   with open(output_path.with_suffix(".tex"), "w") as f:
 

@@ -7,11 +7,11 @@ import numpy as np
 def process_all_runs(root_dir, problems, algorithms, file_name_options, anytime=False):
   for problem in problems:
     for alg in algorithms:
-      if problem.endswith("hetero") and alg == "s2m2":
+      if  problem.endswith("hetero") and alg == "s2m2": # s2m2 is not tested with hetero example
           print(f"Skipping {problem}/{alg}")
           continue
 
-      for run_id in range(5):  # 000 to 004
+      for run_id in range(10):  # 000 to 004
         run_folder = f"{run_id:03d}"
         run_dir = os.path.join(root_dir, problem, alg, run_folder)
 
@@ -53,7 +53,7 @@ def process_all_runs(root_dir, problems, algorithms, file_name_options, anytime=
         else:
            energy_cost = 0 # for each robot
            for i in range(len(result_data["result"])):
-              print(f"robot:  {i}")
+              # print(f"robot:  {i}")
               actions = result_data["result"][i]["actions"]
               actions = np.array(actions)
               energy_cost += np.sum(np.linalg.norm(actions, axis=1)**2)
@@ -69,7 +69,7 @@ def process_all_runs(root_dir, problems, algorithms, file_name_options, anytime=
                     first_result_data = yaml.safe_load(f)
                   first_energy_cost = 0 # for each robot
                   for i in range(len(first_result_data["result"])):
-                     print(f"robot:  {i}")
+                    #  print(f"robot:  {i}")
                      actions = first_result_data["result"][i]["actions"]
                      actions = np.array(actions)
                      first_energy_cost += np.sum(np.linalg.norm(actions, axis=1)**2)
@@ -86,63 +86,62 @@ def process_all_runs(root_dir, problems, algorithms, file_name_options, anytime=
 
 def main():
   # 2D case
-  # results_path = Path("../results/tro-plots/2d-5/")
-  # base_patterns = [
-    # "gen_p10_n2_*_unicycle_sphere",
-    # "gen_p10_n4_*_unicycle_sphere",
-    # "gen_p10_n8_*_unicycle_sphere",
-    # "gen_p10_n2_*_hetero",
-    # "gen_p10_n4_*_hetero",
-    # "gen_p10_n8_*_hetero",
-  # ]
-# 
-  # instances = [
-      # pattern.replace("*", str(i))
-      # for pattern in base_patterns
-      # for i in range(10)
-  # ]
-  # instances = []
-  # instances.append("swap2_unicycle_sphere")
-  # instances.append("alcove_unicycle_sphere")
-  # instances.append("at_goal_unicycle_sphere")    
-  # 
-  # algs = [
+  results_path = Path("../results/tro-plots/2d-10-test/")
+  base_patterns = [
+    "gen_p10_n2_*_unicycle_sphere",
+    "gen_p10_n4_*_unicycle_sphere",
+    "gen_p10_n8_*_unicycle_sphere",
+    "gen_p10_n2_*_hetero",
+    "gen_p10_n4_*_hetero",
+    "gen_p10_n8_*_hetero",
+  ]
+
+  instances = [
+      pattern.replace("*", str(i))
+      for pattern in base_patterns
+      for i in range(10)
+  ]
+  instances.append("swap2_unicycle_sphere")
+  instances.append("alcove_unicycle_sphere")
+  instances.append("at_goal_unicycle_sphere")    
+  
+  algs = [
     # "sst",
-    # "s2m2",
+    "s2m2",
     # "k-cbs",
     # "db-cbs",
     # "db-ecbs",
-  # ]
-# 
-  # file_names = [
+  ]
+
+  file_names = [
       # "result_ompl.yaml",
       # "result_kcbs.yaml",
-      # "result_s2sm.yaml",
+      "result_s2sm.yaml",
       # "result_dbcbs_opt.yaml",
       # "result_dbecbs_opt.yaml",
-  # ]
-# 
+  ]
+
 # 3D cases - Wall, Window examples
-  results_path = Path("../results/tro-plots/3d-test/")
-  instances = [
+  # results_path = Path("../results/tro-plots/3d-test/")
+  # instances = [
     # "drone2c",
     # "drone4c",
     # "drone8c",
     # "drone10c",
     # "drone12c",
-    "drone16c",   
+    # "drone16c",   
     # "wall_drone8c",
     # "wall_drone10c",
-  ]
+  # ]
   
-  file_names = [
-      "result_dbecbs_opt.yaml",
-  ]
-  algs = [
-     "db-ecbs-conservative",
-     "db-ecbs-residual",
-  ]
-  process_all_runs(results_path, instances, algs, file_names, anytime=True)
+  # file_names = [
+  #     "result_dbecbs_opt.yaml",
+  # ]
+  # algs = [
+  #    "db-ecbs-conservative",
+  #    "db-ecbs-residual",
+  # ]
+  process_all_runs(results_path, instances, algs, file_names, anytime=False)
 
 if __name__ == '__main__':
   main()

@@ -6,6 +6,8 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 from matplotlib import gridspec
 import matplotlib.lines as mlines
+# colors = ['#005A8C', '#D55E00', '#D55E00', '#009E73', #E69F00'] # blue, orange, vermilion, blueish green, orange light
+
 # I - for the computation time plot
 def read_yaml(file_path):
     # Read and parse the YAML file
@@ -96,8 +98,8 @@ def time_analysis_plot_optimization(instances, itr, dec_var=False):
     folder = "/home/akmarak-laptop/IMRC/db-CBS/results/tro-plots/optimization_scalability/"
     time_keys = ["duration_discrete", "duration_opt"]
     labels = ["Discrete Search", "Optimization"]
-    colors = ['orange', 'grey']
-
+    # colors = ['orange', 'grey']
+    colors = ['#005A8C', '#D55E00']
     means = {key: [] for key in time_keys}
     stds = {key: [] for key in time_keys}
     timesteps_means = []  # mean value for several iterations for each problem instance
@@ -134,7 +136,7 @@ def time_analysis_plot_optimization(instances, itr, dec_var=False):
             
         # Compute mean and std deviation
         for key in time_keys:
-            # if durations[key]:
+            # if durations[key]: # in seconds
                 # print(durations[key])
                 # means[key].append(np.mean(durations[key]))
                 # stds[key].append(np.std(durations[key]))
@@ -193,21 +195,31 @@ def combined_optimization_analysis(
     if scaling_instances is None:
         scaling_instances = []
 
+    plt.rcParams.update({
+    'font.size': 12,
+    'axes.titlesize': 14,
+    'axes.labelsize': 13,
+    'xtick.labelsize': 12,
+    'ytick.labelsize': 11,
+    'legend.fontsize': 12,
+    })
     fig, axs = None, []
     num_plots = int(plot_complexity) + int(plot_scaling)
     if num_plots > 1:
-        fig, axs = plt.subplots(num_plots, 1, figsize=(8, 5 * num_plots))
-        axs = axs if isinstance(axs, np.ndarray) else [axs]
+        # fig, axs = plt.subplots(num_plots, 1, figsize=(8, 5 * num_plots))
+        # axs = axs if isinstance(axs, np.ndarray) else [axs]
+        fig, axs = plt.subplots(num_plots, 1, figsize=(8, min(15, 3 * num_plots)), constrained_layout=True)
+        axs = np.atleast_1d(axs)
 
     plot_index = 0
-
+    file_name = "result_dbecbs.yaml"
     # --- Complexity Plot ---
     if plot_complexity:
         folder = "/home/akmarak-laptop/IMRC/db-CBS/results/tro-plots/optimization_complexity/"
-        file_name = "result_dbecbs.yaml"
         stats_name = "stats.yaml"
         mean_max_timesteps = []
         mean_duration_opts = []
+        std_duration_opts = []
 
         for i in range(10):
             max_timesteps = []
@@ -229,23 +241,36 @@ def combined_optimization_analysis(
                 except Exception as e:
                     print(f"Error reading files for i={i}, it={it}: {e}")
 
-            mean_max_timesteps.append(np.mean(max_timesteps) if max_timesteps else float('nan'))
-            mean_duration_opts.append(np.mean(duration_opts) if duration_opts else float('nan'))
-
-        sorted_pairs = sorted(zip(mean_max_timesteps, mean_duration_opts), key=lambda x: x[0])
-        mean_max_timesteps_sorted, mean_duration_opts_sorted = zip(*sorted_pairs)
-        mean_max_timesteps_sorted = list(mean_max_timesteps_sorted)
-        mean_duration_opts_sorted = list(mean_duration_opts_sorted)
-
+            if max_timesteps and duration_opts:
+                mean_max_timesteps.append(np.mean(max_timesteps))
+                mean_duration_opts.append(np.mean(duration_opts))
+                std_duration_opts.append(np.std(duration_opts))
+            else:
+                mean_max_timesteps.append(float('nan'))
+                mean_duration_opts.append(float('nan'))
+                std_duration_opts.append(float('nan'))
+        sorted_triples = sorted(zip(mean_max_timesteps, mean_duration_opts, std_duration_opts), key=lambda x: x[0])
+        mean_max_timesteps_sorted, mean_duration_opts_sorted, std_duration_opts_sorted = zip(*sorted_triples)
+        mean_max_timesteps_sorted = np.array(mean_max_timesteps_sorted[:8])
+        mean_duration_opts_sorted = np.array(mean_duration_opts_sorted[:8])
+        std_duration_opts_sorted = np.array(std_duration_opts_sorted[:8])
         ax = axs[plot_index] if num_plots > 1 else plt
-        ax.tick_params(axis='both', labelsize=11) # little bigger ticks
-        ax.plot(mean_max_timesteps_sorted[:8], mean_duration_opts_sorted[:8])
+        # ax.tick_params(axis='both')
+
+        # Line plot
+        ax.plot(mean_max_timesteps_sorted, mean_duration_opts_sorted, label='Mean Runtime', color='#009E73', alpha=0.9)
+
+        # Shaded fill for stddev
+        ax.fill_between(mean_max_timesteps_sorted,
+                        mean_duration_opts_sorted - std_duration_opts_sorted,
+                        mean_duration_opts_sorted + std_duration_opts_sorted,
+                        color='#009E73', alpha=0.3, label='±1 Std. Dev.')
+
         ax.set_xlabel('Time Steps')
         ax.set_ylabel('Optimization Runtime [s]')
-        # ax.set_title("Optimization Complexity")
-        # ax.grid(True)
         ax.grid(which='both', axis='x', linestyle='dashed')
         ax.grid(which='both', axis='y', linestyle='dashed')
+        # ax.legend()
         plot_index += 1
 
     # --- Scaling Plot ---
@@ -253,7 +278,8 @@ def combined_optimization_analysis(
         folder = "/home/akmarak-laptop/IMRC/db-CBS/results/tro-plots/optimization_scalability/"
         time_keys = ["duration_discrete", "duration_opt"]
         labels = ["Discrete Search", "Optimization"]
-        colors = ['orange', 'grey']
+        # colors = ['orange', 'grey']
+        colors = ['#005A8C', '#D55E00']
         means = {key: [] for key in time_keys}
         stds = {key: [] for key in time_keys}
         timesteps_means = []
@@ -275,7 +301,11 @@ def combined_optimization_analysis(
                                 for key in time_keys:
                                     durations[key].append(stats[key])
                             if dec_var:
-                                timesteps.append(stats["discrete cost"])
+                                yaml_result_path = os.path.join(folder, instance, "db-ecbs-residual", f"00{it}", "result_dbecbs.yaml")
+                                with open(yaml_result_path, 'r') as file:
+                                    result_data = yaml.safe_load(file)   
+                                    max_timestep = max(len(res["actions"]) for res in result_data["result"])
+                                    timesteps.append(max_timestep)
                 except FileNotFoundError:
                     print(f"Error: File not found: {yaml_path}")
                 except yaml.YAMLError as e:
@@ -294,10 +324,12 @@ def combined_optimization_analysis(
                 timesteps_means.append(np.mean(timesteps))
 
         if dec_var:
-            nx = 3
-            nu = 3
+            # nx = 3
+            # nu = 3
+            print(timesteps_means)
             timesteps_means = [round(x) for x in timesteps_means]
-            x = [value * (nx + nu) for value in timesteps_means]
+            # x = [value * max(nx, nu) for value in timesteps_means]
+            x = [2*3, 4*3, 8*3, 10*3, 12*3, 16*3]
             instance_labels = [f"{a}-{b}" for a, b in zip(instance_labels, x)]
         else:
             x = np.arange(len(scaling_instances))
@@ -309,7 +341,7 @@ def combined_optimization_analysis(
             ax.plot(x, mean_vals, color=colors[i], label=labels[i], linewidth=2)
             ax.fill_between(x, mean_vals - std_vals, mean_vals + std_vals, color=colors[i], alpha=0.3)
 
-        ax.tick_params(axis='both', labelsize=11) # little bigger ticks
+        # ax.tick_params(axis='both') # little bigger ticks
         ax.set_xticks(x)
         ax.set_xticklabels(instance_labels, rotation=45, ha='right')
         ax.set_ylabel("Time [min]")
@@ -343,23 +375,30 @@ def delta_time_analysis_plot(data_iterations):
         'Search-NN': 'time_nearestNode'
         # 'Search' : 'time_search'
     }
-    colors = [
-    '#0072B2',  # Blue
-    '#D55E00',  # Vermilion
-    '#009E73',  # Bluish Green
-    '#E69F00',  # Orange
-    # '#CC79A7',  # Reddish Purple
-]
+    # colors = [
+    # '#0072B2',  # Blue
+    # '#D55E00',  # Vermilion
+    # '#009E73',  # Bluish Green
+    # '#E69F00',  # Orange
+    # ]
+    colors = ['#005A8C', '#D55E00', '#E69F00', '#009E73']
     labels = instance_names 
     # Initialize plot
     fig, ax = plt.subplots()
-    width = 0.4 # Bar width
+    width = 0.35 # Bar width
     x_positions = range(len(data_iterations))  # Positions for each bar
     # Create stacked bars for each iteration
     for category_index, (category, key) in enumerate(categories.items()):
         bottoms = [sum(data[categories[c]] for c in list(categories.keys())[:category_index]) for data in data_iterations]
         values = [data[key] for data in data_iterations]
-        ax.bar(x_positions, values, width, label=category, color=colors[category_index], bottom=bottoms)
+        ax.bar(x_positions, 
+               values, 
+               width, 
+               label=category,
+               alpha=0.9, 
+               color=colors[category_index], 
+               bottom=bottoms,
+               edgecolor='black')
     
     # Add legend, title, and labels
     ax.grid(which='both', axis='x', linestyle='dashed')
@@ -368,9 +407,9 @@ def delta_time_analysis_plot(data_iterations):
     ax.set_xticks(x_positions)
     ax.set_xticklabels(labels, rotation=45, ha='right')
     ax.legend(loc='upper left')
+    # ax.legend()
     plt.tight_layout()
     plt.grid(True)
-    # Show the plot
     plt.show()
 
 import numpy as np
@@ -383,8 +422,7 @@ def add_node_rewire_bar_chart(a, i):
     t_values = {key: [] for key in a}  # Store t values for a1 and a2
     cost_values = {key: [] for key in a}  # Store cost values for a1 and a2
     
-    # colors = ['red', 'blue']
-    # colors = ['#E69F00', '#56B4E9'] # ['#117733', '#332288'] # green, navy
+    # colors = ['#005A8C', '#D55E00']
     colors = ['#005A8C', '#D55E00']
     labels = ['Always Add', 'Rewire']
     i2 = [name[:-1] for name in i] 
@@ -406,18 +444,22 @@ def add_node_rewire_bar_chart(a, i):
                 t_values[a_instance].append(None)
                 cost_values[a_instance].append(None)
     
-    # fig, ax = plt.subplots(2, 1, sharex='all', sharey='none')
     fig, ax = plt.subplots(2, 1, sharex='all', sharey='none')
-    bar_width = 0.3  # Width of each bar
+    bar_width = 0.35  # Width of each bar
 
     parameters = {'Cost': cost_values, 'Time': t_values}
     
     for idx, (param, values) in enumerate(parameters.items()):
-        for j in range(2):  # Two bars per category
-            ax[idx].bar(x + j * bar_width, values[a[j]], 
-                        color=colors[j], width=bar_width, alpha=0.8, label=labels[j])
-
-        # ax[idx].grid(axis='y', linestyle='dashed')
+        for i in range(2):  # Two bars per category
+            ax[idx].bar(
+                x + i * bar_width,
+                values[a[i]],
+                width=bar_width,
+                color=colors[i],
+                label=labels[i],
+                alpha=0.9,
+                edgecolor='black'
+            )
         ax[idx].grid(which='both', axis='x', linestyle='dashed')
         ax[idx].grid(which='major', axis='y', linestyle='dashed')
         ax[idx].set_ylabel(f"{param} [s]")
@@ -426,20 +468,8 @@ def add_node_rewire_bar_chart(a, i):
     # X-axis settings
     ax[-1].set_xticks(x + bar_width / 2)
     ax[-1].set_xticklabels(i2)
-    # i2 = [
-    #     "alcove-u1",
-    #     "swap4-u1",
-	# 	"swap4-car",
-    #     "drone4",
-    #     "drone8",
-    #     "drone12",
-    #     "drone16",
-    # ]
-    # ax[-1].set_xticklabels(i2)
-
     plt.tight_layout()
     plt.grid(True)
-    # plt.savefig('addnode_rewire.pdf')
     plt.show()
 
 # if the folder has many iterations
@@ -448,7 +478,8 @@ def add_cost_and_time_over_robots_plot_itr(a, i, itr):
     folder = "/home/akmarak-laptop/IMRC/db-CBS/results/heuristics/"
     t_values = {key: [] for key in a}  # Store t values for a1 and a2
     cost_values = {key: [] for key in a}  # Store t values for a1 and a2
-    colors = ['green', 'red'] # ['red', 'blue']
+    # colors = ['green', 'red'] # ['red', 'blue']
+    colors = ['#005A8C', '#D55E00']
     labels = ['L1', 'L2'] # ['Always Add', 'Rewire']
     # x = np.array([1, 2, 3, 4]) 
     x = np.array([1, 2, 3, 4]) 
@@ -507,12 +538,13 @@ def add_cost_and_time_over_robots_plot_itr(a, i, itr):
 # stem plot style
 # if the folder has many iterations
 def add_cost_and_time_over_robots_plot_itr_stem(a, i, itr):
+    stem_style = False
     folder = "/home/akmarak-laptop/IMRC/db-CBS/results/tro-plots/heuristics/"
     t_values = {key: [] for key in a}  # Store t values for a1 and a2
     cost_values = {key: [] for key in a}  # Store t values for a1 and a2
-    colors = ['#0072B2', '#D55E00'] 
+    # colors = ['#E69F00', '#56B4E9']
+    colors = ['#005A8C', '#D55E00']
     labels = ['L1', 'L2'] 
-    # x = np.array([1, 2, 3, 4]) 
     x = np.arange(1, len(i) + 1)
     for a_instance in a:
         for i_instance in i:
@@ -540,30 +572,46 @@ def add_cost_and_time_over_robots_plot_itr_stem(a, i, itr):
                 cost_values[a_instance].append(cost / itr)  
     print(t_values)
     fig, ax = plt.subplots(2, 1, sharex='all', sharey='none')
-    for i in range(2):
-    #   ax[i].set_xscale('log')
-      ax[i].grid(which='both', axis='x', linestyle='dashed')
-      ax[i].grid(which='major', axis='y', linestyle='dashed')
+    if stem_style:
+        for i in range(2):
+          ax[i].grid(which='both', axis='x', linestyle='dashed')
+          ax[i].grid(which='major', axis='y', linestyle='dashed')
 
-    parameters = {'p': cost_values, 't': t_values}
-    for idx, (param, values) in enumerate(parameters.items()):
-        for i in range(2):  # Two lines for each parameter
-            markerline, stemlines, baseline = ax[idx].stem(
-                x, values[a[i]],
-                linefmt=colors[i],
-                markerfmt=f'{colors[i]}',
-                basefmt="k-"
-            )
-            # Optional styling
-            # plt.setp(markerline, markersize=8)
-            # plt.setp(stemlines, linewidth=2)
-    # Create custom legend
-    legend_handles = [
-        mlines.Line2D([], [], color=colors[0], marker='o', linestyle='-', linewidth=2, label=labels[0]),
-        mlines.Line2D([], [], color=colors[1], marker='o', linestyle='-', linewidth=2, label=labels[1])
-    ]
-    ax[0].legend(handles=legend_handles)
-    # ax[0].legend()
+        parameters = {'p': cost_values, 't': t_values}
+        for idx, (param, values) in enumerate(parameters.items()):
+            for i in range(2):  # Two lines for each parameter
+                markerline, stemlines, baseline = ax[idx].stem(
+                    x, values[a[i]],
+                    linefmt=colors[i],
+                    markerfmt=f'{colors[i]}',
+                    basefmt="k-"
+                )
+        # Create custom legend
+        legend_handles = [
+            mlines.Line2D([], [], color=colors[0], marker='o', linestyle='-', linewidth=2, label=labels[0]),
+            mlines.Line2D([], [], color=colors[1], marker='o', linestyle='-', linewidth=2, label=labels[1])
+        ]
+    else:
+        for i in range(2):
+            ax[i].grid(which='both', axis='x', linestyle='dashed')
+            ax[i].grid(which='major', axis='y', linestyle='dashed')
+
+        parameters = {'p': cost_values, 't': t_values}
+        bar_width = 0.35  # Adjust width for spacing
+        x = np.arange(len(cost_values[a[0]]))  # Assuming all lists are same length
+
+        for idx, (param, values) in enumerate(parameters.items()):
+            for i in range(2):  # Two bars for each parameter
+                ax[idx].bar(
+                    x + (i - 0.5) * bar_width,
+                    values[a[i]],
+                    width=bar_width,
+                    color=colors[i],
+                    label=labels[i],
+                    alpha=0.9,
+                    edgecolor='black')
+                
+    ax[0].legend()
     ax[0].set_ylabel(r"Cost [s]")
     ax[1].set_ylabel("Time [s]")
     ax[-1].set_xticks(x)
@@ -576,7 +624,7 @@ def add_cost_and_time_over_robots_plot_itr_stem(a, i, itr):
         "drone12",
         "drone16",
     ]
-    ax[-1].set_xticklabels(i2)
+    ax[-1].set_xticklabels(i2, rotation=45, ha='right')
     plt.tight_layout()
     plt.show()
 
@@ -659,12 +707,12 @@ def main():
    
     # 1. Time analysis plot for optimization/discrete time
     # i = [
-        # "drone2c",
-        # "drone4c",
-        # "drone8c",
-        # "drone10c",
-        # "drone12c",
-        # "drone16c",
+    #     "drone2c",
+    #     "drone4c",
+    #     "drone8c",
+    #     "drone10c",
+    #     "drone12c",
+    #     "drone16c",
     # ]
     # time_analysis_plot_optimization(i, itr=5, dec_var=True) # considers average time, itr = 5
 

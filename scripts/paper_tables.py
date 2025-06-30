@@ -47,7 +47,7 @@ def write_table3(trials, timelimit):
     "db-cbs",
   ]
 
-  write_table(instances, algs, Path("../results"), "paper_table3.pdf", 10, timelimit, True)
+  write_table(instances, algs, Path("../results/tro-plots/2d-10-test"), "paper_table3.pdf", 10, timelimit, True)
 
 def write_table4(trials, timelimit):
   instances = [
@@ -149,18 +149,17 @@ def write_table4(trials, timelimit):
 
 def write_table5(trials, timelimit):
   instances = [
-    "swap2_unicycle_sphere",
-    "alcove_unicycle_sphere",
-    "at_goal_unicycle_sphere",
-    # "window4_unicycle_sphere",
-
-    "<<HLINE>>",
-
-    "gen_p10_n2_*_unicycle_sphere",
-    "gen_p10_n4_*_unicycle_sphere",
-    "gen_p10_n8_*_unicycle_sphere",
-
-    "<<HLINE>>",
+    # "swap2_unicycle_sphere",
+    # "alcove_unicycle_sphere",
+    # "at_goal_unicycle_sphere",
+# 
+    # "<<HLINE>>",
+# 
+    # "gen_p10_n2_*_unicycle_sphere",
+    # "gen_p10_n4_*_unicycle_sphere",
+    # "gen_p10_n8_*_unicycle_sphere",
+# 
+    # "<<HLINE>>",
 
     "gen_p10_n2_*_hetero",
     "gen_p10_n4_*_hetero",
@@ -168,11 +167,11 @@ def write_table5(trials, timelimit):
   ]
   trials = [trials]*4 + [10*trials]*7
   algs = [
-    "sst",
-    "s2m2",
+    # "sst",
+    # "s2m2",
     "k-cbs",
-    "db-cbs",
-    "db-ecbs",
+    # "db-cbs",
+    # "db-ecbs",
   ]
 
   instance_names = {
@@ -196,7 +195,7 @@ def write_table5(trials, timelimit):
     "db-ecbs": "db-ECBS",
   }
 
-  result = benchmark_table.compute_results(instances, algs, Path("../results"), trials, timelimit, True)
+  result = benchmark_table.compute_results(instances, algs, Path("../results/tro-plots/2d-10-test"), trials, timelimit, True)
   output_path = Path("../results/paper_table5.pdf")
   with open(output_path.with_suffix(".tex"), "w") as f:
 
@@ -249,8 +248,8 @@ def write_table5(trials, timelimit):
       for alg in algs:
 
         out = benchmark_table.print_and_highlight_best_max(out, 'success', result[instance], alg, algs)
-        out = benchmark_table.print_and_highlight_best(out, 't^st_median', result[instance], alg, algs)
-        out = benchmark_table.print_and_highlight_best(out, 'J^st_median', result[instance], alg, algs)
+        out = benchmark_table.print_and_highlight_best(out, 't^st_mean', result[instance], alg, algs)
+        out = benchmark_table.print_and_highlight_best(out, 'J^st_mean', result[instance], alg, algs)
         # out = benchmark_table.print_and_highlight_best(out, 'Jr^st_median', result[instance], alg, algs, digits=0) // without notion of regret
 
       out += r"\\"
@@ -480,14 +479,12 @@ def write_table7(trials, timelimit):
     "gen_p10_n2_*_unicycle_sphere",
     "gen_p10_n4_*_unicycle_sphere",
     "gen_p10_n8_*_unicycle_sphere",
-
-    # "<<HLINE>>",
-
+# 
     "gen_p10_n2_*_hetero",
     "gen_p10_n4_*_hetero",
     "gen_p10_n8_*_hetero",
   ]
-  trials = [trials]*4 + [10*trials]*7
+  trials = [trials]*3 + [10*trials]*7
   algs = [
     "sst",
     "s2m2",
@@ -518,7 +515,7 @@ def write_table7(trials, timelimit):
   }
   add_std = True
   energy_cost_bool = True
-  result = benchmark_table.compute_results_with_std(instances, algs, Path("../results/tro-plots/2d-5/"), trials, timelimit, True, energy_cost=energy_cost_bool, anytime=False)
+  result = benchmark_table.compute_results_with_std(instances, algs, Path("../results/tro-plots/2d-10-test/"), trials, timelimit, True, energy_cost=energy_cost_bool, anytime=False)
   output_path = Path("../results/paper_table7_std.pdf")
   
   with open(output_path.with_suffix(".tex"), "w") as f:
@@ -557,7 +554,8 @@ def write_table7(trials, timelimit):
       if(alg == "db-ecbs"):
         out += r" & $p$ & $t [s]$ & $J^{\mathrm{st}} [s]$"
       else:
-        out += r" & $p$ & $t [s]$ & $J^{\mathrm{st}}[s] | E^{\mathrm{st}}$ & $r | r_{\mathrm{e}} [\%]$"
+        out += r" & $p$ & $t\,[s]$ & $\begin{array}{c} J^{\mathrm{st}}[s] \\ E^{\mathrm{st}} \end{array}$ & $\begin{array}{c} r [\%] \\ r_{\mathrm{e}}\, [\%] \end{array}$"
+
     out += r"\\"
     f.write(out)
 
@@ -891,9 +889,9 @@ def write_table9(trials, timelimit):
     if not regret:
       for alg in algs:
         if energy_cost_bool:
-          out += r" & $p$ & $t^{\mathrm{st}} [s]$ & $J^{\mathrm{st}} [s] | E^{\mathrm{st}}$ & $J^{f} [s] | E^{f}$"
+          out += r" & $p$ & $t^{\mathrm{st}} [s]$ & $\begin{array}{c} J^{\mathrm{st}}[s] \\ E^{\mathrm{st}} \end{array}$ & $\begin{array}{c} J^{\mathrm{f}}[s] \\ E^{\mathrm{f}} \end{array}$"
         else: 
-          out += r" & $p$ & $t^{\mathrm{st}} [s]$ & $J^{\mathrm{st}} [s] | E^{\mathrm{st}}$ & $J^{f} [s] | E^{f}$"
+          out += r" & $p$ & $t^{\mathrm{st}} [s]$ & $\begin{array}{c} J^{\mathrm{st}}[s] \\ E^{\mathrm{st}} \end{array}$ & $\begin{array}{c} J^{\mathrm{f}}[s] \\ E^{\mathrm{f}} \end{array}$"
     else:
       for alg in algs:
         out += r" & $p$ & $t_r^{\mathrm{st}} [\%]$ & $J_r^{f} [\%]$"
@@ -936,7 +934,7 @@ def write_table9(trials, timelimit):
   # run pdflatex
   benchmark_table.gen_pdf(output_path)
 if __name__ == '__main__':
-  trials = 5
+  trials = 10 # 10 for 2D
   timelimit = 5*60*60
   # write_table1(trials, timelimit)
   # write_table2(trials, timelimit)
@@ -944,9 +942,9 @@ if __name__ == '__main__':
   # write_table4(trials, timelimit)
   # write_table5(trials, timelimit)
   # write_table6(trials, timelimit) # window, wall together
-  # write_table7(trials, timelimit) # has std, energy_cost
+  write_table7(trials, timelimit) # has std, energy_cost
   # write_table8(trials, timelimit)
-  write_table9(trials, timelimit) # window, wall together. As table6, but has std
+  # write_table9(trials, timelimit) # window, wall together. As table6, but has std
 
 
 
