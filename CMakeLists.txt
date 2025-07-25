@@ -117,6 +117,8 @@ target_include_directories(main_ompl_geometric PUBLIC
 
 add_executable(db_cbs
   src/db_cbs.cpp
+  src/init_guess_payload.cpp
+  src/init_guess_unicycles.cpp
   # src/robots.cpp
 )
 

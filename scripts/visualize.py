@@ -40,7 +40,7 @@ class Animation:
     self.ax.set_xlim(env["environment"]["min"][0], env["environment"]["max"][0])
     self.ax.set_ylim(env["environment"]["min"][1], env["environment"]["max"][1])
     self.robot_numbers = len(env["robots"])
-    self.size = np.array([0.5, 0.25])
+    self.size = np.array([0.1, 0.05])
     self.trailer_size = np.array([0.3, 0.25])
     self.hitch_length = [0.5]
     self.radius = 0.1

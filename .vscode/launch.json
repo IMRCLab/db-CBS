@@ -5,28 +5,56 @@
     "version": "0.2.0",
     "configurations": [
         {
+            // "name": "My Debug Launch",
+            // "type": "cppdbg",
+            // "request": "launch",
+            // "program": "${workspaceFolder}/buildDebug/dynoplan/main_optimization",
+            // "args": [
+            //     "--init_file", "/home/khaledwahba94/imrc/db-CBS/stats_db/lego_3robots_unicycle/000/init_guess_unicycles.yaml",
+            //     "--env_file",  "../stats_db/lego_3robots_unicycle/000/env.yaml",
+            //     "--models_base_path", "../dynoplan/dynobench/models/",
+            //     "--solver_id", "1", 
+            //     "--max_iter", "50",
+            //     "--results_file", "../stats_db/lego_3robots_unicycle/000/output",
+            //     ">", "../stats_db/lego_3robots_unicycle/000/log_opt.txt"
+                
+
             "name": "My Debug Launch",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/buildDebug/db_cbs",
             "args": [
-                // "-i", "../example/simple_quadrotors.yaml",
-                // "-o", "../out_quad/result_dbcbs.yaml",
-                // "--optimization", "../out_quad/result_opt.yaml",
-                // "--t", "1000",
-                // "--cfg", "../example/algorithms.yaml"
+                "-i", "../dynoplan/dynobench/envs/benchmark_planners/dbcbs/forest_3robots_unicycle.yaml",
+                "-o", "../stats_db/forest_3robots_unicycle/000/result_dbcbs.yaml",
+                "--optimization", "../stats_db/forest_3robots_unicycle/000/result_dbcbs_opt.yaml",
+                "--cfg", "../example/algorithms.yaml", 
+                "-t", "350000",
+                ">", "../stats_db/forest_3robots_unicycle/000/log_dbcbs.txt"
 
-                // "-i", "../example/simple_unicycle.yaml",
-                // "-o", "../out_unicycle/result_dbcbs.yaml",
-                // "--optimization", "../out_unicycle/result_opt.yaml",
-                // "--t", "500",
-                // "--cfg", "../example/algorithms.yaml"
+            //     "-i", "/home/khaledwahba94/imrc/db-CBS/buildRelease/../example/payload_benchmark/dbcbs/window_5robots.yaml ",
+            //     "-o", "../stats_db/window_5robots/0.95/000/result_dbcbs.yaml",
+            //     "--optimization", "../stats_db/window_5robots/0.95/000/result_dbcbs_opt.yaml",
+            //     "--cfg", "../example/algorithms.yaml", 
+            //     "-t", "300000",
+            //     ">", "../log_dbcbs.txt"
 
-                "-i", "../example/payload_envs/window_integrators2_2d.yaml",
-                "-o", "../out_integrators/result_dbcbs.yaml",
-                "--optimization", "../out_integrators/result_opt.yaml",
-                "--t", "1000",
-                "--cfg", "../example/algorithms.yaml"
+            //     // "-i", "../example/payload_envs/simple_quadrotors.yaml",
+            //     // "-o", "../out_quad/result_dbcbs.yaml",
+            //     // "--optimization", "../out_quad/result_opt.yaml",
+            //     // "--t", "1000000",
+            //     // "--cfg", "../example/algorithms.yaml"
+
+            //     // "-i", "../example/payload_envs/simple_unicycle.yaml",
+            //     // "-o", "../out_unicycle/result_dbcbs.yaml",
+            //     // "--optimization", "../out_unicycle/result_opt.yaml",
+            //     // "--t", "100000",
+            //     // "--cfg", "../example/algorithms.yaml"
+
+            //     // "-i", "../example/payload_envs/window_integrators2_2d.yaml",
+            //     // "-o", "../out_integrators/result_dbcbs.yaml",
+            //     // "--optimization", "../out_integrators/result_opt.yaml",
+            //     // "--t", "1000000",
+            //     // "--cfg", "../example/algorithms.yaml"
 
             ],
             "cwd": "${workspaceFolder}/buildDebug",
