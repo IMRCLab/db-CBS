@@ -126,6 +126,8 @@ void generate_init_guess_payload(std::string &envPath,
     YAML::Node robotsNode_traj_checker = YAML::Clone(env["joint_robot"]);  // Deep copy for modifications
 
     YAML::Node outputEnvYaml = YAML::Clone(env);  // Ensure env remains unaffected
+    outputEnvYaml["environment"]["max"][2] = 1000.;
+    outputEnvYaml["environment"]["min"][2] = -1000.;
     outputEnvYaml.remove("joint_robot");
     outputEnvYaml["robots"] = robotsNode;
 
