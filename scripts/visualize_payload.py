@@ -198,6 +198,7 @@ class Visualizer():
 
     def _setObstacles(self, obstacles):
         for idx, obstacle in enumerate(obstacles):
+            # obsMat = g.MeshLambertMaterial(opacity=0.5)
             obsMat = g.MeshLambertMaterial(opacity=0.5, color=0x008000)
             center = obstacle["center"]
             shape = obstacle["type"]
@@ -405,7 +406,10 @@ def quad3dpayload_meshcatViewer():
             if "states" in refpath:
                 states_d = refpath["states"]
             elif "result" in refpath:
-                states_d = refpath["result"]["states"]
+                if isinstance(refpath["result"], dict):
+                    states_d = refpath["result"]["states"]
+                elif isinstance(refpath["result"], list):
+                    states_d = refpath["result"][0]["states"]
             else: 
                 raise NotImplementedError("unknown result format")
 
