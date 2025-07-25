@@ -10,21 +10,21 @@ def gen_pdf(output_path):
     output_path.with_suffix(".log").unlink()
 
 
-output_file = "final_table_real.tex"
+output_file = "final_table_real_unicycles.tex"
 
 from jinja2 import Template
 
 # Environments data (reordered: Window, Wall, Forest)
 environments = {
-    "Window": ["Window 2", "Window 3"],
-    "Forest": ["Forest 2", "Forest 3"],
-    # "lego": ["lego 2", "lego 3"],
+    # "Window": ["Window 2", "Window 3"],
+    # "Forest": ["Forest 2", "Forest 3"],
+    "collector": ["collect 2", "collect 3"],
 }
 
 # Methods and robot types
 methods = ["Ours", "BL"]  # Ours and Baseline (BL)
 # robot_types = ["UR", "MP"]  # UR: Unicycles with Rods, MP: Multirotors with Cables
-robot_types = ["MP"]  # UR: Unicycles with Rods, MP: Multirotors with Cables
+robot_types = ["UR"]  # UR: Unicycles with Rods, MP: Multirotors with Cables
 
 def create_table(data, output_file):
     """Generates a LaTeX table from the given data."""
@@ -34,34 +34,32 @@ def create_table(data, output_file):
 \usepackage{booktabs}
 \usepackage{xcolor}
 \usepackage{multirow}
-\usepackage{siunitx}
 
 \begin{document}
 
 % Compact table settings
 \renewcommand{\arraystretch}{1.0} % Further tighten row height
-\setlength{\tabcolsep}{4.5pt}       % Further tighten column padding
+\setlength{\tabcolsep}{5pt}       % Further tighten column padding
 
 \begin{table}[h!]
 \caption{Real Experiments Results.
-    Energy usage, mean tracking error, and trajectory time from 10 CF flight experiments with standard deviation in gray. F: failed.}
+    mean tracking error, and trajectory time from 10 ground robots experiments with standard deviation in gray. F: failed.}
 \centering
 \footnotesize
-\begin{tabular}{|c||c|c||c|c||c|c|}
+\begin{tabular}{|c||c|c||c|c|}
 \hline
 \multirow{2}{*}{\textbf{Environment}} 
-& \multicolumn{2}{c||}{\textbf{Energy} [Wh] $\downarrow$} 
 & \multicolumn{2}{c||}{\textbf{Error } [m] $\downarrow$} 
-& \multicolumn{2}{c|}{\textbf{Time} [s] $\downarrow$} \\
-\cline{2-7}
-& \scriptsize \textbf{Ours} & \scriptsize \textbf{BL} 
+& \multicolumn{2}{c|}{\textbf{Time} [s]  $\downarrow$} \\
+\cline{2-5}
 & \scriptsize \textbf{Ours} & \scriptsize \textbf{BL} 
 & \scriptsize \textbf{Ours} & \scriptsize \textbf{BL} \\
+\cline{2-5}
 \hline
 {% for group, envs in environments.items() %}
 {% for env in envs %}
 {{ env }}
-{% for metric in ['energy', 'error', 'time'] %}
+{% for metric in ['error', 'time'] %}
 {% for robot in robot_types %}
 {% for method in methods %}
 & {% if robot in data.get(env, {}).get(method, {}) and metric in data[env][method][robot] %}
@@ -97,21 +95,21 @@ F
 {% set bl = data[env]["BL"][robot][metric][0] if data[env]["BL"][robot][metric] is not none else None %}
 {% if ours is not none and bl is not none %}
     {% if method == 'Ours' and ours < bl %}
-    {\textbf{{ "{{" ~ "%.3f" | format(ours) ~ "}}" }}\hspace{0.5em}{\tiny \textcolor{gray}{{ "{%.2f}" | format(data[env]["Ours"][robot][metric][1]) }}}}
+    {\textbf{{ "{{" ~ "%.2f" | format(ours) ~ "}}" }}\hspace{0.5em}{\tiny \textcolor{gray}{{ "{%.2f}" | format(data[env]["Ours"][robot][metric][1]) }}}}
     {% elif method == 'BL' and bl < ours %}
-    {\textbf{{ "{{" ~ "%.3f" | format(bl) ~ "}}" }}\hspace{0.5em}{\tiny \textcolor{gray}{{ "{%.2f}" | format(data[env]["BL"][robot][metric][1]) }}}}
+    {\textbf{{ "{{" ~ "%.2f" | format(bl) ~ "}}" }}\hspace{0.5em}{\tiny \textcolor{gray}{{ "{%.2f}" | format(data[env]["BL"][robot][metric][1]) }}}}
     {% else %}
-    {{ "%.3f" | format(data[env][method][robot][metric][0]) }} {\tiny \textcolor{gray}{{ "{%.2f}" | format(data[env][method][robot][metric][1]) }}}
+    {{ "%.2f" | format(data[env][method][robot][metric][0]) }} {\tiny \textcolor{gray}{{ "{%.2f}" | format(data[env][method][robot][metric][1]) }}}
     {% endif %}
-{% elif ours is not none %}
+{% elif ours is not none and bl is none%}
     {% if method == 'Ours' %}
-    {\textbf{{ "{{" ~ "%.3f" | format(ours) ~ "}}" }}\hspace{0.5em}{\tiny \textcolor{gray}{{ "{%.2f}" | format(data[env]["Ours"][robot][metric][1]) }}}}
+    {\textbf{{ "{{" ~ "%.2f" | format(ours) ~ "}}" }}\hspace{0.5em}{\tiny \textcolor{gray}{{ "{%.2f}" | format(data[env]["Ours"][robot][metric][1]) }}}}
     {% else %}
     F
     {% endif %}
-{% elif bl is not none %}
+{% elif bl is not none and ours is none %}
     {% if method == 'BL' %}
-    {\textbf{{ "{{" ~ "%.3f" | format(bl) ~ "}}" }}\hspace{0.5em}{\tiny \textcolor{gray}{{ "{%.2f}" | format(data[env]["BL"][robot][metric][1]) }}}}
+    {\textbf{{ "{{" ~ "%.2f" | format(bl) ~ "}}" }}\hspace{0.5em}{\tiny \textcolor{gray}{{ "{%.2f}" | format(data[env]["BL"][robot][metric][1]) }}}}
     {% else %}
     F
     {% endif %}
@@ -131,8 +129,9 @@ F
 {% endfor %}
 \hline
 \end{tabular}
-\label{table3}
+\label{table4}
 \end{table}
+
 \end{document}
 """)    # Render the LaTeX table
     latex_table = template.render(data=data, environments=environments, methods=methods, robot_types=robot_types).strip()
@@ -224,10 +223,10 @@ if __name__ == "__main__":
     }
 
 
-    data["lego 2"] = {
+    data["collect 2"] = {
         "Ours": {
             "UR": {
-                "energy": (None,None), "error": (None, None), "time": None
+                "energy": (None,None), "error": (0.12, 0.01), "time": 6.4
             },
             "MP": {
                 "energy": (None, None), "error": (None, None), "time": None
@@ -235,7 +234,7 @@ if __name__ == "__main__":
         },
         "BL": {
             "UR": {
-                "energy": (None,None), "error": (None, None), "time": None
+                "energy": (None,None), "error": (0.27, 0.21), "time": 13.2
             },
             "MP": {
                 "energy": (None,None), "error": (None, None), "time": None
@@ -244,10 +243,10 @@ if __name__ == "__main__":
     }
 
 
-    data["lego 3"] = {
+    data["collect 3"] = {
         "Ours": {
             "UR": {
-                "energy": (None,None), "error": (None, None), "time": None
+                "energy": (None,None), "error": (0.12, 0.02), "time": 8.9
             },
             "MP": {
                 "energy": (None, None), "error": (None, None), "time": None

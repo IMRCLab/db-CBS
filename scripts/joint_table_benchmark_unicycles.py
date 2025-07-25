@@ -1,7 +1,7 @@
 import subprocess
 from pathlib import Path
-import yaml
 import argparse
+import yaml
 
 def gen_pdf(output_path):
     """Generate PDF from LaTeX."""
@@ -14,22 +14,18 @@ parser = argparse.ArgumentParser(description="Process environment statistics.")
 parser.add_argument("inp", help="inpput_yaml.")
 args = parser.parse_args()
 inp = args.inp
-
-
-output_file = f"final_table_{inp}.tex"
+output_file = f"final_table_unicycles_{inp}.tex"
 
 from jinja2 import Template
 
 # Environments data
 environments = {
-    "Window": ["Window, 2 robots", "Window, 3 robots", "Window, 4 robots", "Window, 5 robots", "Window, 6 robots"],
-    "Forest": ["Forest, 2 robots", "Forest, 3 robots", "Forest, 4 robots", "Forest, 5 robots", "Forest, 6 robots"],
-    # "Wall": ["Wall 2", "Wall 3", "Wall 4", "Wall 5", "Wall 6"],
+    "Wall": ["Wall, 2 robots", "Wall, 3 robots", "Wall, 4 robots", "Wall, 5 robots", "Wall, 6 robots"],
 }
 
 # Methods and robot types
 methods = ["Ours", "BL"]  # Ours and Baseline (BL)
-robot_types = ["UR", "MP"]  # UR: Unicycles with Rods, MP: Multirotors with Cables
+robot_types = ["UR"]  # UR: Unicycles with Rods, MP: Multirotors with Cables
 
 def create_table(data, output_file):
     """Generates a LaTeX table from the given data."""
@@ -40,30 +36,28 @@ def create_table(data, output_file):
 \usepackage{xcolor}
 \usepackage{multirow}
 \usepackage{siunitx}
+
 \begin{document}
 
 % Compact table settings
 \renewcommand{\arraystretch}{1.02} % Further tighten row height
-\setlength{\tabcolsep}{4.5pt}       % Further tighten column padding
-\begin{table*}[h!]
+\setlength{\tabcolsep}{5pt}       % Further tighten column padding
+\begin{table}[t]
 \caption{Simulation Results.
-    Shown are mean values for the success rate, cost and computational time over 10 runs with a timelimit of \SI{350}{s}. Standard deviation is small gray. Percentages are success rates. F: failed.}
+Shown are mean values for the success rate, cost and computational time over 10 runs for unicycles with rods (UR) with a timelimit of \SI{350}{s}. Standard deviation is small gray. Percentages are success rates. F: failed.}
 \centering
 \footnotesize
-\begin{tabular}{|c||c|c|c|c||c|c|c|c||c|c|c|c|}
+\begin{tabular}{|c||c|c||c|c||c|c|}
 \hline
 \multirow{3}{*}{\textbf{Environment, robots}} 
-& \multicolumn{4}{c||}{\textbf{Success [\%]} $\uparrow$} 
-& \multicolumn{4}{c||}{\textbf{Cost} [s] $\downarrow$} 
-& \multicolumn{4}{c|}{\textbf{Time} [s] $\downarrow$} \\
-\cline{2-13}
-& \multicolumn{2}{c|}{\textbf{UR}} & \multicolumn{2}{c||}{\textbf{MP}} 
-& \multicolumn{2}{c|}{\textbf{UR}} & \multicolumn{2}{c||}{\textbf{MP}} 
-& \multicolumn{2}{c|}{\textbf{UR}} & \multicolumn{2}{c|}{\textbf{MP}} \\
-\cline{2-13}
-& \scriptsize \textbf{Ours} & \scriptsize \textbf{BL} & \scriptsize \textbf{Ours} & \scriptsize \textbf{BL} 
-& \scriptsize \textbf{Ours} & \scriptsize \textbf{BL} & \scriptsize \textbf{Ours} & \scriptsize \textbf{BL} 
-& \scriptsize \textbf{Ours} & \scriptsize \textbf{BL} & \scriptsize \textbf{Ours} & \scriptsize \textbf{BL} \\
+& \multicolumn{2}{c||}{\textbf{Success [\%]} $\uparrow$}  
+& \multicolumn{2}{c||}{\textbf{Cost} [s] $\downarrow$}
+& \multicolumn{2}{c|}{\textbf{Time} [s] $\downarrow$} \\
+\cline{2-7}
+& \scriptsize \textbf{Ours} & \scriptsize \textbf{BL} 
+& \scriptsize \textbf{Ours} & \scriptsize \textbf{BL} 
+& \scriptsize \textbf{Ours} & \scriptsize \textbf{BL} \\
+\cline{2-7}
 \hline
 {% for group, envs in environments.items() %}
 {% for env in envs %}
@@ -140,8 +134,8 @@ F
 {% endfor %}
 \hline
 \end{tabular}
-\label{table1}
-\end{table*}
+\label{table2}
+\end{table}
 \end{document}
 """)
     # Render the LaTeX table
