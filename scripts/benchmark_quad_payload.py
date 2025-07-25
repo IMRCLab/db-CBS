@@ -359,16 +359,17 @@ def execute_task(task: ExecutionTask):
 def main():
     parallel = True
     instances = [
-        {"name": "window_2robots", "model": "point_2.yaml"},
-        {"name": "window_3robots", "model": "point_3.yaml"},
-        {"name": "window_4robots", "model": "point_4.yaml"},
-        {"name": "window_5robots", "model": "point_5.yaml"},
-        {"name": "window_6robots", "model": "point_6.yaml"},
+        # {"name": "one_obs_2robots", "model": "point_2.yaml"},
+        # {"name": "window_2robots", "model": "point_2.yaml"},
+        # {"name": "window_3robots", "model": "point_3.yaml"},
+        # {"name": "window_4robots", "model": "point_4.yaml"},
+        # {"name": "window_5robots", "model": "point_5.yaml"},
+        # {"name": "window_6robots", "model": "point_6.yaml"},
        
-        {"name": "forest_2robots", "model": "point_2.yaml"},
-        {"name": "forest_3robots", "model": "point_3.yaml"},
-        {"name": "forest_4robots", "model": "point_4.yaml"},
-        {"name": "forest_5robots", "model": "point_5.yaml"},
+        # {"name": "forest_2robots", "model": "point_2.yaml"},
+        # {"name": "forest_3robots", "model": "point_3.yaml"},
+        # {"name": "forest_4robots", "model": "point_4.yaml"},
+        # {"name": "forest_5robots", "model": "point_5.yaml"},
         {"name": "forest_6robots", "model": "point_6.yaml"},
  
         # {"name": "window_2robots_unicycle", "model": "unicyclesWithRods_2.yaml"},
@@ -394,35 +395,41 @@ def main():
     ]
 
     db_params = [    
-        {"delta_0": 0.9, "delta_rate": 0.95, "num_primitives_0": 2000, "num_primitives_rate": 1.2, "heuristic1": "no-reverse-search", "payload": {"solve_p0": True, "anytime": True, "p0_init_guess": [-1.0,0,0],  "tol":0.9}}, # window_2robots
-        {"delta_0": 0.9, "delta_rate": 0.95, "num_primitives_0": 2000, "num_primitives_rate": 1.2, "heuristic1": "no-reverse-search", "payload": {"solve_p0": True, "anytime": True, "p0_init_guess": [-1.0,0,0],  "tol":0.9}}, # window_3robots
-        {"delta_0": 0.9, "delta_rate": 0.95, "num_primitives_0": 2000, "num_primitives_rate": 1.2, "heuristic1": "no-reverse-search", "payload": {"solve_p0": True, "anytime": True, "p0_init_guess": [-1.0,0,0],  "tol":0.9}}, # window_4robots
-        {"delta_0": 0.9, "delta_rate": 0.95, "num_primitives_0": 2000, "num_primitives_rate": 1.2, "heuristic1": "no-reverse-search", "payload": {"solve_p0": True, "anytime": True, "p0_init_guess": [-1.0,0,0],  "tol":0.9}}, # window_5robots
-        {"delta_0": 0.9, "delta_rate": 0.95, "num_primitives_0": 2000, "num_primitives_rate": 1.2, "heuristic1": "no-reverse-search", "payload": {"solve_p0": True, "anytime": True, "p0_init_guess": [-1.0,0,0],  "tol":0.9}}, # window_6robots
+        # {"delta_0": 0.8, "delta_rate": 0.95, "num_primitives_0": 2500, "num_primitives_rate": 1.3, "heuristic1": "no-reverse-search", "payload": {"solve_p0": True, "anytime": True, "p0_init_guess": [-1.0,0,0],  "tol":0.8}}, # window_2robots
+        # {"delta_0": 0.8, "delta_rate": 0.95, "num_primitives_0": 2500, "num_primitives_rate": 1.3, "heuristic1": "no-reverse-search", "payload": {"solve_p0": True, "anytime": True, "p0_init_guess": [-1.0,0,0],  "tol":0.8}}, # window_3robots
+        # {"delta_0": 0.8, "delta_rate": 0.95, "num_primitives_0": 2500, "num_primitives_rate": 1.3, "heuristic1": "no-reverse-search", "payload": {"solve_p0": True, "anytime": True, "p0_init_guess": [-1.0,0,0],  "tol":0.8}}, # window_4robots
+        # {"delta_0": 0.8, "delta_rate": 0.95, "num_primitives_0": 2500, "num_primitives_rate": 1.3, "heuristic1": "no-reverse-search", "payload": {"solve_p0": True, "anytime": True, "p0_init_guess": [-1.0,0,0],  "tol":0.8}}, # window_5robots
+        # {"delta_0": 0.5, "delta_rate": 0.85, "num_primitives_0": 1500, "num_primitives_rate": 1.3, "heuristic1": "no-reverse-search", "payload": {"solve_p0": True, "anytime": True, "p0_init_guess": [-1.0,0,0],  "tol":0.5}}, # window_6robots
         
-        {"delta_0": 0.9, "delta_rate": 0.95, "num_primitives_0": 2000, "num_primitives_rate": 1.2, "heuristic1": "no-reverse-search", "payload": {"solve_p0": True, "anytime": True, "p0_init_guess": [-0.5,0,0],  "tol":0.9}}, # forest_2robots
-        {"delta_0": 0.9, "delta_rate": 0.95, "num_primitives_0": 2000, "num_primitives_rate": 1.2, "heuristic1": "no-reverse-search", "payload": {"solve_p0": True, "anytime": True, "p0_init_guess": [-0.5,0,0],  "tol":0.9}}, # forest_3robots
-        {"delta_0": 0.9, "delta_rate": 0.95, "num_primitives_0": 2000, "num_primitives_rate": 1.2, "heuristic1": "no-reverse-search", "payload": {"solve_p0": True, "anytime": True, "p0_init_guess": [-0.5,0,0],  "tol":0.9}}, # forest_4robots
-        {"delta_0": 0.9, "delta_rate": 0.95, "num_primitives_0": 2000, "num_primitives_rate": 1.2, "heuristic1": "no-reverse-search", "payload": {"solve_p0": True, "anytime": True, "p0_init_guess": [-0.5,0,0],  "tol":0.9}}, # forest_5robots
-        {"delta_0": 0.9, "delta_rate": 0.95, "num_primitives_0": 2000, "num_primitives_rate": 1.2, "heuristic1": "no-reverse-search", "payload": {"solve_p0": True, "anytime": True, "p0_init_guess": [-0.5,0,0],  "tol":0.9}}, # forest_6robots
-    
-        # {"delta_0": 0.3, "delta_rate": 0.9, "num_primitives_0": 300, "num_primitives_rate": 1.2, "heuristic1": "no-reverse-search", "payload": {"solve_p0": True, "anytime": True, "tol": 0.3}},  # window_2robots_unicycle
-        # {"delta_0": 0.3, "delta_rate": 0.9, "num_primitives_0": 300, "num_primitives_rate": 1.2, "heuristic1": "no-reverse-search", "payload": {"solve_p0": True, "anytime": True, "tol": 0.3}},  # window_3robots_unicycle
-        # {"delta_0": 0.3, "delta_rate": 0.9, "num_primitives_0": 300, "num_primitives_rate": 1.2, "heuristic1": "no-reverse-search", "payload": {"solve_p0": True, "anytime": True, "tol": 0.3}},  # window_4robots_unicycle
-        # {"delta_0": 0.3, "delta_rate": 0.9, "num_primitives_0": 300, "num_primitives_rate": 1.2, "heuristic1": "no-reverse-search", "payload": {"solve_p0": True, "anytime": True, "tol": 0.3}},  # window_5robots_unicycle
-        # {"delta_0": 0.3, "delta_rate": 0.9, "num_primitives_0": 1000, "num_primitives_rate": 1.2, "heuristic1": "no-reverse-search", "payload": {"solve_p0": True, "anytime": True,"tol": 0.3}}, # window_6robots_unicycle
-        
-        # {"delta_0": 0.3, "delta_rate": 0.9, "num_primitives_0": 500, "num_primitives_rate": 1.5, "heuristic1": "no-reverse-search", "payload": {"solve_p0": True, "anytime": True,  "tol": 0.3}}, # forest_2robots_unicycle
-        # {"delta_0": 0.3, "delta_rate": 0.9, "num_primitives_0": 500, "num_primitives_rate": 1.5, "heuristic1": "no-reverse-search", "payload": {"solve_p0": True, "anytime": True,  "tol": 0.3}},  # forest_3robots_unicycle
-        # {"delta_0": 0.3, "delta_rate": 0.9, "num_primitives_0": 500, "num_primitives_rate": 1.5, "heuristic1": "no-reverse-search", "payload": {"solve_p0": True, "anytime": True,  "tol": 0.3}},  # forest_4robots_unicycle
-        # {"delta_0": 0.3, "delta_rate": 0.9, "num_primitives_0": 500, "num_primitives_rate": 1.5, "heuristic1": "no-reverse-search", "payload": {"solve_p0": True, "anytime": True,  "tol": 0.3}},  # forest_5robots_unicycle
-        # {"delta_0": 0.3, "delta_rate": 0.9, "num_primitives_0": 500, "num_primitives_rate": 1.5, "heuristic1": "no-reverse-search", "payload": {"solve_p0": True, "anytime": True,  "tol": 0.3}},  # forest_6robots_unicycle
+        # {"delta_0": 0.8, "delta_rate": 0.95, "num_primitives_0": 2500, "num_primitives_rate": 1.3, "heuristic1": "no-reverse-search", "payload": {"solve_p0": True, "anytime": True, "p0_init_guess": [-0.5,0,0],  "tol":0.8}}, # forest_2robots
+        # {"delta_0": 0.7, "delta_rate": 0.95, "num_primitives_0": 2200, "num_primitives_rate": 1.2, "heuristic1": "no-reverse-search", "payload": {"solve_p0": True, "anytime": True, "p0_init_guess": [-0.5,0,0],  "tol":0.7}}, # forest_3robots
+        # {"delta_0": 0.7, "delta_rate": 0.95, "num_primitives_0": 2200, "num_primitives_rate": 1.2, "heuristic1": "no-reverse-search", "payload": {"solve_p0": True, "anytime": True, "p0_init_guess": [-0.5,0,0],  "tol":0.7}}, # forest_4robots
+        # {"delta_0": 0.9, "delta_rate": 0.99, "num_primitives_0": 200, "num_primitives_rate": 0.2, "heuristic1": "no-reverse-search", "payload": {"solve_p0": True, "anytime": False, "p0_init_guess": [-0.5,0,0],  "tol":0.9}}, # forest_3robots
+        # {"delta_0": 0.8, "delta_rate": 0.99, "num_primitives_0": 150, "num_primitives_rate": 1.01, "heuristic1": "no-reverse-search", "payload": {"solve_p0": True, "anytime": False, "p0_init_guess": [-0.5,0,0],  "tol":0.8}}, # forest_4robots
+        # {"delta_0": 0.9, "delta_rate": 0.99, "num_primitives_0": 150, "num_primitives_rate": 1.01, "heuristic1": "no-reverse-search", "payload": {"solve_p0": True, "anytime": False, "p0_init_guess": [-0.5,0,0],  "tol":0.9}}, # forest_5robots
 
-        # {"delta_0": 0.5, "delta_rate": 0.99, "num_primitives_0": 200, "num_primitives_rate": 1.1, "heuristic1": "no-reverse-search", "payload": {"solve_p0": True, "anytime": True, "tol": 0.5}},  #wall_2robots_unicycle
-        # {"delta_0": 0.5, "delta_rate": 0.99, "num_primitives_0": 200, "num_primitives_rate": 1.1, "heuristic1": "no-reverse-search", "payload": {"solve_p0": True, "anytime": True, "tol": 0.5}},  #wall_3robots_unicycle
-        # {"delta_0": 0.5, "delta_rate": 0.99, "num_primitives_0": 200, "num_primitives_rate": 1.1, "heuristic1": "no-reverse-search", "payload": {"solve_p0": True, "anytime": True, "tol": 0.5}},  #wall_4robots_unicycle
-        # {"delta_0": 0.5, "delta_rate": 0.99, "num_primitives_0": 200, "num_primitives_rate": 1.1, "heuristic1": "no-reverse-search", "payload": {"solve_p0": True, "anytime": True, "tol": 0.5}},  #wall_5robots_unicycle
-        # {"delta_0": 0.5, "delta_rate": 0.99, "num_primitives_0": 200, "num_primitives_rate": 1.1, "heuristic1": "no-reverse-search", "payload": {"solve_p0": True, "anytime": True, "tol": 0.5}},  #wall_6robots_unicycle
+        # {"delta_0": 0.95, "delta_rate": 0.95, "num_primitives_0": 1500, "num_primitives_rate": 0.1, "heuristic1": "no-reverse-search", "payload": {"solve_p0": True, "anytime": False, "p0_init_guess": [-0.5,0,0],  "tol":0.95}}, # forest_3robots
+        # {"delta_0": 0.8, "delta_rate": 0.99, "num_primitives_0": 500, "num_primitives_rate": 0.1, "heuristic1": "no-reverse-search", "payload": {"solve_p0": True, "anytime": False, "p0_init_guess": [-0.5,0,0],  "tol":0.8}}, # forest_4robots
+        # {"delta_0": 0.75, "delta_rate": 0.99, "num_primitives_0": 100, "num_primitives_rate": 0.1, "heuristic1": "no-reverse-search", "payload": {"solve_p0": True, "anytime": False, "p0_init_guess": [-0.5,0,0],  "tol":0.75}}, # forest_5robots
+        {"delta_0": 0.75, "delta_rate": 0.99, "num_primitives_0": 200, "num_primitives_rate": 0.1, "heuristic1": "no-reverse-search", "payload": {"solve_p0": True, "anytime": False, "p0_init_guess": [-0.5,0,0],  "tol":0.75}}, # forest_6robots
+
+        # {"delta_0": 0.4, "delta_rate": 0.9, "num_primitives_0": 500 , "num_primitives_rate": 1.2, "heuristic1": "no-reverse-search", "payload": {"solve_p0": True, "anytime": True, "tol": 0.4}},  # window_2robots_unicycle
+        # {"delta_0": 0.4, "delta_rate": 0.9, "num_primitives_0": 500 , "num_primitives_rate": 1.2, "heuristic1": "no-reverse-search", "payload": {"solve_p0": True, "anytime": True, "tol": 0.4}},  # window_3robots_unicycle
+        # {"delta_0": 0.9, "delta_rate": 0.99, "num_primitives_0": 200 , "num_primitives_rate": 0.5, "heuristic1": "no-reverse-search", "payload": {"solve_p0": True, "anytime": False, "tol": 0.9}},  # window_4robots_unicycle
+        # {"delta_0": 0.4, "delta_rate": 0.9, "num_primitives_0": 500 , "num_primitives_rate": 1.2, "heuristic1": "no-reverse-search", "payload": {"solve_p0": True, "anytime": True, "tol": 0.4}},  # window_5robots_unicycle
+        # {"delta_0": 0.4, "delta_rate": 0.9, "num_primitives_0": 500 , "num_primitives_rate": 1.2, "heuristic1": "no-reverse-search", "payload": {"solve_p0": True, "anytime": True, "tol": 0.4}}, # window_6robots_unicycle
+        
+        # {"delta_0": 0.3, "delta_rate": 0.9, "num_primitives_0": 200, "num_primitives_rate": 1.2, "heuristic1": "no-reverse-search", "payload": {"solve_p0": True, "anytime": True,  "tol": 0.3}}, # forest_2robots_unicycle
+        # {"delta_0": 0.3, "delta_rate": 0.9, "num_primitives_0": 200, "num_primitives_rate": 1.2, "heuristic1": "no-reverse-search", "payload": {"solve_p0": True, "anytime": True,  "tol": 0.3}},  # forest_3robots_unicycle
+        # {"delta_0": 0.3, "delta_rate": 0.9, "num_primitives_0": 200, "num_primitives_rate": 1.2, "heuristic1": "no-reverse-search", "payload": {"solve_p0": True, "anytime": True,  "tol": 0.3}},  # forest_4robots_unicycle
+        # {"delta_0": 0.3, "delta_rate": 0.9, "num_primitives_0": 200, "num_primitives_rate": 1.2, "heuristic1": "no-reverse-search", "payload": {"solve_p0": True, "anytime": True,  "tol": 0.3}},  # forest_5robots_unicycle
+        # {"delta_0": 0.3, "delta_rate": 0.9, "num_primitives_0": 200, "num_primitives_rate": 1.2, "heuristic1": "no-reverse-search", "payload": {"solve_p0": True, "anytime": True,  "tol": 0.3}},  # forest_6robots_unicycle
+
+        # {"delta_0": 0.5, "delta_rate": 0.99, "num_primitives_0": 100, "num_primitives_rate": 0.5, "heuristic1": "no-reverse-search", "payload": {"solve_p0": True, "anytime": True, "tol": 0.5}},  #wall_2robots_unicycle
+        # {"delta_0": 0.5, "delta_rate": 0.99, "num_primitives_0": 100, "num_primitives_rate": 0.5, "heuristic1": "no-reverse-search", "payload": {"solve_p0": True, "anytime": True, "tol": 0.5}},  #wall_3robots_unicycle
+        # {"delta_0": 0.5, "delta_rate": 0.99, "num_primitives_0": 100, "num_primitives_rate": 0.5, "heuristic1": "no-reverse-search", "payload": {"solve_p0": True, "anytime": True, "tol": 0.5}},  #wall_4robots_unicycle
+        # {"delta_0": 0.5, "delta_rate": 0.99, "num_primitives_0": 100, "num_primitives_rate": 0.5, "heuristic1": "no-reverse-search", "payload": {"solve_p0": True, "anytime": True, "tol": 0.5}},  #wall_5robots_unicycle
+        # {"delta_0": 0.5, "delta_rate": 0.99, "num_primitives_0": 100, "num_primitives_rate": 0.5, "heuristic1": "no-reverse-search", "payload": {"solve_p0": True, "anytime": True, "tol": 0.6}},  #wall_6robots_unicycle
 
 
         # {"delta_0": 0.3, "delta_rate": 0.99, "num_primitives_0": 100, "num_primitives_rate": 2.2, "heuristic1": "no-reverse-search", "payload": {"solve_p0": True, "anytime": False,  "tol": 0.3}},  # lego_2robots_unicycle
@@ -431,7 +438,7 @@ def main():
     ] 
 
 
-    trials = 10
+    trials = 40
     timelimit = 350 # [s]
     tasks = []
     for instance, db in zip(instances, db_params):
@@ -439,7 +446,7 @@ def main():
             tasks.append(ExecutionTask(instance, db, trial, timelimit))
 
     if parallel and len(tasks) > 1:
-        use_cpus = psutil.cpu_count(logical=False) - 10
+        use_cpus = psutil.cpu_count(logical=False) - 2
         print("Using {} CPUs".format(use_cpus))
         with mp.Pool(use_cpus) as p:
             for _ in tqdm.tqdm(p.imap_unordered(execute_task, tasks)):
