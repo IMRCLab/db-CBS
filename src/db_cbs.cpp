@@ -70,7 +70,7 @@ int main(int argc, char* argv[]) {
       return 1;
     }
     YAML::Node cfg = YAML::LoadFile(cfgFile);
-    duration duration_discrete, duration_opt;
+    duration duration_discrete, duration_opt, duration_cost;
     if (cfg["db-cbs"]){
       cfg = cfg["db-cbs"]["default"];
     }
@@ -107,7 +107,12 @@ int main(int argc, char* argv[]) {
     options_tdbastar.cost_delta_factor = 0;
     options_tdbastar.delta = cfg["delta_0"].as<float>();
     options_tdbastar.fix_seed = 1;
-    options_tdbastar.max_motions = cfg["num_primitives_0"].as<size_t>();
+    size_t init_prim_num = cfg["num_primitives_0"].as<size_t>();
+    if (cfg["max_motions"]) {
+      options_tdbastar.max_motions = cfg["max_motions"].as<size_t>();
+    } else {
+      options_tdbastar.max_motions = 60000;
+    }
     options_tdbastar.rewire = true;
     bool save_forward_search_expansion = false;
     bool save_reverse_search_expansion = true;
@@ -178,6 +183,9 @@ int main(int argc, char* argv[]) {
             motionsFile = "../new_format_motions/integrator2_3d_v0/integrator2_3d_v0.bin.im.bin.sp.bin";
         } else if (robotType == "quad3d_v0") {
             motionsFile = "../new_format_motions/quad3d_v0/quad3d_v0.msgpack";
+            // motionsFile = "../new_format_motions/quad3d_v0/quad3d_v0.msgpack";
+            // motionsFile = "../../tmp_mp/quad.bin.im.bin.sp.bin";
+            // std::cout << "motionsFile: " << motionsFile << std::endl;
         } else {
             throw std::runtime_error("Unknown motion filename for this robottype!");
         }
@@ -201,9 +209,9 @@ int main(int argc, char* argv[]) {
         if (robot_motions.find(problem.robotTypes[i]) == robot_motions.end()){
             options_tdbastar.motionsFile = all_motionsFile[i];
             load_motion_primitives_new(options_tdbastar.motionsFile, *robot, robot_motions[problem.robotTypes[i]], 
-                                       /*options_tdbastar.max_motions*/ 1e6,
+                                       options_tdbastar.max_motions,
                                        options_tdbastar.cut_actions, /*shuffle*/true, options_tdbastar.check_cols);
-            motion_to_motion(robot_motions[problem.robotTypes[i]], sub_motions[problem.robotTypes[i]], *robot, options_tdbastar.max_motions);
+            motion_to_motion(robot_motions[problem.robotTypes[i]], sub_motions[problem.robotTypes[i]], *robot, init_prim_num);
         }
         if (robot->name == "car_with_trailers") {
           col_geom_id++;
@@ -214,6 +222,7 @@ int main(int argc, char* argv[]) {
         
         col_geom_id++;
         i++;
+        std::cout << "robots: " << i << std::endl;
     }
     col_mng_robots->registerObjects(robot_objs);
     // Heuristic computation
@@ -221,6 +230,10 @@ int main(int argc, char* argv[]) {
     size_t num_robots = robots.size();
     std::vector<ompl::NearestNeighbors<std::shared_ptr<AStarNode>>*> heuristics(robots.size(), nullptr);
     std::vector<double> upper_bounds(num_robots, std::numeric_limits<double>::max());
+    // for (size_t l = 0; l < num_robots; l++){
+    //   upper_bounds[l] = num_robots * 3*(4);
+    // }
+
     std::vector<double> hs(num_robots, -1.0); // start->hScore
     double lowest_cost = std::numeric_limits<double>::max();
     YAML::Node itr_cost_data;
@@ -258,47 +271,52 @@ int main(int argc, char* argv[]) {
     int optimization_counter = 0;
     std::string optimizationFile_anytime = optimizationFile;
     auto discrete_start = std::chrono::steady_clock::now();
+    auto start_time = std::chrono::steady_clock::now();
     for (size_t iteration = 0; ; ++iteration) {
       if (iteration > 0) {
         if (solved_db && solved_opt) {
           std::cout << "Optimization succeeded!, optimization counter: "<< optimization_counter << std::endl;
           options_tdbastar.delta *= cfg["delta_rate"].as<float>();
           tol *= cfg["delta_rate"].as<float>();
-          options_tdbastar.max_motions *= cfg["num_primitives_rate"].as<float>();
-
+          init_prim_num = init_prim_num +  init_prim_num*cfg["num_primitives_rate"].as<float>();
+          
           for (auto& iter : robot_motions){
             for (size_t i = 0; i < problem.robotTypes.size(); ++i){
               if (iter.first == problem.robotTypes[i]){
-                motion_to_motion(robot_motions[problem.robotTypes[i]], sub_motions[problem.robotTypes[i]], *robots[i], options_tdbastar.max_motions);
+                motion_to_motion(robot_motions[problem.robotTypes[i]], sub_motions[problem.robotTypes[i]], *robots[i], init_prim_num);
+                break;
               }
             }
           }
 
         } else if (solved_db) {
-          // options_tdbastar.delta *= cfg["delta_rate"].as<float>();
-          // tol *= cfg["delta_rate"].as<float>();
-          options_tdbastar.max_motions *= cfg["num_primitives_rate"].as<float>();
+          options_tdbastar.delta *= cfg["delta_rate"].as<float>();
+          tol *= cfg["delta_rate"].as<float>();
+          init_prim_num = init_prim_num +  init_prim_num*cfg["num_primitives_rate"].as<float>();
           for (auto& iter : robot_motions){
             for (size_t i = 0; i < problem.robotTypes.size(); ++i){
               if (iter.first == problem.robotTypes[i]){
-                motion_to_motion(robot_motions[problem.robotTypes[i]], sub_motions[problem.robotTypes[i]], *robots[i], options_tdbastar.max_motions);
+                
+                motion_to_motion(robot_motions[problem.robotTypes[i]], sub_motions[problem.robotTypes[i]], *robots[i], init_prim_num);
+                break;
               }
             }
           }
         } else {
           // options_tdbastar.delta *= cfg["delta_rate"].as<float>();
           // tol *= cfg["delta_rate"].as<float>();
-          options_tdbastar.max_motions *= cfg["num_primitives_rate"].as<float>();
+          init_prim_num = init_prim_num +  init_prim_num*cfg["num_primitives_rate"].as<float>();
           for (auto& iter : robot_motions){
             for (size_t i = 0; i < problem.robotTypes.size(); ++i){
               if (iter.first == problem.robotTypes[i]){
-                motion_to_motion(robot_motions[problem.robotTypes[i]], sub_motions[problem.robotTypes[i]], *robots[i], options_tdbastar.max_motions);
+                motion_to_motion(robot_motions[problem.robotTypes[i]], sub_motions[problem.robotTypes[i]], *robots[i], init_prim_num);
+                break;
               }
             }
           }
         }
-        options_tdbastar.max_motions = std::min<size_t>(options_tdbastar.max_motions, 1e6);
-        std::cout << "Enabling " << options_tdbastar.max_motions << " motions" << std::endl;
+        init_prim_num = std::min<size_t>(init_prim_num, 1e6);
+        std::cout << "Enabling " << init_prim_num << " motions" << std::endl;
         std::cout << "*** options_tdbastar iteration: " << iteration << "***" << std::endl;
         options_tdbastar.print(std::cout);
         std::cout << "***" << std::endl;
@@ -309,9 +327,9 @@ int main(int argc, char* argv[]) {
       for (auto& iter : sub_motions) {
           for (size_t i = 0; i < problem.robotTypes.size(); ++i) {
               if (iter.first == problem.robotTypes[i]) {
-                  std::cout << "num of max motions: " << options_tdbastar.max_motions << std::endl; 
-                  disable_motions(robots[i], problem.robotTypes[i], options_tdbastar.delta, filter_duplicates, alpha, 
-                                  options_tdbastar.max_motions, iter.second);
+                  std::cout << "num of max motions: " << init_prim_num << std::endl; 
+                  disable_motions(robots[i], problem.robotTypes[i], options_tdbastar.delta, true/*filter_duplicates*/, alpha, 
+                                  init_prim_num, iter.second);
                   break;
               }
           }
@@ -351,7 +369,16 @@ int main(int argc, char* argv[]) {
       int id = 1;
       size_t expands = 0;
       double hs_total = std::accumulate(hs.begin(), hs.end(), 0);
+      auto start_conflict = std::chrono::steady_clock::now();
       while (!open.empty()){
+        auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(
+            std::chrono::steady_clock::now() - start_conflict
+        );
+
+        if (elapsed.count() >= 40) {  // 100 seconds
+            std::cout << "elapsed time: "<< elapsed.count() << ", adding more primitives" << std::endl;
+            break;
+        }
         HighLevelNode P = open.top();
         open.pop();
         Conflict inter_robot_conflict;
@@ -393,6 +420,7 @@ int main(int argc, char* argv[]) {
             bool feasible = false;
             double sum_cost = 0.0;
             dynobench::Trajectory sol;
+            dynobench::Trajectory sol_broken;
             auto start = std::chrono::steady_clock::now();
             if (startsWith(robots[0]->name, "quad3d")) {
               bool sum_robot_cost = true;
@@ -403,7 +431,7 @@ int main(int argc, char* argv[]) {
                                             optimizationFile_anytime,
                                             sol,
                                             DYNOBENCH_BASE,
-                                            sum_robot_cost);
+                                            sum_robot_cost, sol_broken);
               // TODO: add the optimization sol in the robot motions
               // 1. transform the opt solution to the robot states
               // 2. add to all robots motions
@@ -417,13 +445,13 @@ int main(int argc, char* argv[]) {
                                             optimizationFile_anytime,
                                             sol,
                                             DYNOBENCH_BASE,
-                                            sum_robot_cost);
+                                            sum_robot_cost, sol_broken);
             }
             if (!feasible) {
               std::cout << "Optimization failed. Restarting the iteration with updated parameters." << std::endl;
               solved_opt = false;
               
-              add_motion_primitives(problem, sol, sub_motions, robots, sum_cost);
+              add_motion_primitives(problem, sol_broken, sub_motions, robots, sum_cost);
               break;  
             }
             auto end = std::chrono::steady_clock::now();
@@ -438,6 +466,11 @@ int main(int argc, char* argv[]) {
               itr_cost_data["cost_joint"] = sol.cost;
               itr_cost_data["sum_cost"] = sum_cost;
               itr_cost_data["duration_discrete"] = duration_discrete.count();
+              itr_cost_data["total_time"] = duration_opt.count() + duration_discrete.count();
+
+              auto end_time = std::chrono::steady_clock::now();
+              duration_cost = end - start;
+              itr_cost_data["duration"] = duration_cost.count();
 
               std::ofstream file(stats_file);
               if (file.is_open()) {
@@ -461,6 +494,7 @@ int main(int argc, char* argv[]) {
               itr_cost_data["runs"][optimization_counter]["delta_rate"] = cfg["delta_rate"].as<float>();
               itr_cost_data["runs"][optimization_counter]["duration_opt"] = duration_opt.count();
               itr_cost_data["runs"][optimization_counter]["duration_discrete"] = duration_discrete.count();
+              itr_cost_data["runs"][optimization_counter]["total_time"] = duration_opt.count() + duration_discrete.count();
               std::ofstream file(itr_cost_file);
               if (file.is_open()) {
                   file << itr_cost_data;
@@ -491,9 +525,7 @@ int main(int argc, char* argv[]) {
           std::cout << "Node ID is " << id << std::endl;
           newNode.constraints[tmp_robot_id].insert(newNode.constraints[tmp_robot_id].end(), c.second.begin(), c.second.end());
           newNode.cost -= newNode.solution[tmp_robot_id].trajectory.cost;
-#ifdef DBG_PRINTS
-          std::cout << "New node cost: " << newNode.cost << std::endl;
-#endif
+
           Out_info_tdb tmp_out_tdb; // should I keep the old one ?
           expanded_trajs_tmp.clear();
           options_tdbastar.motions_ptr = &sub_motions[problem.robotTypes[tmp_robot_id]]; 
@@ -502,9 +534,7 @@ int main(int argc, char* argv[]) {
                   expanded_trajs_tmp, heuristics[tmp_robot_id]);
           if (tmp_out_tdb.solved){
               newNode.cost += newNode.solution[tmp_robot_id].trajectory.cost;
-#ifdef DBG_PRINTS
-              std::cout << "Updated New node cost: " << newNode.cost << std::endl;
-#endif
+
               auto handle = open.push(newNode);
               (*handle).handle = handle;
               id++;
