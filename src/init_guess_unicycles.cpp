@@ -120,18 +120,31 @@ void generate_init_guess_unicycles(std::string &envPath,
     }
 
     YAML::Node robotsNode = env["joint_robot"];
+    YAML::Node robotsNode_traj_checker = YAML::Clone(env["joint_robot"]);  // Deep copy for modifications
 
-    // Create the output environment YAML
-    YAML::Node outputEnvYaml = env;
+    YAML::Node outputEnvYaml = YAML::Clone(env);  // Ensure env remains unaffected
     outputEnvYaml.remove("joint_robot");
     outputEnvYaml["robots"] = robotsNode;
 
+    YAML::Node outputEnvYaml_traj_checker = YAML::Clone(env);  // Ensure env remains unaffected
+    outputEnvYaml_traj_checker.remove("joint_robot");
+    outputEnvYaml_traj_checker["robots"] = robotsNode_traj_checker;
+
+    // Modify only the trajectory checker type
+    std::string typeField = outputEnvYaml_traj_checker["robots"][0]["type"].as<std::string>();
+    outputEnvYaml_traj_checker["robots"][0]["type"] = typeField.substr(0, typeField.find_last_of('.')) + "_traj_checker";
+    
     // Save the new env.yaml file
     std::string envOutputPath = resultPath.substr(0, resultPath.find_last_of("/\\") + 1) + "env.yaml";
     joint_robot_env_path = envOutputPath;
     std::ofstream envOutFile(envOutputPath);
     envOutFile << outputEnvYaml;
     envOutFile.close();
+
+    std::string envOutputPath_traj_checker = resultPath.substr(0, resultPath.find_last_of("/\\") + 1) + "env_traj_checker.yaml";
+    std::ofstream envOutFile_traj_checker(envOutputPath_traj_checker);
+    envOutFile_traj_checker << outputEnvYaml_traj_checker;  // Corrected line
+    envOutFile_traj_checker.close();
 
 
     // Save results to YAML

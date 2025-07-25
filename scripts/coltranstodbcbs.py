@@ -54,8 +54,11 @@ def createRobotDict(coltrans_dict, robotType="quadrotor"):
     
     elif "unicycle" in robotType:
         robot_0_dict = dict()
-        robot_0_dict["type"] = "unicycle1_v0"
-        
+        if "no_right" in robotType:
+            robot_0_dict["type"] = "unicycle1_v0_no_right"
+        else:
+            robot_0_dict["type"] = "unicycle1_v0"
+    
         robot0_start = np.zeros(3,)
         robot0_goal  = np.zeros(3,)
 
@@ -73,8 +76,11 @@ def createRobotDict(coltrans_dict, robotType="quadrotor"):
 
         for i in range(1,num_robots):
             robot_i_dict = dict()
-            robot_i_dict["type"] = "unicycle1_v0"
-           
+            if "no_right" in robotType:
+                robot_i_dict["type"] = "unicycle1_v0_no_right"
+            else:
+                robot_i_dict["type"] = "unicycle1_v0"
+
             alpha_start_i = start[2 + i]
             alpha_goal_i  =  goal[2 + i]
 
