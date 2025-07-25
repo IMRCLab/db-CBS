@@ -10,7 +10,7 @@ def transform_environments(original_envs):
     transformed_envs = {}
     for group, env_list in original_envs.items():
         transformed_envs[group] = [
-            f"{group} {env.split('_')[1][0]}" for env in env_list
+            f"{group}, {env.split('_')[1][0]} robots" for env in env_list
         ]
     return transformed_envs
 
@@ -58,7 +58,7 @@ def map_to_final_format(data_stats_db_done, data_alt_structure, environments, ne
     return data
 
 
-def process_stats_db_done(base_path, environments, robot_types):
+def process_db_data(base_path, environments, robot_types):
     """Processes the stats_db_done folder structure."""
     data = {}
 
@@ -74,7 +74,8 @@ def process_stats_db_done(base_path, environments, robot_types):
         """Parses result_dbcbs_opt.yaml for cost."""
         with open(file_path, 'r') as f:
             data = yaml.safe_load(f)
-        return data["cost"]
+        return float(data["cost"])
+        # return data["cost"]
 
     def parse_dbcbs_stats(file_path):
         """Parses dbcbs_stats.yaml for time (duration_opt + duration_discrete)."""
@@ -82,6 +83,12 @@ def process_stats_db_done(base_path, environments, robot_types):
             data = yaml.safe_load(f)
         data = data["runs"][0]
         return data.get('duration_opt', 0) + data.get('duration_discrete', 0)
+
+    def parse_dbcbs_stats_1iter(file_path):
+        """Parses dbcbs_stats.yaml for time (duration_opt + duration_discrete)."""
+        with open(file_path, 'r') as f:
+            data = yaml.safe_load(f)
+        return data.get('total_time', 0)
 
     for env_group, env_list in environments.items():
         for env in env_list:
@@ -103,6 +110,7 @@ def process_stats_db_done(base_path, environments, robot_types):
                     trajectory_check_path = os.path.join(trial_path, 'trajectory_opt.check.txt')
                     result_dbcbs_path = os.path.join(trial_path, 'result_dbcbs_opt.yaml')
                     dbcbs_stats_path = os.path.join(trial_path, 'iteration_cost.yaml')
+                    dbcbs_stats_1iter_path = os.path.join(trial_path, 'dbcbs_stats.yaml')
                     trajectory_opt_path = os.path.join(trial_path, 'trajectory_opt.yaml')
 
                     if os.path.exists(trajectory_check_path):
@@ -112,6 +120,8 @@ def process_stats_db_done(base_path, environments, robot_types):
                         costs.append(parse_result_dbcbs_opt(result_dbcbs_path))
                     if os.path.exists(dbcbs_stats_path):
                         times.append(parse_dbcbs_stats(dbcbs_stats_path))
+                    elif os.path.exists(dbcbs_stats_1iter_path):
+                        times.append(parse_dbcbs_stats_1iter(dbcbs_stats_1iter_path))
                     if os.path.exists(trajectory_opt_path):
                         mean_error, std_error = parse_trajectory_opt(trajectory_opt_path, is_mp)
                         errors.append((mean_error, std_error))
@@ -148,7 +158,7 @@ def parse_output_trajopt(file_path):
     cost = data.get("cost", float("inf"))
     return feasible == 1, cost
 
-def process_alt_structure(base_path, environments, robot_types):
+def process_coltrans_data(base_path, environments, robot_types):
     """Processes the alternate folder structure."""
     data = {}
 
@@ -166,8 +176,10 @@ def process_alt_structure(base_path, environments, robot_types):
                 geom_path = os.path.join(full_path, 'geom')
                 opt_path = os.path.join(full_path, 'opt')
                 geom_trials = sorted(os.listdir(geom_path))
-                opt_trials = sorted(os.listdir(opt_path))
-
+                if os.path.exists(opt_path):
+                    opt_trials = sorted(os.listdir(opt_path))
+                else:
+                    opt_trials = []
                 total_trials = len(geom_trials)
                 successes = 0
 
@@ -226,45 +238,84 @@ def process_alt_structure(base_path, environments, robot_types):
 
 def main():
     parser = argparse.ArgumentParser(description="Process environment statistics.")
-    parser.add_argument("stats_db_done", help="Path to the 'stats_db_done' folder.")
-    parser.add_argument("alt_structure", help="Path to the alternate folder structure.")
+    parser.add_argument("--db_dir", required=True, default=None, help="Path to the 'stats_db_done' folder.")
+    parser.add_argument("--coltrans_dir", required=False, default=None, help="Path to the alternate folder structure.")
+    parser.add_argument("--out", help="output_yaml.")
     args = parser.parse_args()
-
+    out = args.out
     environments = {
-        "Window": ["window_2robots", "window_3robots","window_4robots", "window_5robots", "window_6robots"],
-        "Wall": ["wall_2robots", "wall_3robots", "wall_4robots", "wall_5robots", "wall_6robots"],
-        "Forest": ["forest_2robots", "forest_3robots", "forest_4robots", "forest_5robots", "forest_6robots"],
+        # "Window" : [
+        #     "window_4robots_25", 
+        #     "window_4robots_100", 
+        #     "window_4robots_200", 
+        #     "window_4robots_500", 
+        #     "window_4robots_1000", 
+        # ],
+        # "Wall" : [
+        #     "wall_2robots", 
+        #     "wall_3robots", 
+        #     "wall_4robots", 
+        #     "wall_5robots", 
+        #     "wall_6robots", 
+        # ],
+        "Forest" : [
+            "forest_6robots", 
+        ],
+        # "Forest": [ 
+        #            "forest_4robots", 
+        #            "forest_4robots_cable", 
+        #            "forest_4robots_db", 
+        #            "forest_4robots_db_orig"
+        #            ],
+        # "Wall" : [
+        #     "wall_2robots_unicycle", "wall_3robots_unicycle", "wall_4robots_unicycle", "wall_5robots_unicycle", "wall_6robots_unicycle"
+        # ]
+        # "Window" : [
+        #     "window_2robots", "window_3robots", "window_4robots", "window_5robots", "window_6robots"
+        # ],
+        # "Forest" : [
+        #     "forest_2robots", "forest_3robots", "forest_4robots", "forest_5robots", "forest_6robots"
+        # ],
     }
-    robot_types = ["UR", "MP"]
+    # robot_types = ["UR", "MP"]
+    # robot_types = ["UR"]
+    robot_types = ["MP"]
 
-    print("Processing stats_db_done...")
-    data_stats_db_done = process_stats_db_done(args.stats_db_done, environments, robot_types)
-    print(data_stats_db_done)
+    if args.db_dir is not None: 
+        print(f"Processing {args.db_dir}")
+        data_db = process_db_data(args.db_dir, environments, robot_types)
+        print(data_db)
+    else:
+        print("db is None")
+        data_db = {}
 
-    print("Processing alternate structure...")
-    data_alt_structure = process_alt_structure(args.alt_structure, environments, robot_types)
-    print(data_alt_structure)
-    
+    if args.coltrans_dir is not None: 
+        print(f"Processing {args.coltrans_dir}")
+        data_coltrans = process_coltrans_data(args.coltrans_dir, environments, robot_types)
+        print(data_coltrans)
+    else:
+        print("coltransplanning is None")
+        data_coltrans = {}
     # Combine the data into a single dictionary
     combined_data = {
-        "stats_db_done": data_stats_db_done,
-        "alt_structure": data_alt_structure,
+        "stats_db": data_db,
+        "stats_coltransplanning": data_coltrans,
     }
 
     # Save the combined data to a single YAML file
-    with open("combined_data.yaml", "w") as file:
+    with open(f"../combined_data_{out}.yaml", "w") as file:
         yaml.dump(combined_data, file, default_flow_style=False)
 
-    print("Data has been saved to 'combined_data.yaml'.")
+    print(f"Data has been saved to 'combined_data_{out}.yaml'.")
     new_envs = transform_environments(environments)
 
-    final_data = map_to_final_format(data_stats_db_done, data_alt_structure, environments, new_envs)
+    final_data = map_to_final_format(data_db, data_coltrans, environments, new_envs)
 
     # Optionally, save the data to a YAML file
-    with open("../final_data.yaml", "w") as file:
+    with open(f"../final_data_{out}.yaml", "w") as file:
         yaml.dump(final_data, file, default_flow_style=False)
 
-    print("Data saved to 'final_data.yaml'.")
+    print(f"Data saved to 'final_data_{out}.yaml'.")
 
 if __name__ == "__main__":
     main()
