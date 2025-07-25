@@ -9,7 +9,7 @@ from meshcat.animation import Animation
 import argparse
 import yaml
 import time
-
+import rowan as rn
 # To do:
 # draw the path 
 # add start/goal robots with different color
@@ -51,10 +51,10 @@ def visualize(env_file, result_file, video_file, payload_file=None):
         payload_states = yaml.safe_load(f)
 
       if "payload" in payload_states and payload_states["payload"] is not None:
-        pstates = np.array(payload_states["payload"])
+        pstates = np.array(payload_states["payload"], dtype=np.float64)
         draw_payload = True
         vis["payload"].set_object(
-                  g.Mesh(g.Sphere(0.01), g.MeshLambertMaterial(color="r",opacity=1.0)))
+                  g.Mesh(g.Sphere(0.02), g.MeshLambertMaterial(color="r",opacity=1.0)))
 
     vis["/Cameras/default"].set_transform(
         tf.translation_matrix([0, 0, 0]).dot(
@@ -108,9 +108,18 @@ def visualize(env_file, result_file, video_file, payload_file=None):
           else:
             robot_state = states[l][k]
           if "quad" in data["robots"][0]["type"]:
-
             frame["Quadrotor" + str(l)].set_transform(tf.translation_matrix(robot_state[0:3]).dot(
                 tf.quaternion_matrix(np.array([robot_state[6],robot_state[3],robot_state[4],robot_state[5]]))))
+            
+            if draw_payload:
+              qc = normalize(pstates[k,0:3] - robot_state[0:3])
+              len_cable = np.linalg.norm(pstates[k,0:3] - robot_state[0:3])
+              cablePos  = pstates[k,0:3] - 0.5*np.array(qc)/2
+              cableQuat = rn.vector_vector_rotation(qc, [0,0,-1])
+              vis["cable"+ str(l)].set_object(g.Box([0.005,0.005,0.5]), g.MeshLambertMaterial(color=0x000000)) # l = 0.5, hard coded
+              
+              frame["cable" + str(l)].set_transform(tf.translation_matrix(cablePos).dot(
+                                                                tf.quaternion_matrix(cableQuat)))
           elif "unicycle" in data["robots"][0]["type"]:
             frame["unicycle" + str(l)].set_transform(tf.translation_matrix([robot_state[0], robot_state[1], 0]).dot(
                 tf.quaternion_matrix(tf.quaternion_from_euler(0,0,robot_state[2]))))
@@ -127,7 +136,7 @@ def visualize(env_file, result_file, video_file, payload_file=None):
                 
                 rod_center = pos1 + 0.5 * rod_length * normalize(pos2-pos1)
                 vis[f"rod{l}"].set_object(
-                    g.Mesh(g.Box([0.6*rod_length, 0.01, 0.01]), g.MeshLambertMaterial(color=0x000000))
+                    g.Mesh(g.Box([rod_length, 0.01, 0.01]), g.MeshLambertMaterial(color=0x000000))
                 )
 
 
