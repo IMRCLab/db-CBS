@@ -12,6 +12,11 @@ find_package(NLopt REQUIRED)
 message(STATUS "Found NLopt in ${NLOPT_INCLUDE_DIRS}")
 
 add_subdirectory(dynoplan)
+set(MJ_ROOT "$ENV{HOME}/imrc/mujoco-3.3.3")
+if(NOT glfw3_FOUND)
+  find_package(PkgConfig REQUIRED)
+  pkg_check_modules(GLFW REQUIRED glfw3) # uses glfw3.pc
+endif()
 
 # set(ompl_ROOT ${}/k_cbs/ompl)
 # find_package(ompl)
@@ -126,6 +131,7 @@ target_include_directories(db_cbs PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/dynoplan/include
 )
 
+
 target_link_libraries(db_cbs PRIVATE 
   idbastar::optimization
   idbastar::tdbastar
@@ -135,6 +141,7 @@ target_link_libraries(db_cbs PRIVATE
   ompl
   ${FCL_LIBRARIES}
   ${NLOPT_LIBRARIES} 
+  glfw
   )
 target_include_directories(main_ompl PUBLIC 
   ${YAML_INCLUDE_DIRS}
