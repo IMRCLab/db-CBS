@@ -15,6 +15,7 @@
 #include "dynoplan/optimization/multirobot_optimization.hpp"
 #include "dynoplan/optimization/payloadTransport_optimization.hpp"
 #include "dynoplan/optimization/unicyclesWithRods_optimization.hpp"
+#include "dynoplan/optimization/opt_simulate_mujoco.hpp"
 #include "dynoplan/tdbastar/tdbastar.hpp"
 // DYNOBENCH
 #include "dynobench/general_utils.hpp"
@@ -29,6 +30,7 @@
 #include "dbcbs_utils.hpp"
 #include "init_guess_payload.hpp"
 #include "init_guess_unicycles.hpp"
+#include "init_guess_mujoco.hpp"
 
 using namespace dynoplan;
 namespace fs = std::filesystem;
@@ -111,7 +113,7 @@ int main(int argc, char* argv[]) {
     if (cfg["max_motions"]) {
       options_tdbastar.max_motions = cfg["max_motions"].as<size_t>();
     } else {
-      options_tdbastar.max_motions = 60000;
+      options_tdbastar.max_motions = 10000;
     }
     options_tdbastar.rewire = true;
     bool save_forward_search_expansion = false;
@@ -181,7 +183,7 @@ int main(int argc, char* argv[]) {
             motionsFile = "../new_format_motions/integrator2_2d_v0/integrator2_2d_v0.msgpack";
         } else if (robotType == "integrator2_3d_v0"){
             motionsFile = "../new_format_motions/integrator2_3d_v0/integrator2_3d_v0.bin.im.bin.sp.bin";
-        } else if (robotType == "quad3d_v0") {
+        } else if (robotType == "quad3d_v0" || startsWith(robots[0]->name, "mujocoquad")) {
             motionsFile = "../new_format_motions/quad3d_v0/quad3d_v0.msgpack";
             // motionsFile = "../new_format_motions/quad3d_v0/quad3d_v0.msgpack";
             // motionsFile = "../../tmp_mp/quad.bin.im.bin.sp.bin";
@@ -383,133 +385,166 @@ int main(int argc, char* argv[]) {
         open.pop();
         Conflict inter_robot_conflict;
         if (!getEarliestConflict(P.solution, robots, col_mng_robots, robot_objs, inter_robot_conflict, p0_init_guess, p0_sol, solve_p0, tol)){
-            solved_db = true;
-            auto discrete_end = std::chrono::steady_clock::now();
-            duration_discrete = discrete_end - discrete_start;
-            std::cout << "Final solution!" << std::endl; 
-            create_dir_if_necessary(outputFile);
-            std::ofstream out(outputFile);
-            export_solutions(P.solution, robots.size(), &out, id);
-            size_t pos = outputFile.rfind(".yaml");
-            std::string outputFile_payload = "../result_dbcbs_payload.yaml";
-            std::string joint_robot_env_path;
-            std::string resultPath = outputFile; // Start with the original outputFile path
-            size_t pos_resultPath = resultPath.rfind("result_dbcbs.yaml"); // Find the position of "result_dbcbs.yaml"
+          solved_db = true;
+          auto discrete_end = std::chrono::steady_clock::now();
+          duration_discrete = discrete_end - discrete_start;
+          std::cout << "Final solution!" << std::endl; 
+          create_dir_if_necessary(outputFile);
+          std::ofstream out(outputFile);
+          export_solutions(P.solution, robots.size(), &out, id);
+          size_t pos = outputFile.rfind(".yaml");
+          std::string outputFile_payload = "../result_dbcbs_payload.yaml";
+          std::string joint_robot_env_path;
+          std::string resultPath = outputFile; // Start with the original outputFile path
+          size_t pos_resultPath = resultPath.rfind("result_dbcbs.yaml"); // Find the position of "result_dbcbs.yaml"
 
-            if (solve_p0) {
-              if (startsWith(robots[0]->name, "quad3d")) {
-                outputFile_payload = outputFile.substr(0, pos) + "_payload.yaml";
-                resultPath.replace(pos_resultPath, std::string("result_dbcbs.yaml").length(), "init_guess_payload.yaml");
-                export_solution_p0(p0_sol, outputFile_payload);
-                generate_init_guess_payload(inputFile, outputFile_payload, outputFile, resultPath, robots.size(), joint_robot_env_path);
-                p0_sol.clear();
-              } else if (startsWith(robots[0]->name, "unicycle")) {                
-                resultPath.replace(pos_resultPath, std::string("result_dbcbs.yaml").length(), "init_guess_unicycles.yaml");
-                outputFile_payload = outputFile.substr(0, pos) + "_unicycles_dummy.yaml";
-                export_solution_p0(p0_sol, outputFile_payload); // dummy file: nothing is generated here
-                generate_init_guess_unicycles(inputFile, outputFile, resultPath, robots.size(), joint_robot_env_path);
-            
-              }
-            }
-            // get motion_primitives_plot
-            if (save_forward_search_expansion){
-              std::string output_folder = output_path.parent_path().string();
-              std::ofstream out2(output_folder + "/expanded_trajs_forward_solution_" + gen_random(6) + ".yaml");
-              export_node_expansion(expanded_trajs_tmp, &out2);
-            }
-            bool feasible = false;
-            double sum_cost = 0.0;
-            dynobench::Trajectory sol;
-            dynobench::Trajectory sol_broken;
-            auto start = std::chrono::steady_clock::now();
+          if (solve_p0) {
             if (startsWith(robots[0]->name, "quad3d")) {
-              bool sum_robot_cost = true;
-              optimizationFile_anytime = optimizationFile.substr(0, pos) + "_" + std::to_string(optimization_counter) + optimizationFile.substr(pos);
-              feasible = execute_payloadTransportOptimization(joint_robot_env_path,
-                                            resultPath, 
-                                            optimizationFile,
-                                            optimizationFile_anytime,
-                                            sol,
-                                            DYNOBENCH_BASE,
-                                            sum_robot_cost, sol_broken);
-              // TODO: add the optimization sol in the robot motions
-              // 1. transform the opt solution to the robot states
-              // 2. add to all robots motions
-                              
-            } else if (startsWith(robots[0]->name, "unicycle")) {
-              bool sum_robot_cost = true;
-              optimizationFile_anytime = optimizationFile.substr(0, pos) + "_" + std::to_string(optimization_counter) + optimizationFile.substr(pos);
-              feasible = execute_unicyclesWithRodsOptimization(joint_robot_env_path,
-                                            resultPath, 
-                                            optimizationFile,
-                                            optimizationFile_anytime,
-                                            sol,
-                                            DYNOBENCH_BASE,
-                                            sum_robot_cost, sol_broken);
-            }
-            if (!feasible) {
-              std::cout << "Optimization failed. Restarting the iteration with updated parameters." << std::endl;
-              solved_opt = false;
-              
-              add_motion_primitives(problem, sol_broken, sub_motions, robots, sum_cost);
-              break;  
-            }
-            auto end = std::chrono::steady_clock::now();
-            duration_opt = end - start;
-            solved_opt = true;
-            add_motion_primitives(problem, sol, sub_motions, robots, sum_cost);
-            if (!anytime_planning) {
-              sol.to_yaml_format(optimizationFile.c_str());  
-              itr_cost_data["delta"] =  options_tdbastar.delta;
-              itr_cost_data["delta_rate"] = cfg["delta_rate"].as<float>();
-              itr_cost_data["duration_opt"] = duration_opt.count();
-              itr_cost_data["cost_joint"] = sol.cost;
-              itr_cost_data["sum_cost"] = sum_cost;
-              itr_cost_data["duration_discrete"] = duration_discrete.count();
-              itr_cost_data["total_time"] = duration_opt.count() + duration_discrete.count();
+              outputFile_payload = outputFile.substr(0, pos) + "_payload.yaml";
+              resultPath.replace(pos_resultPath, std::string("result_dbcbs.yaml").length(), "init_guess_payload.yaml");
+              export_solution_p0(p0_sol, outputFile_payload);
+              generate_init_guess_payload(inputFile, outputFile_payload, outputFile, resultPath, robots.size(), joint_robot_env_path);
+              p0_sol.clear();
+            } else if (startsWith(robots[0]->name, "unicycle")) {                
+              resultPath.replace(pos_resultPath, std::string("result_dbcbs.yaml").length(), "init_guess_unicycles.yaml");
+              outputFile_payload = outputFile.substr(0, pos) + "_unicycles_dummy.yaml";
+              export_solution_p0(p0_sol, outputFile_payload); // dummy file: nothing is generated here
+              generate_init_guess_unicycles(inputFile, outputFile, resultPath, robots.size(), joint_robot_env_path);
 
-              auto end_time = std::chrono::steady_clock::now();
-              duration_cost = end - start;
-              itr_cost_data["duration"] = duration_cost.count();
-
-              std::ofstream file(stats_file);
-              if (file.is_open()) {
-                  file << itr_cost_data;
-                  file.close();
-                  std::cout << "Iteration " << iteration << " and the lowest cost " << lowest_cost << std::endl;
-              } else {
-                  std::cerr << "Error: Unable to open file for writing." << std::endl;
-              }
-              return 0;
+            } else if (startsWith(robots[0]->name, "mujocoquad")) {                
+              outputFile_payload = outputFile.substr(0, pos) + "_mujoco.yaml";
+              resultPath.replace(pos_resultPath, std::string("result_dbcbs.yaml").length(), "init_guess_mujoco.yaml");
+              export_solution_p0(p0_sol, outputFile_payload);
+              generate_init_guess_mujoco(inputFile, outputFile_payload, outputFile, resultPath, robots.size(), joint_robot_env_path);
+              p0_sol.clear();
             }
-            if (lowest_cost > sum_cost) {
-              sol.to_yaml_format(optimizationFile.c_str());  
-              sol.to_yaml_format(optimizationFile_anytime.c_str());  
-              lowest_cost = sum_cost;
-              itr_cost_data["runs"].push_back(YAML::Node());
-              itr_cost_data["runs"][optimization_counter]["iteration"] = optimization_counter;
-              itr_cost_data["runs"][optimization_counter]["lowest_cost"] = lowest_cost;
-              itr_cost_data["runs"][optimization_counter]["cost_joint"] = sol.cost;
-              itr_cost_data["runs"][optimization_counter]["delta"] = options_tdbastar.delta;
-              itr_cost_data["runs"][optimization_counter]["delta_rate"] = cfg["delta_rate"].as<float>();
-              itr_cost_data["runs"][optimization_counter]["duration_opt"] = duration_opt.count();
-              itr_cost_data["runs"][optimization_counter]["duration_discrete"] = duration_discrete.count();
-              itr_cost_data["runs"][optimization_counter]["total_time"] = duration_opt.count() + duration_discrete.count();
-              std::ofstream file(itr_cost_file);
-              if (file.is_open()) {
-                  file << itr_cost_data;
-                  file.close();
-                  std::cout << "Iteration " << iteration << " and the lowest cost " << lowest_cost << std::endl;
-              } else {
-                  std::cerr << "Error: Unable to open file for writing." << std::endl;
-              }
-              optimization_counter++;
-              for (size_t l = 0; l < num_robots; l++){
-                upper_bounds[l] = sum_cost - (hs_total - hs[l]);
-              }
+          } else if (startsWith(robots[0]->name, "mujocoquad")) {                
+              outputFile_payload = outputFile.substr(0, pos) + "_mujoco.yaml";
+              resultPath.replace(pos_resultPath, std::string("result_dbcbs.yaml").length(), "init_guess_mujoco.yaml");
+              export_solution_p0(p0_sol, outputFile_payload);
+              generate_init_guess_mujoco(inputFile, outputFile_payload, outputFile, resultPath, robots.size(), joint_robot_env_path);
+              p0_sol.clear();
+          }
+          // get motion_primitives_plot
+          if (save_forward_search_expansion){
+            std::string output_folder = output_path.parent_path().string();
+            std::ofstream out2(output_folder + "/expanded_trajs_forward_solution_" + gen_random(6) + ".yaml");
+            export_node_expansion(expanded_trajs_tmp, &out2);
+          }
+          bool feasible = false;
+          double sum_cost = 0.0;
+          dynobench::Trajectory sol;
+          dynobench::Trajectory sol_broken;
+          auto start = std::chrono::steady_clock::now();
+          if (startsWith(robots[0]->name, "quad3d")) {
+            bool sum_robot_cost = true;
+            optimizationFile_anytime = optimizationFile.substr(0, pos) + "_" + std::to_string(optimization_counter) + optimizationFile.substr(pos);
+            feasible = execute_payloadTransportOptimization(joint_robot_env_path,
+                                          resultPath, 
+                                          optimizationFile,
+                                          optimizationFile_anytime,
+                                          sol,
+                                          DYNOBENCH_BASE,
+                                          sum_robot_cost, sol_broken);
+            // TODO: add the optimization sol in the robot motions
+            // 1. transform the opt solution to the robot states
+            // 2. add to all robots motions
+                            
+          } else if (startsWith(robots[0]->name, "unicycle")) {
+            bool sum_robot_cost = true;
+            optimizationFile_anytime = optimizationFile.substr(0, pos) + "_" + std::to_string(optimization_counter) + optimizationFile.substr(pos);
+            feasible = execute_unicyclesWithRodsOptimization(joint_robot_env_path,
+                                          resultPath, 
+                                          optimizationFile,
+                                          optimizationFile_anytime,
+                                          sol,
+                                          DYNOBENCH_BASE,
+                                          sum_robot_cost, sol_broken);
+          } else if (startsWith(robots[0]->name, "mujoco")) {
+            bool sum_robot_cost = true;
+            optimizationFile_anytime = optimizationFile.substr(0, pos) + "_" + std::to_string(optimization_counter) + optimizationFile.substr(pos);
+            feasible = execute_optMujoco(joint_robot_env_path,
+                                          resultPath, 
+                                          optimizationFile,
+                                          optimizationFile_anytime,
+                                          sol,
+                                          DYNOBENCH_BASE,
+                                          sum_robot_cost, sol_broken, "../cfg_file.yaml");
+          }
+          if (!feasible) {
+            std::cout << "Optimization failed. Restarting the iteration with updated parameters." << std::endl;
+            solved_opt = false;
+            
+            add_motion_primitives(problem, sol_broken, sub_motions, robots, sum_cost);
+            break;  
+          }
+          auto end = std::chrono::steady_clock::now();
+          duration_opt = end - start;
+          solved_opt = true;
+          add_motion_primitives(problem, sol, sub_motions, robots, sum_cost);
+          if (!anytime_planning) {
+            sol.to_yaml_format(optimizationFile.c_str());  
+            itr_cost_data["delta"] =  options_tdbastar.delta;
+            itr_cost_data["delta_rate"] = cfg["delta_rate"].as<float>();
+            itr_cost_data["duration_opt"] = duration_opt.count();
+            itr_cost_data["cost_joint"] = sol.cost;
+            itr_cost_data["sum_cost"] = sum_cost;
+            itr_cost_data["duration_discrete"] = duration_discrete.count();
+            itr_cost_data["total_time"] = duration_opt.count() + duration_discrete.count();
 
+            auto end_time = std::chrono::steady_clock::now();
+            duration_cost = end - start;
+            itr_cost_data["duration"] = duration_cost.count();
+
+            std::ofstream file(stats_file);
+            if (file.is_open()) {
+                file << itr_cost_data;
+                file.close();
+                std::cout << "Iteration " << iteration << " and the lowest cost " << lowest_cost << std::endl;
+            } else {
+                std::cerr << "Error: Unable to open file for writing." << std::endl;
             }
-            break;
+              if (startsWith(robots[0]->name, "mujoco")) {
+                std::string videoPath = resultPath;
+                std::string toReplace = "init_guess_mujoco.yaml";
+                size_t pos_resultPath = videoPath.find(toReplace);
+                if (pos_resultPath != std::string::npos) {
+                    videoPath.replace(pos_resultPath, toReplace.length(), "output.mp4");
+                } else {
+                    throw std::runtime_error("Could not find 'result_dbcbs.yaml' in resultPath");
+                }
+                execute_simMujoco(joint_robot_env_path, resultPath ,sol, DYNOBENCH_BASE, videoPath, "auto", 1, false, feasible);
+              }
+            return 0;
+          }
+          if (lowest_cost > sum_cost) {
+            sol.to_yaml_format(optimizationFile.c_str());  
+            sol.to_yaml_format(optimizationFile_anytime.c_str());  
+            lowest_cost = sum_cost;
+            itr_cost_data["runs"].push_back(YAML::Node());
+            itr_cost_data["runs"][optimization_counter]["iteration"] = optimization_counter;
+            itr_cost_data["runs"][optimization_counter]["lowest_cost"] = lowest_cost;
+            itr_cost_data["runs"][optimization_counter]["cost_joint"] = sol.cost;
+            itr_cost_data["runs"][optimization_counter]["delta"] = options_tdbastar.delta;
+            itr_cost_data["runs"][optimization_counter]["delta_rate"] = cfg["delta_rate"].as<float>();
+            itr_cost_data["runs"][optimization_counter]["duration_opt"] = duration_opt.count();
+            itr_cost_data["runs"][optimization_counter]["duration_discrete"] = duration_discrete.count();
+            itr_cost_data["runs"][optimization_counter]["total_time"] = duration_opt.count() + duration_discrete.count();
+            std::ofstream file(itr_cost_file);
+            if (file.is_open()) {
+                file << itr_cost_data;
+                file.close();
+                std::cout << "Iteration " << iteration << " and the lowest cost " << lowest_cost << std::endl;
+            } else {
+                std::cerr << "Error: Unable to open file for writing." << std::endl;
+            }
+            optimization_counter++;
+            for (size_t l = 0; l < num_robots; l++){
+              upper_bounds[l] = sum_cost - (hs_total - hs[l]);
+            }
+
+          }
+          break;
         }
         ++expands;
         if (expands % 100 == 0) {

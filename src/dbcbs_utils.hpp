@@ -285,7 +285,7 @@ struct cableShapes {
         // col_mgr_robots = std::make_shared<fcl::DynamicAABBTreeCollisionManagerd>();
         cablesObj.clear();
         robotsObj.clear();
-        if (startsWith(robot_name, "quad3d")) {
+        if (startsWith(robot_name, "quad3d") || startsWith(robot_name, "mujocoquad")) {
             for (size_t i=0; i < num_robots; ++i) {
                 std::shared_ptr<fcl::CollisionGeometryd> cablegeom;
                 cablegeom.reset(new fcl::Capsuled(0.01, l[i]));
@@ -462,7 +462,7 @@ bool getEarliestConflict(
             robot_objs[obj_idx]->computeAABB();
             ++obj_idx;
             }
-            if (startsWith(all_robots[0]->name, "quad3d")) { // Assuming Homogenous robot team
+            if (startsWith(all_robots[0]->name, "quad3d") || startsWith(all_robots[0]->name, "mujocoquad")) { // Assuming Homogenous robot team
                 size_t dim = 3;
                 double mu = 0.1;
                 double lambda = 4;
@@ -557,7 +557,7 @@ bool getEarliestConflict(
             robot_objs[obj_idx]->computeAABB();
             ++obj_idx;
             }
-            if (startsWith(all_robots[0]->name, "quad3d")) { // Assuming Homogenous robot team
+            if (startsWith(all_robots[0]->name, "quad3d") || startsWith(all_robots[0]->name, "mujocoquad")) { // Assuming Homogenous robot team
                 size_t dim = 3;
                 double mu = 0.2;
                 double lambda = 1.;
@@ -715,7 +715,7 @@ bool getEarliestConflict(
     }
 
     if (solve_p0) {
-        if (startsWith(all_robots[0]->name, "quad3d")) {
+        if (startsWith(all_robots[0]->name, "quad3d") || startsWith(all_robots[0]->name, "mujocoquad")) {
             for (const auto& p0i : p0_tmp) {
                 p0_sol.push_back(p0i);
             }
