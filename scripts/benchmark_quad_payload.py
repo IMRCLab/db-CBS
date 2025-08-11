@@ -348,8 +348,13 @@ def execute_task(task: ExecutionTask):
                 if control_success:
                     print("Visualizing the controller output......")
                     visualize_unicycles(str(env_joint_robot_path), result_folder / "result_dbcbs_opt.yaml", reference_traj=result_folder / "result_dbcbs_opt.yaml", visualize_controller_out=True)
-            if control_success:
-                run_checker(str(env_joint_robot_path_checker), result_folder / "result_dbcbs_opt.yaml", (result_folder / "trajectory_opt.yaml").with_suffix(".check.txt"))
+            
+            if "mujoco" in robot_type:
+                run_visualize(vis_script, env_path, path_to_dbcbs_result, path_to_payload)
+
+
+            # if control_success:
+            #     run_checker(str(env_joint_robot_path_checker), result_folder / "result_dbcbs_opt.yaml", (result_folder / "trajectory_opt.yaml").with_suffix(".check.txt"))
                 # run_checker(str(env_joint_robot_path), result_folder / "trajectory_opt.yaml", (result_folder / "trajectory_opt.yaml").with_suffix(".check.txt"))
         else: 
             print(f"db-cbs failed in {task.instance['name']}, trial {task.trial}")
@@ -359,6 +364,16 @@ def execute_task(task: ExecutionTask):
 def main():
     parallel = True
     instances = [
+        # {"name": "quad3d", "model": "quad3d_v0.yaml"},
+        # {"name": "quad3d_forest", "model": "quad3d_v0.yaml"},
+        # {"name": "quad3d_flip", "model": "quad3d_v0.yaml"},
+        {"name": "mujocoquad_empty", "model": "mujocoquad_empty.yaml"},
+        {"name": "mujocoquad_forest", "model": "mujocoquad_forest.yaml"},
+        {"name": "mujocoquad_flip", "model": "mujocoquad_flip.yaml"},
+        {"name": "mujocoquadspayload_empty1", "model": "mujocoquadspayload_empty1.yaml"},
+        {"name": "mujocoquadspayload_empty2", "model": "mujocoquadspayload_empty2.yaml"},
+        {"name": "mujocoquadspayload_empty3", "model": "mujocoquadspayload_empty3.yaml"},
+
         # {"name": "one_obs_2robots", "model": "point_2.yaml"},
         # {"name": "window_2robots", "model": "point_2.yaml"},
         # {"name": "window_3robots", "model": "point_3.yaml"},
@@ -370,7 +385,7 @@ def main():
         # {"name": "forest_3robots", "model": "point_3.yaml"},
         # {"name": "forest_4robots", "model": "point_4.yaml"},
         # {"name": "forest_5robots", "model": "point_5.yaml"},
-        {"name": "forest_6robots", "model": "point_6.yaml"},
+        # {"name": "forest_6robots", "model": "point_6.yaml"},
  
         # {"name": "window_2robots_unicycle", "model": "unicyclesWithRods_2.yaml"},
         # {"name": "window_3robots_unicycle", "model": "unicyclesWithRods_3.yaml"},
@@ -411,7 +426,7 @@ def main():
         # {"delta_0": 0.95, "delta_rate": 0.95, "num_primitives_0": 1500, "num_primitives_rate": 0.1, "heuristic1": "no-reverse-search", "payload": {"solve_p0": True, "anytime": False, "p0_init_guess": [-0.5,0,0],  "tol":0.95}}, # forest_3robots
         # {"delta_0": 0.8, "delta_rate": 0.99, "num_primitives_0": 500, "num_primitives_rate": 0.1, "heuristic1": "no-reverse-search", "payload": {"solve_p0": True, "anytime": False, "p0_init_guess": [-0.5,0,0],  "tol":0.8}}, # forest_4robots
         # {"delta_0": 0.75, "delta_rate": 0.99, "num_primitives_0": 100, "num_primitives_rate": 0.1, "heuristic1": "no-reverse-search", "payload": {"solve_p0": True, "anytime": False, "p0_init_guess": [-0.5,0,0],  "tol":0.75}}, # forest_5robots
-        {"delta_0": 0.75, "delta_rate": 0.99, "num_primitives_0": 200, "num_primitives_rate": 0.1, "heuristic1": "no-reverse-search", "payload": {"solve_p0": True, "anytime": False, "p0_init_guess": [-0.5,0,0],  "tol":0.75}}, # forest_6robots
+        # {"delta_0": 0.75, "delta_rate": 0.99, "num_primitives_0": 200, "num_primitives_rate": 0.1, "heuristic1": "no-reverse-search", "payload": {"solve_p0": True, "anytime": False, "p0_init_guess": [-0.5,0,0],  "tol":0.75}}, # forest_6robots
 
         # {"delta_0": 0.4, "delta_rate": 0.9, "num_primitives_0": 500 , "num_primitives_rate": 1.2, "heuristic1": "no-reverse-search", "payload": {"solve_p0": True, "anytime": True, "tol": 0.4}},  # window_2robots_unicycle
         # {"delta_0": 0.4, "delta_rate": 0.9, "num_primitives_0": 500 , "num_primitives_rate": 1.2, "heuristic1": "no-reverse-search", "payload": {"solve_p0": True, "anytime": True, "tol": 0.4}},  # window_3robots_unicycle
@@ -434,6 +449,14 @@ def main():
 
         # {"delta_0": 0.3, "delta_rate": 0.99, "num_primitives_0": 100, "num_primitives_rate": 2.2, "heuristic1": "no-reverse-search", "payload": {"solve_p0": True, "anytime": False,  "tol": 0.3}},  # lego_2robots_unicycle
         # {"delta_0": 0.4, "delta_rate": 0.99, "num_primitives_0": 220, "num_primitives_rate": 1.1, "heuristic1": "no-reverse-search", "payload": {"solve_p0": True, "anytime": True,  "tol": 0.4}},  # lego_2robots_unicycle
+
+        # {"delta_0": 0.8, "delta_rate": 0.99, "num_primitives_0": 1000, "num_primitives_rate": 0.05, "heuristic1": "no-reverse-search", "payload": {"solve_p0": False, "anytime": False, "p0_init_guess": [-0.5,0,0.5],  "tol":0.8}}, # mujocoquad_empty
+        {"delta_0": 0.8, "delta_rate": 0.99, "num_primitives_0": 1000, "num_primitives_rate": 0.05, "heuristic1": "no-reverse-search", "payload": {"solve_p0": False, "anytime": False, "p0_init_guess": [-0.5,0,0.5],  "tol":0.8}}, # mujocoquad_forest
+        {"delta_0": 0.65, "delta_rate": 0.99, "num_primitives_0": 1000, "num_primitives_rate": 0.05, "heuristic1": "no-reverse-search", "payload": {"solve_p0": False, "anytime": False, "p0_init_guess": [-0.5,0,0.5],  "tol":0.8}}, # mujocoquad_flip
+        # {"delta_0": 0.6, "delta_rate": 0.9, "num_primitives_0": 500, "num_primitives_rate": 0.1, "heuristic1": "no-reverse-search", "payload": {"solve_p0": True, "anytime": False, "p0_init_guess": [-1.0,0.0,0.5],  "tol":0.6}}, # mujucoquadspayload1
+        # {"delta_0": 0.6, "delta_rate": 0.9, "num_primitives_0": 500, "num_primitives_rate": 0.1, "heuristic1": "no-reverse-search", "payload": {"solve_p0": True, "anytime": False, "p0_init_guess": [-1.0,0.0,0.5],  "tol":0.6}}, # mujucoquadspayload2
+        # {"delta_0": 0.6, "delta_rate": 0.9, "num_primitives_0": 500, "num_primitives_rate": 0.1, "heuristic1": "no-reverse-search", "payload": {"solve_p0": True, "anytime": False, "p0_init_guess": [-1.0,0.0,0.5],  "tol":0.6}}, # mujucoquadspayload3
+
 
     ] 
 
