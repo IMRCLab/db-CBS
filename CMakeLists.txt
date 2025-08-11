@@ -124,6 +124,7 @@ add_executable(db_cbs
   src/db_cbs.cpp
   src/init_guess_payload.cpp
   src/init_guess_unicycles.cpp
+  src/init_guess_mujoco.cpp
   # src/robots.cpp
 )
 
