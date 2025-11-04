@@ -257,7 +257,7 @@ def combined_optimization_analysis(
                         mean_duration_opts_sorted - std_duration_opts_sorted,
                         mean_duration_opts_sorted + std_duration_opts_sorted,
                         color='#009E73', alpha=0.3)
-
+        # ax.margins(x=0)
         ax.set_xlabel('Time Steps', fontsize=fontsize)
         ax.set_ylabel('Optimization Time [s]', fontsize=fontsize)
         ax.tick_params(axis='both', labelsize=fontsize - 2)
@@ -313,7 +313,7 @@ def combined_optimization_analysis(
             std_vals = np.array(stds[key])
             ax.plot(x, mean_vals, color=colors[i], label=labels[i], linewidth=2)
             ax.fill_between(x, mean_vals - std_vals, mean_vals + std_vals, color=colors[i], alpha=0.3)
-
+            # ax.margins(x=0)
         ax.set_xticks(x)
         ax.set_xticklabels(instance_labels, rotation=45, ha='right', fontsize=fontsize-2)
         ax.set_ylabel("Time [min]", fontsize=fontsize)
@@ -595,71 +595,80 @@ def get_state(X, t):
     return X[-1]
   
 def plot(filename_env, filename_res):
-#   scale = 2.5
-#   fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(8*scale,2.4*scale),sharex='row', sharey='row', gridspec_kw={'height_ratios': [5,1]})
-#   fig = plt.figure(figsize=(8, 6)) 
-  gs = gridspec.GridSpec(2, 1, height_ratios=[5, 1]) 
-  ax1 = plt.subplot(gs[0])
-  ax2 = plt.subplot(gs[1])
-  # 1. read the environment, get robot types
-  with open(filename_env) as env_file:
-    env = yaml.safe_load(env_file)
-  robot_types = []
-  for r in env["robots"]:
-    robot_types.append(r["type"])
-  dt = 0.1
-  # 2. read the trajectory, adjust the circle radius
-  with open(filename_res) as motions_file:
-    results = yaml.safe_load(motions_file)
- # get max T
-  T = 0
-  for i in range(len(results["result"])):
-    T = max(T, len(results["result"][i]["states"]))
+    fig = plt.figure(figsize=(8, 6))
+    gs = gridspec.GridSpec(2, 1, height_ratios=[5, 1])
+    ax1 = plt.subplot(gs[0])
+    ax2 = plt.subplot(gs[1])
 
-  for i in range(len(results["result"])):
-    states = results["result"][i]["states"]
-    X = [s[0] for s in states]
-    Y = [s[1] for s in states]
-    Z = [s[2] for s in states]
-    F = [s[6] for s in states]
-    qX = []
-    qZ = []
-    qU = []
-    qV = []
-    for k in np.arange(0, len(X)-1, int(0.5 / dt)):
-       qX.append(X[k])
-       qZ.append(Z[k])
-       qU.append((X[k+1] - X[k]) / dt)
-       qV.append((Z[k+1] - Z[k]) / dt)
-    #    u = (X[k+1] - X[k]) / dt
-    #    v = (Z[k+1] - Z[k]) / dt
-    #    magnitude = np.sqrt(u**2 + v**2)  # Compute magnitude
-    #    qU.append(u / magnitude)
-    #    qV.append(v / magnitude)
-    robot_rad = 0.1 # assumes a small robot
-    # plot trajectory
-    line = ax1.plot(X, Z,alpha=0.5)
-    color = line[0].get_color()
-    if(robot_types[i] == "integrator2_3d_large_v0"):
-        robot_rad = 0.15
-    # plot outline
-    ax1.add_artist(mpatches.Circle([states[int(T/2)][0], states[int(T/2)][2]], robot_rad, color=color, alpha=0.4))
-    # ax1.quiver(qX, qZ, qU, qV, angles='xy', scale_units='xy', scale=5, color='r', width=0.005)
-    ax1.quiver(qX,qZ,qU,qV,angles='xy', scale_units='xy',scale=5, color=color, width=0.01)
-    ax1.set_aspect('auto')
-    ax1.set_xlim([-0.5,1])
-    ax1.set_ylim([1,2])
-    ax1.set_xticklabels([])
-    ax1.set_yticklabels([])
-    ax1.set_xlabel('X')
-    ax1.set_ylabel('Z')
-    ax2.plot([i * dt for i in range(len(X))], F, color)
-    ax2.set_xlabel('Time [s]')
-    ax2.set_ylabel(r"$\psi$ [g]")
+    with open(filename_env) as env_file:
+        env = yaml.safe_load(env_file)
+    robot_types = [r["type"] for r in env["robots"]]
 
-  plt.tight_layout()
-#   plt.savefig('swap3_drone.pdf')
-  plt.show()
+    dt = 0.1
+    with open(filename_res) as motions_file:
+        results = yaml.safe_load(motions_file)
+
+    T = 0
+    for i in range(len(results["result"])):
+        T = max(T, len(results["result"][i]["states"]))
+
+    # plot inside loop (each robot)
+    for i in range(len(results["result"])):
+        states = results["result"][i]["states"]
+        X = [s[0] for s in states]
+        Y = [s[1] for s in states]
+        Z = [s[2] for s in states]
+        # F = [s[6] for s in states] 
+        F = [s[6] / 9.81 * 1000 for s in states] 
+
+        qX, qZ, qU, qV = [], [], [], []
+        step = max(1, int(0.5 / dt))
+        for k in np.arange(0, len(X) - 1, step):
+            qX.append(X[k])
+            qZ.append(Z[k])
+            qU.append((X[k + 1] - X[k]) / dt)
+            qV.append((Z[k + 1] - Z[k]) / dt)
+
+        robot_rad = 0.1
+        if robot_types[i] == "integrator2_3d_large_v0":
+            robot_rad = 0.15
+
+        line = ax1.plot(X, Z, alpha=0.5)
+        color = line[0].get_color()
+
+        circ = mpatches.Circle([states[int(T / 2)][0], states[int(T / 2)][2]],
+                               robot_rad, color=color, alpha=0.4)
+        ax1.add_patch(circ)
+
+        ax1.quiver(qX, qZ, qU, qV, angles='xy', scale_units='xy',
+                   scale=5, color=color, width=0.01)
+
+        ax2.plot([j * dt for j in range(len(X))], F, color)
+
+    ax1.set_aspect('equal', adjustable='box')
+    ax1.set_xlim([-0.5, 1])
+    ax1.set_ylim([1, 2])
+    labelpad = 16
+    font_size = 16
+    # ax1.tick_params(axis='y', labelsize=labelpad)   # y-ticks of top plot
+    ax2.tick_params(axis='y', labelsize=labelpad) 
+    ax2.tick_params(axis='x', labelsize=labelpad)
+    # labels 
+    ax1.set_xlabel('X', fontsize=font_size)
+    ax1.set_ylabel('Z', fontsize=font_size, labelpad=labelpad)
+    ax2.set_xlabel('Time [s]', fontsize=font_size)
+    ax2.set_ylabel(r"$\psi$ [g]", fontsize=font_size, labelpad=labelpad)
+    plt.setp(ax1.get_xticklabels(), visible=False)
+    plt.setp(ax1.get_yticklabels(), visible=False)
+    fig.subplots_adjust(left=0.12, right=0.98, top=0.97, bottom=0.12, hspace=0.14)
+    fig.align_ylabels([ax1, ax2])
+    pos_top = ax1.get_position()   # Bbox(x0, y0, x1, y1)
+    pos_bot = ax2.get_position()
+    new_bot = [pos_top.x0, pos_bot.y0, pos_top.width, pos_bot.height]
+    ax2.set_position(new_bot)
+    plt.savefig('../results/swap3_drone.pdf')
+    plt.show()
+
 
 
 def main():
