@@ -1,14 +1,10 @@
-import shutil
 import subprocess
-import time
 import shutil
 import tempfile
 from pathlib import Path
 import sys
 import os
 import yaml
-# import msgpack
-
 
 sys.path.append(os.getcwd())
 
@@ -22,49 +18,39 @@ def run_dbcbs(filename_env, folder, timelimit, cfg):
 
         print(filename_env)
         filename_stats = "{}/stats.yaml".format(folder)
-        start = time.time()
-        duration_dbcbs = 0
-        with open(filename_stats, 'w') as stats:
-            stats.write("stats:\n")
-            
-            filename_result_dbcbs = Path(folder) / "result_dbcbs.yaml"
-            filename_result_dbcbs_opt = Path(folder) / "result_dbcbs_opt.yaml"
-            t_dbcbs_start = time.time()
+        filename_result_dbcbs = Path(folder) / "result_dbcbs.yaml"
+        filename_result_dbcbs_opt = Path(folder) / "result_dbcbs_opt.yaml"
 
-            cmd = ["./db_cbs", 
-                "-i", filename_env,
-                "-o", filename_result_dbcbs,
-                "--opt", filename_result_dbcbs_opt,
-                "--cfg", str(filename_cfg),
-                "-t", str(1e6)]
-            print(subprocess.list2cmdline(cmd))
+        cmd = ["./db_cbs", 
+            "-i", filename_env,
+            "-o", filename_result_dbcbs,
+            "--opt", filename_result_dbcbs_opt,
+            "--stats", filename_stats,
+            "--cfg", str(filename_cfg),
+            "-t", str(1e6)]
+        print(subprocess.list2cmdline(cmd))
+        try:
+            with open("{}/log.txt".format(folder), 'w') as logfile:
+                result = subprocess.run(cmd, timeout=timelimit, stdout=logfile, stderr=logfile)
+        except subprocess.TimeoutExpired as e:
+            print(f"Command timed out after {timelimit} seconds.")
+            cmd_str = " ".join(str(arg) for arg in cmd)
+            subprocess.run(["pkill", "-f", " ".join(cmd_str)])
+
+            filename_stats = f"{folder}/stats.yaml"
             try:
-                with open("{}/log.txt".format(folder), 'w') as logfile:
-                    result = subprocess.run(cmd, timeout=timelimit, stdout=logfile, stderr=logfile)
-                t_dbcbs_stop = time.time()
-                duration_dbcbs += t_dbcbs_stop - t_dbcbs_start
-                if result.returncode != 0:
-                    print("db-cbs failed ", result.returncode)
-                else:
-                    # shutil.copyfile(filename_result_dbcbs_opt, "{}/result_dbcbs_opt.yaml".format(folder))
-                    cost = 0
-                    with open(filename_result_dbcbs_opt) as f:
-                    # with open(filename_result_dbcbs) as f:
-                        result = yaml.safe_load(f)
-                        for r in result["result"]:
-                            cost += len(r["actions"]) * 0.1
-                        nodes = result["result"][-1]["nodes"]
-        
-                    now = time.time()
-                    t = now - start
-                    print("success!", cost, t)
-                    stats.write("  - t: {}\n".format(t))
-                    stats.write("    cost: {}\n".format(cost))
-                    stats.write("    duration_dbcbs: {}\n".format(duration_dbcbs))
-                    stats.write("    hl_expanded_nodes: {}\n".format(nodes))
-                    stats.flush()
-            except:
-                print("Failure!")
+                with open(filename_stats, 'r') as file:
+                    stats = yaml.safe_load(file)
+                    if stats and "stats" in stats and len(stats["stats"]):
+                        print("db-cbs succeeded!")
+                    else:
+                        print("db-cbs failed!")
+            except FileNotFoundError:
+                print(f"Stats file {filename_stats} not found.")
+
+        except Exception as e:
+            print(f"An unexpected error occurred: {e}")
+
 
 
 

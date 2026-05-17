@@ -10,9 +10,16 @@
             "request": "launch",
             "program": "${workspaceFolder}/buildDebug/db_cbs",
             "args": [
-                // "-i", "/home/akmarak-laptop/IMRC/db-CBS/example/parallelpark.yaml",
-                // "-m", "/home/akmarak-laptop/IMRC/db-CBS/results/dbg/motions.msgpack",
-                // "-o", "/home/akmarak-laptop/IMRC/db-CBS/example/result/result_dbcbs.yaml"
+                "-i",
+                "../example/swap2_unicycle.yaml",
+                "-o",
+                "../results/test_hetero.yaml",
+                "--opt",
+                "../results/test_hetero_opt.yaml",
+                "--cfg",
+                "../example/algorithms.yaml",
+                "--t",
+                30000000
             ],
             "cwd": "${workspaceFolder}/buildDebug",
             "externalConsole": false,

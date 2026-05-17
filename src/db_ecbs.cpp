@@ -18,18 +18,18 @@
 #include "dynoplan/tdbastar/tdbastar_epsilon.hpp"
 #include "dynoplan/tdbastar/planresult.hpp"
 #include "dynoplan/ompl/robots.h"
-#include <dynobench/multirobot_trajectory.hpp>
-
 // DYNOBENCH
 #include "dynobench/general_utils.hpp"
 #include "dynobench/robot_models_base.hpp"
-
+#include <dynobench/multirobot_trajectory.hpp>
+// OTHERS
 #include "robots.h"
 #include "robotStatePropagator.hpp"
+#include "dbcbs_utils.hpp"
+// FCL
 #include "fclStateValidityChecker.hpp"
 #include "fcl/broadphase/broadphase_collision_manager.h"
 #include <fcl/fcl.h>
-#include "dbcbs_utils.hpp"
 
 using namespace dynoplan;
 namespace fs = std::filesystem;
@@ -612,14 +612,6 @@ int main(int argc, char *argv[])
       }
       if (constraints.empty())
         createConstraintsFromConflicts(inter_robot_conflict, constraints);
-      if (save_search_video)
-      {
-        // get the plot of high-level node solution with conflicts
-        auto filename = conflicts_folder + "/" + std::to_string(P.id) + ".yaml";
-        std::cout << filename << std::endl;
-        std::ofstream int_out(filename);
-        export_intermediate_solutions(P.solution, P.constraints, inter_robot_conflict, &int_out);
-      }
 
       for (const auto &c : constraints)
       {

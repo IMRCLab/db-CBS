@@ -50,3 +50,7 @@ python3 ../scripts/benchmark.py
 gedit example/algorithms.yaml
 db-ecbs/default/residual_force = False
 ```
+
+# Note
+Currently, K-CBS is removed from benchmarking due to different OMPL versions being used. 
+If you are able to resolve it, feel free to reach out to me please.

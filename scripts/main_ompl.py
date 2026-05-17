@@ -1,7 +1,5 @@
 import argparse
 import subprocess
-# import main_scp
-# import main_komo
 import tempfile
 from pathlib import Path
 import yaml

@@ -4,22 +4,19 @@
 #include <chrono>
 #include <iterator>
 #include <yaml-cpp/yaml.h>
-
-// #include <boost/functional/hash.hpp>
+// BOOST
 #include <boost/program_options.hpp>
-
-// OMPL headers
+// OMPL 
 #include <ompl/base/spaces/RealVectorStateSpace.h>
 #include <ompl/control/SpaceInformation.h>
 #include <ompl/control/spaces/RealVectorControlSpace.h>
 #include <ompl/control/planners/rrt/RRT.h>
 #include <ompl/control/planners/sst/SST.h>
 #include <ompl/base/objectives/ControlDurationObjective.h>
-
+// OTHERS
 #include "robots.h"
 #include "robotStatePropagator.hpp"
 #include "fclStateValidityChecker.hpp"
-
 
 namespace ob = ompl::base;
 namespace oc = ompl::control;
