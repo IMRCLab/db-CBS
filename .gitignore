@@ -1,8 +1,7 @@
-buildRelease/
+build/
 buildDebug/
 results/
 new_format_motions/
-debug/
 demo/
 cloud/motions/
 .vscode/

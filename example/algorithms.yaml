@@ -42,6 +42,8 @@ db-cbs:
     delta_rate: 0.9
     num_primitives_0: 100
     num_primitives_rate: 1.5
+    heuristic1_delta: 0.9
+    heuristic1_num_primitives_0: 100
     alpha: 0.5
     filter_duplicates: True
     heuristic1: "reverse-search"
@@ -69,7 +71,7 @@ db-ecbs:
     execute_joint_optimization: True
     residual_force: False # NN, augmented state
     conservative: False # Ellipsoid shape, no augmented state
-    save_expanded_trajs: False
+    refine_solution: True
   '*_unicycle_sphere':
     delta_0: 0.9
     heuristic1_delta: 0.9
