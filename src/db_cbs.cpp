@@ -28,7 +28,8 @@
 namespace fs = std::filesystem;
 using namespace dynoplan;
 using duration = std::chrono::duration<double>;
-#define BASE "../../../" // w.r.t db-CBS/build
+// #define BASE "../../../../" // w.r.t db-CBS/build
+#define BASE "../../" // mrmp_benchmark dir
 using duration = std::chrono::duration<double>;
 
 int main(int argc, char *argv[])
@@ -80,11 +81,14 @@ int main(int argc, char *argv[])
   }
   auto dbcbs_start = std::chrono::steady_clock::now();
   YAML::Node cfg = YAML::LoadFile(cfgFile);
+  std::cout << cfgFile << std::endl;
+  std::cout << cfg << std::endl;
   cfg = cfg["db-cbs"]["default"];
   float alpha = cfg["alpha"].as<float>();
   bool filter_duplicates = cfg["filter_duplicates"].as<bool>();
   std::filesystem::path p(inputFile);
   std::string instanceName = p.filename().string(); // with .yaml
+  std::cout << "instance name: " << instanceName << std::endl;
   bool feasible = false;
   // tdbstar options
   Options_tdbastar options_tdbastar;
@@ -110,14 +114,32 @@ int main(int argc, char *argv[])
   std::vector<std::shared_ptr<fcl::CollisionGeometryd>> collision_geometries;
   for (const auto &obs : env["environment"]["obstacles"])
   {
-    if (obs["type"].as<std::string>() == "box")
+    if (obs["shape"]["type"].as<std::string>() == "box")
     {
-      const auto &size = obs["size"];
+      const auto &size = obs["shape"]["size"];
       std::shared_ptr<fcl::CollisionGeometryf> geom;
       geom.reset(new fcl::Boxf(size[0].as<float>(), size[1].as<float>(), 1.0));
       const auto &center = obs["center"];
       auto co = new fcl::CollisionObjectf(geom);
       co->setTranslation(fcl::Vector3f(center[0].as<float>(), center[1].as<float>(), 0));
+      co->computeAABB();
+      obstacles.push_back(co);
+    }
+    else if (obs["shape"]["type"].as<std::string>() == "sphere")
+    {
+      const auto &radius_node = obs["shape"]["radius"];
+
+      float radius = radius_node.as<float>();
+
+      std::shared_ptr<fcl::CollisionGeometryf> geom;
+      geom.reset(new fcl::Spheref(radius));
+
+      const auto &center = obs["center"];
+      auto co = new fcl::CollisionObjectf(geom);
+      co->setTranslation(fcl::Vector3f(center[0].as<float>(),
+                                        center[1].as<float>(),
+                                        0.0));
+
       co->computeAABB();
       obstacles.push_back(co);
     }
@@ -146,19 +168,19 @@ int main(int argc, char *argv[])
     robots.push_back(robot);
     if (robotType == "unicycle_first_order" || robotType == "unicycle_sphere_first_order")
     {
-      motionsFile = "../new_format_motions/unicycle1_v0/spread/unicycle1_v0.bin.im.bin.sp.bin";
+      motionsFile = "db-CBS/new_format_motions/unicycle1_v0/spread/unicycle1_v0.bin.im.bin.sp.bin";
     }
     else if (robotType == "single_integrator")
     {
-      motionsFile = "../new_format_motions/integrator1_2d_v0/unit_length2/integrator1_2d_v0.bin.im.bin.sp.bin";
+      motionsFile = "db-CBS/new_format_motions/integrator1_2d_v0/unit_length2/integrator1_2d_v0.bin.im.bin.sp.bin";
     }
     else if (robotType == "double_integrator_2d")
     {
-      motionsFile = "../new_format_motions/integrator2_2d_v0/integrator2_2d_v0.bin.im.bin.sp.bin.yaml";
+      motionsFile = "db-CBS/new_format_motions/integrator2_2d_v0/integrator2_2d_v0.bin.im.bin.sp.bin.yaml";
     }
     else if (robotType == "double_integrator_3d")
     {
-      motionsFile = "../new_format_motions/integrator2_3d_v0/short/integrator2_3d_v0.bin.im.bin.sp.bin";
+      motionsFile = "db-CBS/new_format_motions/integrator2_3d_v0/short/integrator2_3d_v0.bin.im.bin.sp.bin";
     }
     else
     {
