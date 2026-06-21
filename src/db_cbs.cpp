@@ -44,19 +44,21 @@ int main(int argc, char *argv[])
   std::string statsFile;
   std::string cfgFile;
   double timeLimit;
+  std::optional<unsigned int> seed;
 
   desc.add_options()("help", "produce help message")
   ("input,i", po::value<std::string>(&inputFile)->required(), "input file (yaml)")
   ("output,o", po::value<std::string>(&outputFile)->required(), "output file (yaml)")
   ("optimization,opt", po::value<std::string>(&optimizationFile)->required(), "optimization file (yaml)")
-  ("stats,s", po::value<std::string>(&statsFile)->required(), "stats file (yaml)")
+  ("stats", po::value<std::string>(&statsFile)->required(), "stats file (yaml)")
   ("cfg,c", po::value<std::string>(&cfgFile)->required(), "configuration file (yaml)")
-  ("time_limit,t", po::value<double>(&timeLimit)->required(), "time limit for search");
+  ("time_limit,t", po::value<double>(&timeLimit)->required(), "time limit for search")
+  ("seed", po::value<unsigned int>(), "random seed (default: deterministic)");
 
+  po::variables_map vm;
+  po::store(po::parse_command_line(argc, argv, desc), vm);
   try
   {
-    po::variables_map vm;
-    po::store(po::parse_command_line(argc, argv, desc), vm);
     po::notify(vm);
 
     if (vm.count("help") != 0u)
@@ -71,6 +73,16 @@ int main(int argc, char *argv[])
               << std::endl;
     std::cerr << desc << std::endl;
     return 1;
+  }
+
+  // set seeds
+  seed = vm.count("seed")
+         ? std::optional<unsigned int>(vm["seed"].as<unsigned int>())
+         : std::optional<unsigned int>(42); // determenistic behavior
+  if (seed.has_value()) {
+    std::cout << "db-CBS uses seed " << seed.value() << std::endl;
+  } else {
+      std::cout << "db-CBS uses seed (default) " << std::endl;
   }
   create_dir_if_necessary(statsFile);
   std::ofstream stats(statsFile, std::ios::app);
@@ -208,7 +220,7 @@ int main(int argc, char *argv[])
       options_tdbastar.motionsFile = all_motionsFile[i];
       load_motion_primitives_new(options_tdbastar.motionsFile, *robot, robot_motions[problem.robotTypes[i]],
                                  options_tdbastar.max_motions,
-                                 options_tdbastar.cut_actions, /*shuffle*/ false, options_tdbastar.check_cols);
+                                 options_tdbastar.cut_actions, /*shuffle*/true, options_tdbastar.check_cols, seed);
     }
     if (robot->name == "car_with_trailers")
     {
