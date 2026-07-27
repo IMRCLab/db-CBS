@@ -102,6 +102,7 @@ int main(int argc, char *argv[])
   std::string instanceName = p.filename().string(); // with .yaml
   std::cout << "instance name: " << instanceName << std::endl;
   bool feasible = false;
+  bool check_vel_magnitude = false; // only dynamics with speed limit
   // tdbstar options
   Options_tdbastar options_tdbastar;
   options_tdbastar.outFile = outputFile;
@@ -180,19 +181,19 @@ int main(int argc, char *argv[])
     robots.push_back(robot);
     if (robotType == "unicycle_first_order" || robotType == "unicycle_sphere_first_order")
     {
-      motionsFile = "db-CBS/new_format_motions/unicycle1_v0/spread/unicycle1_v0.bin.im.bin.sp.bin";
+      motionsFile = "db-CBS/new_format_motions/unicycle1_v0/my_motions.bin.im.bin.sp.bin";
     }
     else if (robotType == "single_integrator")
     {
-      motionsFile = "db-CBS/new_format_motions/integrator1_2d_v0/unit_length2/integrator1_2d_v0.bin.im.bin.sp.bin";
+      motionsFile = "db-CBS/new_format_motions/integrator1_2d_v0/my_motions.bin.im.bin.sp.bin";
     }
     else if (robotType == "double_integrator_2d")
     {
-      motionsFile = "db-CBS/new_format_motions/integrator2_2d_v0/integrator2_2d_v0.bin.im.bin.sp.bin.yaml";
+      motionsFile = "db-CBS/new_format_motions/integrator2_2d_v0/my_motions.bin.im.bin.sp.bin";
     }
     else if (robotType == "double_integrator_3d")
     {
-      motionsFile = "db-CBS/new_format_motions/integrator2_3d_v0/short/integrator2_3d_v0.bin.im.bin.sp.bin";
+      motionsFile = "db-CBS/new_format_motions/integrator2_3d_v0/my_motions.bin.im.bin.sp.bin";
     }
     else
     {
@@ -294,8 +295,11 @@ int main(int argc, char *argv[])
       {
         if (iter.first == problem.robotTypes[i])
         {
-          disable_motions(robots[i], problem.robotTypes[i], options_tdbastar.delta, filter_duplicates, alpha,
-                          options_tdbastar.max_motions, iter.second);
+          if (iter.first == "double_integrator_2d")
+            check_vel_magnitude = true;
+          filter_motions(robots[i], problem.robotTypes[i], options_tdbastar.delta, filter_duplicates, alpha,
+                          options_tdbastar.max_motions, check_vel_magnitude, iter.second);
+          check_vel_magnitude = false;
           break;
         }
       }
