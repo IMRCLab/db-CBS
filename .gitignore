@@ -1,9 +1,7 @@
 build/
 buildDebug/
 results/
-new_format_motions/
-demo/
-cloud/motions/
+motion_primitives/
 .vscode/
 __pycache__/
 meshes/

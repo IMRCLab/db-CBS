@@ -181,19 +181,19 @@ int main(int argc, char *argv[])
     robots.push_back(robot);
     if (robotType == "unicycle_first_order" || robotType == "unicycle_sphere_first_order")
     {
-      motionsFile = "db-CBS/new_format_motions/unicycle1_v0/my_motions.bin.im.bin.sp.bin";
+      motionsFile = "db-CBS/motion_primitives/unicycle1_v0/my_motions.bin.im.bin.sp.bin";
     }
     else if (robotType == "single_integrator")
     {
-      motionsFile = "db-CBS/new_format_motions/integrator1_2d_v0/my_motions.bin.im.bin.sp.bin";
+      motionsFile = "db-CBS/motion_primitives/integrator1_2d_v0/my_motions.bin.im.bin.sp.bin";
     }
     else if (robotType == "double_integrator_2d")
     {
-      motionsFile = "db-CBS/new_format_motions/integrator2_2d_v0/my_motions.bin.im.bin.sp.bin";
+      motionsFile = "db-CBS/motion_primitives/integrator2_2d_v0/my_motions.bin.im.bin.sp.bin";
     }
     else if (robotType == "double_integrator_3d")
     {
-      motionsFile = "db-CBS/new_format_motions/integrator2_3d_v0/my_motions.bin.im.bin.sp.bin";
+      motionsFile = "db-CBS/motion_primitives/integrator2_3d_v0/my_motions.bin.im.bin.sp.bin";
     }
     else
     {
