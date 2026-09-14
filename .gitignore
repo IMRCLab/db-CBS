@@ -1,4 +1,4 @@
-build/
+buildRelease/
 buildDebug/
 results/
 motion_primitives/

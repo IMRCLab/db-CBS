@@ -100,7 +100,6 @@ int main(int argc, char *argv[])
   bool filter_duplicates = cfg["filter_duplicates"].as<bool>();
   std::filesystem::path p(inputFile);
   std::string instanceName = p.filename().string(); // with .yaml
-  std::cout << "instance name: " << instanceName << std::endl;
   bool feasible = false;
   bool check_vel_magnitude = false; // only dynamics with speed limit
   // tdbstar options
@@ -182,16 +181,10 @@ int main(int argc, char *argv[])
     if (robotType == "unicycle_first_order" || robotType == "unicycle_sphere_first_order")
     {
       motionsFile = "db-CBS/motion_primitives/unicycle1_v0/my_motions.bin.im.bin.sp.bin";
-        // motionsFile = "../motion_primitives/unicycle1_v0/my_motions.bin.im.bin.sp.bin";
-    }
-    else if (robotType == "single_integrator")
-    {
-      motionsFile = "../motion_primitives/integrator1_2d_v0/my_motions.bin.im.bin.sp.bin";
     }
     else if (robotType == "double_integrator_2d")
     {
       motionsFile = "db-CBS/motion_primitives/integrator2_2d_v0/my_motions.bin.im.bin.sp.bin";
-      // motionsFile = "../motion_primitives/integrator2_2d_v0/my_motions.bin.im.bin.sp.bin";
     }
     else if (robotType == "double_integrator_3d")
     {
@@ -376,6 +369,7 @@ int main(int argc, char *argv[])
         // read your discrete solution
         MultiRobotTrajectory discrete_search_sol;
         discrete_search_sol.read_from_yaml(outputFile.c_str());
+        
         bool sum_robot_cost = true;
         MultiRobotTrajectory optimization_sol;
         auto start = std::chrono::steady_clock::now();
@@ -393,6 +387,9 @@ int main(int argc, char *argv[])
           double makespan = optimization_sol.get_makespan_steps();
           double control_effort = optimization_sol.get_control_effort();
           optimization_sol.to_yaml_format(optimizationFile.c_str());
+          if(!optimization_sol.sanity_check()){
+            std::cout << "Sanity Check: Bound Violations" << std::endl;
+          }
           // save stats
           stats << "stats: " << "\n";
           stats << "  - instance: " << instanceName << "\n";
