@@ -113,7 +113,8 @@ int main(int argc, char *argv[])
   // tdbastar problem
   dynobench::Problem problem(inputFile);
   dynobench::Problem problem_original(inputFile);
-  problem.models_base_path = BASE + std::string("robot_types/");
+  problem.models_base_path = BASE + std::string("examples/robot_types/");
+  std::cout << "BASE: " << BASE << std::endl;
   Out_info_tdb out_tdb;
   std::cout << "*** options_tdbastar ***" << std::endl;
   options_tdbastar.print(std::cout);
@@ -387,9 +388,6 @@ int main(int argc, char *argv[])
           double makespan = optimization_sol.get_makespan_steps();
           double control_effort = optimization_sol.get_control_effort();
           optimization_sol.to_yaml_format(optimizationFile.c_str());
-          if(!optimization_sol.sanity_check()){
-            std::cout << "Sanity Check: Bound Violations" << std::endl;
-          }
           // save stats
           stats << "stats: " << "\n";
           stats << "  - instance: " << instanceName << "\n";

@@ -1,5 +1,6 @@
 buildRelease/
 buildDebug/
+build/
 results/
 motion_primitives/
 .vscode/
