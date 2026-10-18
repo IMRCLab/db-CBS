@@ -92,10 +92,14 @@ int main(int argc, char *argv[])
     return 1;
   }
   auto dbcbs_start = std::chrono::steady_clock::now();
+
+  dynobench::Problem problem(inputFile);
+  dynobench::Problem problem_original(inputFile);
+  problem.models_base_path = BASE + std::string("examples/robot_types/");
+
+  std::string robot_type = problem.robotTypes[0];
   YAML::Node cfg = YAML::LoadFile(cfgFile);
-  std::cout << cfgFile << std::endl;
-  std::cout << cfg << std::endl;
-  cfg = cfg["db-cbs"]["default"];
+  cfg = cfg["db-cbs"][robot_type];
   float alpha = cfg["alpha"].as<float>();
   bool filter_duplicates = cfg["filter_duplicates"].as<bool>();
   std::filesystem::path p(inputFile);
@@ -110,11 +114,7 @@ int main(int argc, char *argv[])
   options_tdbastar.fix_seed = 1;
   options_tdbastar.max_motions = cfg["num_primitives_0"].as<size_t>();
   options_tdbastar.rewire = true;
-  // tdbastar problem
-  dynobench::Problem problem(inputFile);
-  dynobench::Problem problem_original(inputFile);
-  problem.models_base_path = BASE + std::string("examples/robot_types/");
-  std::cout << "BASE: " << BASE << std::endl;
+  
   Out_info_tdb out_tdb;
   std::cout << "*** options_tdbastar ***" << std::endl;
   options_tdbastar.print(std::cout);
@@ -182,6 +182,10 @@ int main(int argc, char *argv[])
     if (robotType == "unicycle_first_order" || robotType == "unicycle_sphere_first_order")
     {
       motionsFile = "db-CBS/motion_primitives/unicycle1_v0/my_motions.bin.im.bin.sp.bin";
+    }
+    else if (robotType == "single_integrator_2d")
+    {
+      motionsFile = "db-CBS/motion_primitives/integrator1_2d_v0/my_motions.bin.im.bin.sp.bin";
     }
     else if (robotType == "double_integrator_2d")
     {
