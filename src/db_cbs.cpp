@@ -295,7 +295,7 @@ int main(int argc, char *argv[])
       {
         if (iter.first == problem.robotTypes[i])
         {
-          if (iter.first == "double_integrator_2d")
+          if (iter.first == "double_integrator_2d" || iter.first == "single_integrator_2d")
             check_vel_magnitude = true;
           filter_motions(robots[i], problem.robotTypes[i], options_tdbastar.delta, filter_duplicates, alpha,
                           options_tdbastar.max_motions, check_vel_magnitude, iter.second);
