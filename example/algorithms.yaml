@@ -19,3 +19,13 @@ db-cbs:
     alpha: 0.5
     filter_duplicates: True
     heuristic1: "reverse-search"
+  double_integrator_2d:
+    delta_0: 0.9
+    delta_rate: 0.9
+    num_primitives_0: 500
+    num_primitives_rate: 1.5
+    heuristic1_delta: 0.9
+    heuristic1_num_primitives_0: 200
+    alpha: 0.5
+    filter_duplicates: True
+    heuristic1: "reverse-search"
